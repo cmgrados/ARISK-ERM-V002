@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load risk_extras %}
+
+{% block title_header %}Análisis de Brecha de Liquidez{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="btn-group shadow-sm" role="group">
+            <button type="button" class="btn btn-outline-indigo active" onclick="updateView('contractual')">Contractual</button>
+            <button type="button" class="btn btn-outline-indigo" onclick="updateView('expected')">Esperado</button>
+            <button type="button" class="btn btn-outline-indigo" onclick="updateView('stress')">Estrés</button>
+        </div>
+    </div>
+    <div class="col-md-6 text-right">
+        <form method="get" class="form-inline d-inline-block">
+            <label class="mr-1 small font-weight-bold text-muted">Fecha:</label>
+            <select name="load_date" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                <option value="">Seleccione...</option>
+                {% for d in available_dates %}
+                    <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == selected_date %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="mr-1 small font-weight-bold text-muted">Agencia:</label>
+            <select name="agency" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                {% for ag in available_agencies %}
+                    <option value="{{ ag }}" {% if selected_agency == ag %}selected{% endif %}>{{ ag }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="mr-1 small font-weight-bold text-muted">Moneda:</label>
+            <select name="currency" class="form-control form-control-sm" onchange="this.form.submit()">
+                {% for cur in available_currencies %}
+                    <option value="{{ cur }}" {% if selected_currency == cur %}selected{% endif %}>{{ cur }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+{% if summary_data %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold text-soft"><i class="fas fa-chart-area mr-2 text-indigo"></i>Brecha Acumulada - Escenario <span id="viewTitle">Contractual</span></h3>
+            </div>
+            <div class="card-body">
+                <div id="gapChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold text-soft"><i class="fas fa-table mr-2 text-indigo"></i>Detalle de Flujos</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="gapTable">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Banda Temporal</th>
+                                <th class="text-right">Entradas</th>
+                                <th class="text-right">Salidas</th>
+                                <th class="text-right">Brecha Periódica</th>
+                                <th class="text-right">Brecha Acumulada</th>
+                                <th class="text-center">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in summary_data %}
+                            <tr class="data-row" 
+                                data-contract-in="{{ row.inflow }}" data-contract-out="{{ row.outflow }}"
+                                data-expect-in="{{ row.expect_in }}" data-expect-out="{{ row.expect_out }}"
+                                data-stress-in="{{ row.stress_in }}" data-stress-out="{{ row.stress_out }}">
+                                <td class="font-weight-bold text-indigo">{{ row.band }}</td>
+                                <td class="text-right val-in">S/ {{ row.inflow|floatformat:2 }}</td>
+                                <td class="text-right val-out">S/ {{ row.outflow|floatformat:2 }}</td>
+                                <td class="text-right val-periodic">S/ {{ row.periodic_gap|floatformat:2 }}</td>
+                                <td class="text-right val-cumulative">S/ {{ row.cumulative_gap|floatformat:2 }}</td>
+                                <td class="text-center val-status">
+                                    <span class="badge {% if row.cumulative_gap < 0 %}badge-soft-danger{% else %}badge-soft-success{% endif %}">
+                                        {% if row.cumulative_gap < 0 %}Déficit{% else %}Superávit{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let chart;
+const data = [
+    {% for r in summary_data %}
+    {
+        band: "{{ r.band }}",
+        contract: { in: {{ r.inflow }}, out: {{ r.outflow }} },
+        expect: { in: {{ r.expect_in }}, out: {{ r.expect_out }} },
+        stress: { in: {{ r.stress_in }}, out: {{ r.stress_out }} }
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+function updateView(type) {
+    const titleMap = { contractual: 'Contractual', expected: 'Esperado', stress: 'Estrés' };
+    document.getElementById('viewTitle').innerText = titleMap[type];
+    
+    // Update active button
+    document.querySelectorAll('.btn-outline-indigo').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    let cumulative = 0;
+    const xAxis = data.map(d => d.band);
+    const periodicData = [];
+    const cumulativeData = [];
+
+    data.forEach((d, i) => {
+        const inflow = d[type].in;
+        const outflow = d[type].out;
+        const periodic = inflow - outflow;
+        cumulative += periodic;
+
+        periodicData.push(periodic);
+        cumulativeData.push(cumulative);
+
+        // Update table
+        const row = document.querySelectorAll('.data-row')[i];
+        row.querySelector('.val-in').innerText = 'S/ ' + inflow.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        row.querySelector('.val-out').innerText = 'S/ ' + outflow.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        row.querySelector('.val-periodic').innerText = 'S/ ' + periodic.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        row.querySelector('.val-cumulative').innerText = 'S/ ' + cumulative.toLocaleString('en-US', { minimumFractionDigits: 2 });
+        
+        const statusSpan = row.querySelector('.val-status span');
+        if (cumulative < 0) {
+            statusSpan.className = 'badge badge-soft-danger';
+            statusSpan.innerText = 'Déficit';
+        } else {
+            statusSpan.className = 'badge badge-soft-success';
+            statusSpan.innerText = 'Superávit';
+        }
+    });
+
+    chart.setOption({
+        xAxis: { data: xAxis },
+        series: [
+            { data: cumulativeData },
+            { data: periodicData }
+        ]
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    chart = echarts.init(document.getElementById('gapChart'));
+    const initialCumulative = [{% for r in summary_data %}{{ r.cumulative_gap }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const initialPeriodic = [{% for r in summary_data %}{{ r.periodic_gap }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    const xAxis = [{% for r in summary_data %}"{{ r.band }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    const option = {
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'category', data: xAxis },
+        yAxis: { type: 'value', axisLabel: { formatter: (v) => 'S/ ' + (v/1000).toFixed(0) + 'k' } },
+        series: [
+            {
+                name: 'Brecha Acumulada', type: 'line', smooth: true,
+                areaStyle: { opacity: 0.2 },
+                itemStyle: { color: '#4f46e5' },
+                data: initialCumulative
+            },
+            {
+                name: 'Brecha Periódica', type: 'bar',
+                itemStyle: { color: (p) => p.value < 0 ? '#ef4444' : '#10b981' },
+                data: initialPeriodic
+            }
+        ]
+    };
+    chart.setOption(option);
+    window.addEventListener('resize', () => chart.resize());
+});
+</script>
+
+{% else %}
+<div class="row">
+    <div class="col-12 text-center py-5">
+        <i class="fas fa-search-dollar fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Seleccione una fecha de corte para visualizar el análisis de brechas.</h4>
+        <p class="text-muted">Asegúrese de haber realizado la carga masiva de créditos y pasivos para el periodo deseado.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

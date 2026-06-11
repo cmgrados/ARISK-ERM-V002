@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Procesos | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark">Gestión de Procesos y Áreas</h1>
+        </div>
+        <div class="col-sm-6 text-right">
+          <div class="btn-group">
+            <a href="{% url 'operational_risk:management_cycle' %}" class="btn btn-sm btn-outline-indigo mr-2"><i class="fas fa-arrow-left mr-1"></i> Volver al Ciclo</a>
+            <a href="{% url 'catalogs:download_template' %}" class="btn btn-sm btn-secondary"><i class="fas fa-file-excel mr-1"></i> Plantilla</a>
+            <button type="button" class="btn btn-sm btn-warning" data-toggle="modal" data-target="#importModal"><i class="fas fa-upload mr-1"></i> Carga Masiva</button>
+            <a href="{% url 'catalogs:create_unit' %}" class="btn btn-sm btn-primary"><i class="fas fa-sitemap mr-1"></i> Nueva Unidad</a>
+            <a href="{% url 'catalogs:create_process' %}" class="btn btn-sm btn-success"><i class="fas fa-cogs mr-1"></i> Nuevo Proceso</a>
+            <a href="{% url 'catalogs:create_subprocess' %}" class="btn btn-sm btn-info"><i class="fas fa-cog mr-1"></i> Nuevo Subproceso</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content">
+    <div class="container-fluid">
+      <!-- Estadísticas rápidas -->
+      <div class="row">
+        <div class="col-md-4">
+          <div class="small-box bg-primary">
+            <div class="inner">
+              <h3>{{ units.count }}</h3>
+              <p>Unidades de Área</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-building"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="small-box bg-success">
+            <div class="inner">
+              <h3>{{ processes.count }}</h3>
+              <p>Procesos Registrados</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-project-diagram"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="small-box bg-info">
+            <div class="inner">
+              <h3>{{ subprocesses.count }}</h3>
+              <p>Subprocesos</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-tasks"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-primary card-outline card-tabs shadow-sm">
+        <div class="card-header p-0 pt-1 border-bottom-0">
+          <ul class="nav nav-tabs" id="custom-tabs-three-tab" role="tablist">
+            <li class="nav-item">
+              <a class="nav-link active" id="tabs-procesos-tab" data-toggle="pill" href="#tabs-procesos" role="tab" aria-controls="tabs-procesos" aria-selected="true">
+                <i class="fas fa-cogs mr-1"></i> Procesos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="tabs-subprocesos-tab" data-toggle="pill" href="#tabs-subprocesos" role="tab" aria-controls="tabs-subprocesos" aria-selected="false">
+                <i class="fas fa-cog mr-1"></i> Subprocesos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="tabs-unidades-tab" data-toggle="pill" href="#tabs-unidades" role="tab" aria-controls="tabs-unidades" aria-selected="false">
+                <i class="fas fa-sitemap mr-1"></i> Unidades de Área
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="tab-content" id="custom-tabs-three-tabContent">
+            
+            <!-- Procesos Tab -->
+            <div class="tab-pane fade show active" id="tabs-procesos" role="tabpanel" aria-labelledby="tabs-procesos-tab">
+              <table class="table table-hover table-bordered table-striped text-sm datatable">
+                <thead class="thead-light">
+                  <tr>
+                    <th>ID</th>
+                    <th>Nombre del Proceso</th>
+                    <th>Responsable</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in processes %}
+                  <tr>
+                    <td>{{ p.id }}</td>
+                    <td class="font-weight-bold">
+                      <a href="{% url 'catalogs:process_detail' p.id %}" class="text-indigo">
+                        <i class="fas fa-project-diagram mr-1"></i> {{ p.name }}
+                      </a>
+                    </td>
+                    <td>
+                      {% if p.owner %}
+                        <span class="badge badge-info"><i class="fas fa-user mr-1"></i>{{ p.owner.get_full_name|default:p.owner.username }}</span>
+                      {% else %}
+                        <span class="text-muted">Sin asignar</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ p.description|truncatechars:50 }}</td>
+                    <td class="text-center text-nowrap">
+                      <a href="{% url 'catalogs:edit_process' p.id %}" class="btn btn-xs btn-primary"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'catalogs:delete_process' p.id %}" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">No hay procesos registrados.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Subprocesos Tab -->
+            <div class="tab-pane fade" id="tabs-subprocesos" role="tabpanel" aria-labelledby="tabs-subprocesos-tab">
+              <table class="table table-hover table-bordered table-striped text-sm datatable">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Proceso Padre</th>
+                    <th>Nombre del Subproceso</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for s in subprocesses %}
+                  <tr>
+                    <td><span class="badge badge-success">{{ s.process.name }}</span></td>
+                    <td class="font-weight-bold">{{ s.name }}</td>
+                    <td>{{ s.description|truncatechars:50 }}</td>
+                    <td class="text-center text-nowrap">
+                      <a href="{% url 'catalogs:edit_subprocess' s.id %}" class="btn btn-xs btn-primary"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'catalogs:delete_subprocess' s.id %}" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="4" class="text-center text-muted">No hay subprocesos registrados.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- Unidades Tab -->
+            <div class="tab-pane fade" id="tabs-unidades" role="tabpanel" aria-labelledby="tabs-unidades-tab">
+              <table class="table table-hover table-bordered table-striped text-sm datatable">
+                <thead class="thead-light">
+                  <tr>
+                    <th>Unidad</th>
+                    <th>Agencia</th>
+                    <th>Dependencia (Padre)</th>
+                    <th>Descripción</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for u in units %}
+                  <tr>
+                    <td class="font-weight-bold">{{ u.name }}</td>
+                    <td>
+                      {% if u.is_agency %}
+                        <span class="badge badge-success">Sí</span>
+                      {% else %}
+                        <span class="badge badge-secondary">No</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ u.parent.name|default:"-" }}</td>
+                    <td>{{ u.description|truncatechars:50 }}</td>
+                    <td class="text-center text-nowrap">
+                      <a href="{% url 'catalogs:edit_unit' u.id %}" class="btn btn-xs btn-primary"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'catalogs:delete_unit' u.id %}" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="5" class="text-center text-muted">No hay unidades registradas.</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    <!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="importModalLabel"><i class="fas fa-upload mr-2"></i>Carga Masiva de Catálogos</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form action="{% url 'catalogs:import_excel' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p>Sube el archivo Excel generado a partir de la <strong>Plantilla</strong>. El sistema leerá las 3 hojas (Unidades, Procesos, Subprocesos) y las procesará automáticamente estableciendo las dependencias correspondientes.</p>
+          <div class="form-group mt-3">
+            <label for="excel_file">Archivo Excel (.xlsx)</label>
+            <div class="custom-file">
+              <input type="file" class="custom-file-input" id="excel_file" name="excel_file" accept=".xlsx, .xls" required>
+              <label class="custom-file-label" for="excel_file" data-browse="Buscar">Seleccionar archivo...</label>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning"><i class="fas fa-cloud-upload-alt mr-1"></i> Subir y Procesar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+  </section>
+</div>
+
+{% block extra_js %}
+<script>
+  $(function () {
+    $('.datatable').DataTable({
+      "responsive": true, 
+      "lengthChange": false, 
+      "autoWidth": false,
+      "language": {
+          "url": "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json"
+      }
+    });
+
+    // bs-custom-file-input para mostrar el nombre del archivo
+    $('.custom-file-input').on('change', function() {
+      let fileName = $(this).val().split('\\').pop();
+      $(this).next('.custom-file-label').addClass("selected").html(fileName);
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}

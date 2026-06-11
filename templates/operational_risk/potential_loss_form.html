@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card card-outline shadow-lg" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold text-uppercase small"><i class="fas fa-edit text-primary mr-2"></i>Información de la Pérdida</h3>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Columna Izquierda: Identificación -->
+                        <div class="col-md-6 border-right">
+                            <h6 class="text-indigo font-weight-bold mb-3 border-bottom pb-1 small">IDENTIFICACIÓN Y ORIGEN</h6>
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Fecha de Detección</label>
+                                {% if form.detection_date %}{{ form.detection_date }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.detection_date|default:"-" }}</p>{% endif %}
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <label class="small font-weight-bold text-muted">Proceso</label>
+                                    {% if form.process %}{{ form.process }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.process|default:"-" }}</p>{% endif %}
+                                </div>
+                                <div class="col-6">
+                                    <label class="small font-weight-bold text-muted">Subproceso</label>
+                                    {% if form.subprocess %}{{ form.subprocess }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.subprocess|default:"-" }}</p>{% endif %}
+                                </div>
+                            </div>
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Unidad / Área</label>
+                                {% if form.area %}{{ form.area }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.area|default:"-" }}</p>{% endif %}
+                            </div>
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Responsable</label>
+                                {% if form.responsible %}{{ form.responsible }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.responsible|default:"-" }}</p>{% endif %}
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="small font-weight-bold text-muted">Prioridad / Severidad Estimada</label>
+                                {% if form.priority %}{{ form.priority }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.get_priority_display|default:"-" }}</p>{% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Columna Derecha: Detalle Financiero -->
+                        <div class="col-md-6">
+                            <h6 class="text-indigo font-weight-bold mb-3 border-bottom pb-1 small">DETALLE Y MONTOS</h6>
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Tipo de Pérdida</label>
+                                {% if form.loss_type %}{{ form.loss_type }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.loss_type|default:"-" }}</p>{% endif %}
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-8">
+                                    <label class="small font-weight-bold text-muted">Monto Estimado</label>
+                                    {% if form.estimated_amount %}{{ form.estimated_amount }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.estimated_amount|default:"0.00" }}</p>{% endif %}
+                                </div>
+                                <div class="col-4">
+                                    <label class="small font-weight-bold text-muted">Moneda</label>
+                                    {% if form.currency %}{{ form.currency }}{% else %}<p class="form-control-plaintext border rounded px-2 bg-light mb-0">{{ loss.get_currency_display|default:"-" }}</p>{% endif %}
+                                </div>
+                            </div>
+                            
+                            {% if form.gross_loss %}
+                            <div class="row mb-2 bg-light p-2 rounded border">
+                                <div class="col-6">
+                                    <label class="small font-weight-bold text-success">Pérdida Bruta Final</label>
+                                    {{ form.gross_loss }}
+                                </div>
+                                <div class="col-6">
+                                    <label class="small font-weight-bold text-info">Recuperación</label>
+                                    {{ form.recovery_amount }}
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <label class="small font-weight-bold">Estado del Registro</label>
+                                    {{ form.status }}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Evidencia Adjunta</label>
+                                <div class="input-group">
+                                    <div class="custom-file">
+                                        {{ form.evidence }}
+                                        <label class="custom-file-label small" for="{{ form.evidence.id_for_label }}">Seleccionar archivo...</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Full Width Description -->
+                        <div class="col-12 mt-3">
+                            <h6 class="text-indigo font-weight-bold mb-3 border-bottom pb-1 small">DESCRIPCIÓN Y OBSERVACIONES</h6>
+                            <div class="form-group mb-2">
+                                <label class="small font-weight-bold text-muted">Descripción del Incidente / Motivo</label>
+                                {% if form.description %}{{ form.description }}{% else %}<p class="form-control-plaintext border rounded p-2 bg-light mb-0">{{ loss.description|default:"-" }}</p>{% endif %}
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="small font-weight-bold text-muted">Observaciones de Auditoría / Seguimiento</label>
+                                {% if form.observations %}{{ form.observations }}{% else %}<p class="form-control-plaintext border rounded p-2 bg-light mb-0">{{ loss.observations|default:"-" }}</p>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-right bg-white">
+                    <a href="{% url 'operational_risk:potential_loss_list' %}" class="btn btn-sm btn-light border px-4 rounded-pill mr-2">Cancelar</a>
+                    <button type="submit" class="btn btn-sm btn-primary px-4 rounded-pill shadow" style="background: linear-gradient(90deg, #161065 0%, #1c1c3c 100%); border: none;">
+                        <i class="fas fa-save mr-1"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update filename in custom file input
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('custom-file-input')) {
+            var fileName = e.target.files[0].name;
+            var nextSibling = e.target.nextElementSibling;
+            nextSibling.innerText = fileName;
+        }
+    });
+</script>
+{% endblock %}

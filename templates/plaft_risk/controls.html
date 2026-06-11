@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-filter mr-2" style="color: #161065;"></i>Control de Monitoreo Transaccional</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover text-sm">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Regla de Control</th>
+                            <th>Frecuencia</th>
+                            <th>Cobertura</th>
+                            <th>Estado Ejecución</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Cotejo Listas (OFAC/ONU)</td><td>Diario</td><td>100% de Socios</td><td><span class="badge badge-success">ACTIVO</span></td></tr>
+                        <tr><td>Alertas de Fraccionamiento</td><td>Semanal</td><td>Ahorros/Plazo Fijo</td><td><span class="badge badge-success">ACTIVO</span></td></tr>
+                        <tr><td>Revisiones PEP</td><td>Mensual</td><td>Cargos Públicos</td><td><span class="badge badge-warning">EN PROCESO</span></td></tr>
+                        <tr><td>Monitoreo Operaciones en Efectivo</td><td>Diario</td><td>Ventanilla / ATM</td><td><span class="badge badge-success">ACTIVO</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="card shadow-sm border" style="border-top-color: #ffcc00;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold" style="color: #141313;"><i class="fas fa-shield-alt mr-2"></i>Efectividad del Oficial</h3>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <input type="text" class="knob" value="85" data-width="90" data-height="90" data-fgColor="#161065" data-readonly="true">
+                    <div class="knob-label">Cumplimiento del Plan Anual</div>
+                </div>
+                <ul class="list-group list-group-unbordered mb-3">
+                    <li class="list-group-item"><b>Cursos Dictados</b> <a class="float-right">12/15</a></li>
+                    <li class="list-group-item"><b>Exámenes Aprobados</b> <a class="float-right text-success">92%</a></li>
+                    <li class="list-group-item"><b>Auditorías PLAFT</b> <a class="float-right text-warning">1 Pendiente</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Columna Controles -->
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-shield-alt mr-2"></i>Evaluación de Controles (Diseño y Ejecución)</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover text-sm">
+                    <thead class="bg-light">
+                        <tr><th>ID Control</th><th>Descripción</th><th>Tipo</th><th>Frecuencia</th><th>Evaluación Diseño</th><th>Evaluación Ejec.</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>CTRL-001</td><td>Doble firma en Tx > S/ 50k</td><td><span class="badge badge-info">Preventivo</span></td><td>Diario</td><td>Eficiente</td><td><span class="text-success"><i class="fas fa-check-circle"></i> Eficiente</span></td></tr>
+                        <tr><td>CTRL-002</td><td>Conciliación Bancaria Autom.</td><td><span class="badge badge-warning">Detectivo</span></td><td>Mensual</td><td>Eficiente</td><td><span class="text-danger"><i class="fas fa-times-circle"></i> Deficiente</span></td></tr>
+                        <tr><td>CTRL-003</td><td>Backup Centro Datos Alt.</td><td><span class="badge badge-secondary">Correctivo</span></td><td>Diario</td><td>Adecuado</td><td><span class="text-success"><i class="fas fa-check-circle"></i> Eficiente</span></td></tr>
+                        <tr><td>CTRL-004</td><td>Verificación Biométrica</td><td><span class="badge badge-info">Preventivo</span></td><td>Tiempo Real</td><td>Eficiente</td><td><span class="text-warning"><i class="fas fa-exclamation-triangle"></i> En Observación</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Ponderadores -->
+    <div class="col-md-5">
+        <div class="card shadow-sm border" style="border-top-color: #ffcc00;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold" style="color:#141313;"><i class="fas fa-balance-scale mr-2"></i>Efectividad del Control (Mitigación)</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">El nivel de mitigación aplicado sobre el riesgo inherente depende matemáticamente del peso de cada variable evaluada:</p>
+                <div class="form-group mb-2">
+                    <label>Peso Diseño del Control</label>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar" style="width: 40%; background-color:#161065;">40%</div>
+                    </div>
+                </div>
+                <div class="form-group mb-2">
+                    <label>Peso Ejecución del Control</label>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-warning text-dark font-weight-bold" style="width: 60%;">60%</div>
+                    </div>
+                </div>
+                <div class="alert mt-3 text-sm" style="background-color: rgba(22,16,101,0.05); color: #161065;">
+                    <i class="fas fa-info-circle"></i> Fórmula Estándar: %Mitigación = (Diseño * 0.4) + (Ejecución * 0.6)
+                </div>
+                <button class="btn btn-sm btn-outline-dark w-100 mt-2"><i class="fas fa-cog"></i> Configurar Variables</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header with Breadcrumbs and Actions -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb bg-transparent mb-1 pb-0 pt-1 px-0 me-sm-6 me-5">
+                        <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'utilities:dashboard' %}">Utilitarios</a></li>
+                        <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'utilities:bulk_load_liability' %}">Carga Pasivos</a></li>
+                        <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Detalle</li>
+                    </ol>
+                </nav>
+                <h6 class="font-weight-bolder mb-0">{{ page_title }}</h6>
+                <p class="text-sm mb-0">Archivo: <span class="font-weight-bold text-primary">{{ log.file_name }}</span> | Periodos: {{ log.cut_off_dates }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'utilities:bulk_load_liability' %}" class="btn btn-outline-secondary btn-sm mb-0">
+                    <i class="fas fa-arrow-left me-1"></i> Volver
+                </a>
+                <button class="btn btn-primary btn-sm mb-0" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> Imprimir Reporte
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Total Registros</p>
+                                <h5 class="font-weight-bolder">{{ log.records_processed|intcomma }}</h5>
+                                <p class="mb-0 text-xs">Cargados en el lote</p>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-primary shadow-primary text-center rounded-circle">
+                                <i class="fas fa-database text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Saldo Total MN</p>
+                                <h5 class="font-weight-bolder">S/ {{ total_mn|default:0|intcomma }}</h5>
+                                <p class="mb-0 text-xs">Moneda Nacional</p>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-success shadow-success text-center rounded-circle">
+                                <i class="fas fa-money-bill-wave text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Saldo Total ME</p>
+                                <h5 class="font-weight-bolder">$ {{ total_me|default:0|intcomma }}</h5>
+                                <p class="mb-0 text-xs">Moneda Extranjera</p>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-warning shadow-warning text-center rounded-circle">
+                                <i class="fas fa-dollar-sign text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-sm-6">
+            <div class="card">
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-8">
+                            <div class="numbers">
+                                <p class="text-sm mb-0 text-uppercase font-weight-bold">Estado Carga</p>
+                                <h5 class="font-weight-bolder text-success">Exitosa</h5>
+                                <p class="mb-0 text-xs">Procesamiento completo</p>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="icon icon-shape bg-gradient-info shadow-info text-center rounded-circle">
+                                <i class="fas fa-check text-lg opacity-10" aria-hidden="true"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="nav-wrapper position-relative end-0">
+                <ul class="nav nav-pills nav-fill p-1 bg-gray-100 rounded-3 mb-4" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link mb-0 px-0 py-1 active" data-bs-toggle="tab" href="#tab-summary" role="tab" aria-selected="true">
+                            <i class="fas fa-chart-pie me-2"></i> Resumen Ejecutivo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link mb-0 px-0 py-1" data-bs-toggle="tab" href="#tab-savings" role="tab" aria-selected="false">
+                            <i class="fas fa-piggy-bank me-2"></i> Cuentas de Ahorro
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link mb-0 px-0 py-1" data-bs-toggle="tab" href="#tab-term" role="tab" aria-selected="false">
+                            <i class="fas fa-calendar-alt me-2"></i> Depósitos a Plazo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link mb-0 px-0 py-1" data-bs-toggle="tab" href="#tab-raw" role="tab" aria-selected="false">
+                            <i class="fas fa-list me-2"></i> Detalle Completo
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content">
+                <!-- Executive Summary Tab -->
+                <div class="tab-pane fade show active" id="tab-summary" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0 p-3">
+                                    <h6 class="mb-0">Resumen por Rubro de Liquidez</h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Rubro</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mon</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cant.</th>
+                                                    <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for s in summary_rubro %}
+                                                <tr>
+                                                    <td><h6 class="mb-0 text-sm">{{ s.liquidity_item }}</h6></td>
+                                                    <td class="align-middle text-center text-sm"><span class="badge badge-sm bg-gradient-secondary">{{ s.currency }}</span></td>
+                                                    <td class="align-middle text-center text-sm"><span class="text-xs font-weight-bold">{{ s.count }}</span></td>
+                                                    <td class="align-middle text-end"><span class="text-sm font-weight-bold">{% if s.currency == 'MN' %}S/{% else %}${% endif %} {{ s.total_balance|intcomma }}</span></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header pb-0 p-3">
+                                    <h6 class="mb-0">Distribución por Bandas de Liquidez</h6>
+                                </div>
+                                <div class="card-body p-3">
+                                    <div class="table-responsive">
+                                        <table class="table align-items-center mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Banda</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mon</th>
+                                                    <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cant.</th>
+                                                    <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for b in summary_banda %}
+                                                <tr>
+                                                    <td><span class="badge badge-sm bg-gradient-info">{{ b.liquidity_band }}</span></td>
+                                                    <td class="align-middle text-center text-sm"><span class="badge badge-sm bg-gradient-secondary">{{ b.currency }}</span></td>
+                                                    <td class="align-middle text-center text-sm"><span class="text-xs font-weight-bold">{{ b.count }}</span></td>
+                                                    <td class="align-middle text-end"><span class="text-sm font-weight-bold">{% if b.currency == 'MN' %}S/{% else %}${% endif %} {{ b.total_balance|intcomma }}</span></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Savings Tab -->
+                <div class="tab-pane fade" id="tab-savings" role="tabpanel">
+                    <div class="card">
+                        <div class="card-body px-0 pt-0 pb-2">
+                            <div class="table-responsive p-0">
+                                <table class="table align-items-center mb-0 table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cliente</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Producto / Cuenta</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Agencia</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Mon</th>
+                                            <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for d in details %}
+                                        {% if d.funding_type == 'AHORRO' %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">{{ d.customer_name }}</h6>
+                                                        <p class="text-xs text-secondary mb-0">ID: {{ d.customer_id }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <p class="text-xs font-weight-bold mb-0">{{ d.product }}</p>
+                                                <p class="text-xs text-secondary mb-0">{{ d.account_number }}</p>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                <span class="text-xs font-weight-bold">{{ d.agency }}</span>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="badge badge-sm bg-gradient-secondary">{{ d.currency }}</span>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <span class="text-sm font-weight-bold pe-3">S/ {{ d.balance|intcomma }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% empty %}
+                                        <tr><td colspan="5" class="text-center py-4 text-secondary">No hay registros de ahorro.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Term Deposits Tab -->
+                <div class="tab-pane fade" id="tab-term" role="tabpanel">
+                    <div class="card">
+                        <div class="card-body px-0 pt-0 pb-2">
+                            <div class="table-responsive p-0">
+                                <table class="table align-items-center mb-0 table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cliente / DPF</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Vencimiento</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Días</th>
+                                            <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Banda</th>
+                                            <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for d in details %}
+                                        {% if d.funding_type == 'PLAZO' %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex px-2 py-1">
+                                                    <div class="d-flex flex-column justify-content-center">
+                                                        <h6 class="mb-0 text-sm">{{ d.customer_name }}</h6>
+                                                        <p class="text-xs text-secondary mb-0">{{ d.product }} | Cert: {{ d.account_number }}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle text-center text-sm">
+                                                <span class="text-xs font-weight-bold">{{ d.due_date|date:"d/m/Y" }}</span>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="text-xs font-weight-bold">{{ d.days_to_due }}</span>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <span class="badge badge-sm bg-gradient-info">{{ d.liquidity_band }}</span>
+                                            </td>
+                                            <td class="align-middle text-end">
+                                                <span class="text-sm font-weight-bold pe-3">S/ {{ d.balance|intcomma }}</span>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% empty %}
+                                        <tr><td colspan="5" class="text-center py-4 text-secondary">No hay registros de plazo.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Raw Detail Tab -->
+                <div class="tab-pane fade" id="tab-raw" role="tabpanel">
+                    <div class="card">
+                        <div class="card-body px-0 pt-0 pb-2">
+                            <div class="table-responsive p-0">
+                                <table class="table align-items-center mb-0 table-sm" id="fullDataTable">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Agencia</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cliente</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Cuenta</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Saldo</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Banda</th>
+                                            <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Rubro</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for d in details|slice:":500" %}
+                                        <tr {% if d.is_observed %}class="bg-light-danger"{% endif %}>
+                                            <td class="text-xs ps-3">{{ d.agency }}</td>
+                                            <td class="text-xs font-weight-bold">{{ d.customer_name }}</td>
+                                            <td class="text-xs">{{ d.account_number }}</td>
+                                            <td class="text-xs text-end pe-3">{{ d.balance|intcomma }}</td>
+                                            <td class="text-xs text-center"><span class="badge badge-xs bg-secondary">{{ d.liquidity_band }}</span></td>
+                                            <td class="text-xs">{{ d.liquidity_item }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                <div class="p-3 text-center">
+                                    <p class="text-xs text-secondary">Mostrando los primeros 500 registros para optimizar carga. Use exportación para ver todo.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-light-danger { background-color: rgba(234, 6, 6, 0.05); }
+    .badge-xs { font-size: 0.65rem; padding: 0.25em 0.4em; }
+</style>
+{% endblock %}

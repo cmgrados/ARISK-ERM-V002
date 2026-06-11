@@ -1,0 +1,325 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+{% load risk_extras %}
+
+{% block title_header %}Gestión de Riesgo de Crédito{% endblock %}
+
+{% block extra_js %}
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 text-right">
+        <form method="get" class="form-inline d-inline-block">
+            <label class="mr-2 small font-weight-bold text-muted">Filtrar por Periodo:</label>
+            <select name="load_date" class="form-control form-control-sm" onchange="this.form.submit()">
+                {% for d in dates %}
+                    <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == selected_date %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top KPIs -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box" style="background-color: #161065; color: white;">
+            <div class="inner">
+                <h3>{{ operations_count|format_int }}</h3>
+                <p>N° Operaciones Activas</p>
+            </div>
+            <div class="icon text-white-50">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box" style="background-color: #ffcc00; color: #141313;">
+            <div class="inner">
+                <h3>S/ {{ total_balance|format_num:0 }}</h3>
+                <p>Saldo Total EAD</p>
+            </div>
+            <div class="icon" style="color: rgba(22, 16, 101, 0.3);">
+                <i class="fas fa-money-bill-wave"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white shadow-sm border">
+            <div class="inner">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small font-weight-bold">Constituida:</span>
+                    <h4 class="text-danger mb-0 font-weight-bold">S/ {{ total_provisions|format_num:0 }}</h4>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small font-weight-bold">Requerida:</span>
+                    <h4 class="text-warning mb-0 font-weight-bold">S/ {{ total_required_provisions|format_num:0 }}</h4>
+                </div>
+                <p class="mt-2 mb-0" style="font-size: 0.85rem;">Provisión de Cartera</p>
+            </div>
+            <div class="icon text-muted" style="opacity: 0.2;">
+                <i class="fas fa-balance-scale"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white shadow-sm border">
+            <div class="inner">
+                <h3 class="text-info" style="font-size: 1.6rem;">S/ {{ total_expected_loss|format_num:2 }}</h3>
+                <p>Pérdida esperada (PE) <br><small>(PD × LGD × EAD)</small></p>
+            </div>
+            <div class="icon text-info">
+                <i class="fas fa-hand-holding-usd"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <!-- Risk Adjusted Yield KPIs -->
+    <div class="col-lg-6 col-md-6">
+        <div class="card shadow-sm border" style="background-color: #1a237e; color: white;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 mr-3" style="background: rgba(255,255,255,0.15);">
+                    <i class="fas fa-percentage fa-2x text-white"></i>
+                </div>
+                <div>
+                    <p class="mb-0 small text-uppercase font-weight-bold" style="opacity: 0.8;">Tasa Promedio del Portafolio (TEA)</p>
+                    <h2 class="mb-0 font-weight-bold">{{ avg_rate|format_num:2 }}%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 col-md-6">
+        <div class="card shadow-sm border" style="background-color: #1b5e20; color: white;">
+            <div class="card-body d-flex align-items-center">
+                <div class="rounded-circle p-3 mr-3" style="background: rgba(255,255,255,0.15);">
+                    <i class="fas fa-shield-alt fa-2x text-white"></i>
+                </div>
+                <div>
+                    <p class="mb-0 small text-uppercase font-weight-bold" style="opacity: 0.8;">Tasa Ajustada por Riesgo (RAR)</p>
+                    <h2 class="mb-0 font-weight-bold">{{ avg_adjusted_rate|format_num:2 }}%</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card shadow-sm border-0" style="background-color: #f8f9fa; border-left: 4px solid #3b82f6 !important;">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle text-primary mr-3 fa-lg"></i>
+                    <div class="small">
+                        <span class="font-weight-bold text-dark">TEA Promedio:</span> Es el rendimiento bruto anual ponderado por el saldo de cada crédito. 
+                        <span class="mx-3 text-muted">|</span>
+                        <span class="font-weight-bold text-dark">TEA Ajustada (Risk Adjusted Rate):</span> Es la rentabilidad real neta tras deducir el costo de la Pérdida Esperada. <br>
+                        <span class="text-muted font-italic">Fórmula: (Ingresos Estimados - Pérdida Esperada) / Saldo Total del Portafolio.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Evolución de Cartera (Full Width) -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-outline shadow-sm" style="border-top-color: #3498db;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-area mr-2 text-primary"></i>Evolución del Saldo de Cartera</h3>
+            </div>
+            <div class="card-body">
+                <div id="evolutionChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos Principales (2 Arriba, 2 Abajo) -->
+<div class="row">
+    <!-- 1. Saldo de Cartera por Producto (Top Left) -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-wallet mr-2 text-primary"></i>Saldo de Cartera por Producto</h3>
+            </div>
+            <div class="card-body">
+                <div id="productBalanceChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 2. Estado de Cartera Vigente y Vencido (Top Right) -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-check-circle mr-2 text-success"></i>Estado de Cartera</h3>
+            </div>
+            <div class="card-body">
+                <div id="statusChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 3. Evolución del Saldo en Mora (Bottom Left) -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #E84A5F;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-line mr-2 text-danger"></i>Evolución Saldo en Mora</h3>
+            </div>
+            <div class="card-body">
+                <div id="moraEvolutionChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <!-- 4. Evolución del Ratio de Mora (Bottom Right) -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #2E9CCA;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-percentage mr-2 text-info"></i>Evolución Ratio de Mora %</h3>
+            </div>
+            <div class="card-body">
+                <div id="ratioEvolutionChart" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formatValue = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+
+    // 0. Evolución del Saldo de Cartera (Area Chart)
+    var chartEvolution = echarts.init(document.getElementById('evolutionChart'));
+    var rawEvolutionData = {{ evolucion_data|safe }};
+    var optionEvolution = {
+        tooltip: { 
+            trigger: 'axis', 
+            formatter: (p) => `<b>${p[0].name}</b><br/>Saldo: S/ ${formatValue(p[0].value)}` 
+        },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: rawEvolutionData.map(item => item.date),
+            axisLabel: {
+                formatter: (value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+                }
+            }
+        },
+        yAxis: { 
+            type: 'value', 
+            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' } 
+        },
+        series: [{ 
+            name: 'Saldo Total', 
+            type: 'line', 
+            smooth: true, 
+            symbol: 'circle',
+            symbolSize: 8,
+            areaStyle: { 
+                opacity: 0.3,
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: '#3498db' },
+                    { offset: 1, color: '#fff' }
+                ])
+            },
+            itemStyle: { color: '#2980b9' },
+            lineStyle: { width: 3 },
+            data: rawEvolutionData.map(item => item.balance) 
+        }]
+    };
+    chartEvolution.setOption(optionEvolution);
+
+    // 1. Saldo de Cartera por Producto (Horizontal Bar)
+    var chartProdBal = echarts.init(document.getElementById('productBalanceChart'));
+    var rawProdBalData = {{ concentracion_producto|safe }};
+    rawProdBalData.sort((a, b) => parseFloat(a.total_balance) - parseFloat(b.total_balance));
+    var optionProdBal = {
+        tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Saldo: S/ ${formatValue(p[0].value)}` },
+        grid: { left: '3%', right: '10%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', axisLabel: { formatter: (v) => v.toLocaleString('en-US') } },
+        yAxis: { type: 'category', data: rawProdBalData.map(item => item.product_name || 'G') },
+        series: [{ name: 'Saldo', type: 'bar', itemStyle: { color: '#161065' }, data: rawProdBalData.map(item => parseFloat(item.total_balance) || 0) }]
+    };
+    chartProdBal.setOption(optionProdBal);
+
+    // 2. Estado de Cartera (Pie)
+    var chartStatus = echarts.init(document.getElementById('statusChart'));
+    var optionStatus = {
+        tooltip: { trigger: 'item', formatter: (p) => `<b>${p.name}</b><br/>S/ ${formatValue(p.value)} (${p.percent}%)` },
+        legend: { bottom: '0%', left: 'center' },
+        color: ['#161065', '#E84A5F'],
+        series: [{
+            name: 'Estado', type: 'pie', radius: ['40%', '70%'],
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            data: {{ cartera_status|safe }}
+        }]
+    };
+    chartStatus.setOption(optionStatus);
+
+    // 3. Evolución del Saldo en Mora (Line Chart)
+    var chartMoraEvo = echarts.init(document.getElementById('moraEvolutionChart'));
+    var rawMoraEvoData = {{ mora_evolucion_data|safe }};
+    var optionMoraEvo = {
+        tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Mora: S/ ${formatValue(p[0].value)}` },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: rawMoraEvoData.map(item => item.date),
+            axisLabel: { formatter: (v) => v.split('-').slice(0,2).join('/') }
+        },
+        yAxis: { type: 'value', axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' } },
+        series: [{ 
+            name: 'Saldo Mora', 
+            type: 'line', 
+            smooth: true, 
+            symbol: 'diamond',
+            symbolSize: 8,
+            itemStyle: { color: '#E84A5F' },
+            lineStyle: { width: 3 },
+            data: rawMoraEvoData.map(item => item.mora) 
+        }]
+    };
+    chartMoraEvo.setOption(optionMoraEvo);
+
+    // 4. Evolución del Ratio de Mora (Line Chart)
+    var chartRatioEvo = echarts.init(document.getElementById('ratioEvolutionChart'));
+    var optionRatioEvo = {
+        tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Ratio: ${p[0].value.toFixed(2)}%` },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: rawMoraEvoData.map(item => item.date),
+            axisLabel: { formatter: (v) => v.split('-').slice(0,2).join('/') }
+        },
+        yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+        series: [{ 
+            name: 'Ratio Mora', 
+            type: 'line', 
+            smooth: true, 
+            itemStyle: { color: '#2E9CCA' },
+            lineStyle: { width: 3, type: 'dashed' },
+            data: rawMoraEvoData.map(item => item.ratio) 
+        }]
+    };
+    chartRatioEvo.setOption(optionRatioEvo);
+
+    window.addEventListener('resize', () => {
+        chartEvolution.resize();
+        chartProdBal.resize();
+        chartStatus.resize();
+        chartMoraEvo.resize();
+        chartRatioEvo.resize();
+    });
+});
+</script>
+{% endblock %}

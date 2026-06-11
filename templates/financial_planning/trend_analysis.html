@@ -1,0 +1,536 @@
+<style>
+    .trend-card { border-radius: 12px; border: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); transition: all 0.2s; }
+    .trend-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+    .scenario-input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px; width: 65px; text-align: right; font-size: 0.85rem; }
+    .scenario-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+    .table-scenarios th { background-color: #f8fafc; font-weight: 600; color: #475569; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; white-space: nowrap; }
+    .table-scenarios td { vertical-align: middle; white-space: nowrap; }
+    .nav-pills-agencies .nav-link { border-radius: 20px; padding: 6px 16px; margin-right: 8px; color: #475569; background: #f1f5f9; font-weight: 600; }
+    .nav-pills-agencies .nav-link.active { background: #1e3a8a; color: white; }
+    
+    #trend-loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); z-index: 1000; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 12px; }
+</style>
+
+<div class="container-fluid px-0 position-relative" id="trend-analysis-container">
+    <div id="trend-loading-overlay" style="display: none;">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="sr-only">Cargando...</span>
+        </div>
+        <h5 class="mt-3 text-primary font-weight-bold">Analizando Tendencias...</h5>
+        <p class="text-muted">Procesando histórico completo por agencia (puede tomar unos 20-30 segundos).</p>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="font-weight-bold mb-1 text-primary"><i class="fas fa-chart-line mr-2"></i> Análisis de Tendencias y Escenarios</h4>
+            <p class="text-muted mb-0">Cálculo matemático de tendencias históricas y definición de escenarios por agencia.</p>
+        </div>
+        <div>
+            <a href="{% url 'financial_planning:export_trend_analysis_excel' plan.id %}" class="btn btn-outline-success mr-2 rounded-pill"><i class="fas fa-file-excel mr-1"></i> Exportar Escenarios</a>
+            <button id="btn-save-scenarios" class="btn btn-indigo rounded-pill"><i class="fas fa-save mr-1"></i> Guardar Ajustes</button>
+            <a href="?step=7" class="btn btn-primary rounded-pill ml-2">Siguiente <i class="fas fa-arrow-right ml-1"></i></a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+        <div class="card-body bg-light" style="border-radius: 12px;">
+            <div class="d-flex align-items-center">
+                <span class="font-weight-bold mr-3 text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">Seleccionar Agencia:</span>
+                <select id="agency-selector" class="form-control form-control-sm shadow-sm" style="width: 250px; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: bold;"></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row mb-4" id="indicators-row">
+        <!-- Generado dinámicamente -->
+    </div>
+
+    <div class="row">
+        <!-- Gráfico -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h6 class="font-weight-bold text-uppercase mb-0" style="color: #1e293b;"><i class="fas fa-chart-area mr-2 text-indigo"></i> Proyección Histórica vs Escenarios</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
+                        <div class="btn-group btn-group-sm" role="group" id="chart-var-selector">
+                            <button type="button" class="btn btn-outline-primary active" data-var="cartera">Cartera</button>
+                            <button type="button" class="btn btn-outline-primary" data-var="ahorros">Ahorros</button>
+                            <button type="button" class="btn btn-outline-primary" data-var="dpf">Depósitos</button>
+                            <button type="button" class="btn btn-outline-primary" data-var="aportes">Aportes</button>
+                            <button type="button" class="btn btn-outline-primary" data-var="socios">Socios</button>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group" id="chart-horizon-selector">
+                            <button type="button" class="btn btn-outline-secondary" data-months="12">12M</button>
+                            <button type="button" class="btn btn-outline-secondary" data-months="24">24M</button>
+                            <button type="button" class="btn btn-outline-secondary active" data-months="36">36M</button>
+                        </div>
+                    </div>
+                    <div style="height: 350px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Escenarios -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h6 class="font-weight-bold text-uppercase mb-0" style="color: #1e293b;"><i class="fas fa-sliders-h mr-2 text-indigo"></i> Ajuste de Escenarios (%)</h6>
+                    <p class="text-muted small mt-1 mb-0">Define las tasas de crecimiento anual proyectadas.</p>
+                </div>
+                <div class="card-body px-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-scenarios mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="pl-4">Variable</th>
+                                    <th class="text-center" title="Método ML Usado">Método</th>
+                                    <th class="text-center" title="Tendencia Matemática Anualizada">Tendencia</th>
+                                    <th class="text-center text-danger">Pesimista</th>
+                                    <th class="text-center text-primary">Base</th>
+                                    <th class="text-center text-success pr-4">Optimista</th>
+                                    <th class="text-center" style="width: 80px;">Ajustar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scenarios-tbody">
+                                <!-- Llenado por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+            <!-- Montos Proyectados a 36 meses (Horizontal) -->
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="font-weight-bold text-uppercase mb-0" style="color: #1e293b;"><i class="fas fa-coins mr-2 text-indigo"></i> Montos Proyectados (36 Meses)</h6>
+                        <p class="text-muted small mt-1 mb-0">Detalle mensual para: <span id="lbl-current-var" class="font-weight-bold text-primary">Cartera</span></p>
+                    </div>
+                </div>
+                <div class="card-body p-0" id="tables-container">
+                    <!-- Tables generated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let rawData = {};
+    let currentAgency = '';
+    let currentVar = 'cartera';
+    let projectionHorizon = 36;
+    let chartInstance = null;
+    
+    const varLabels = {
+        'cartera': 'Cartera de Créditos',
+        'ahorros': 'Ahorros',
+        'dpf': 'Depósitos a Plazo',
+        'aportes': 'Aportes',
+        'socios': 'Número de Socios'
+    };
+
+    // Initialize Chart
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { beginAtZero: false, grid: { borderDash: [2, 4], color: '#e2e8f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Load Data
+    function loadData() {
+        $('#trend-loading-overlay').show();
+        
+        fetch("{% url 'financial_planning:api_get_trend_data' plan.id %}")
+            .then(res => res.json())
+            .then(res => {
+                $('#trend-loading-overlay').hide();
+                if(res.status === 'success') {
+                    rawData = res.data;
+                    const select = $('#agency-selector');
+                    select.empty();
+                    Object.keys(rawData).forEach(agency => {
+                        select.append(`<option value="${agency}">${agency}</option>`);
+                    });
+                    
+                    if(Object.keys(rawData).length > 0) {
+                        currentAgency = Object.keys(rawData)[0];
+                        select.val(currentAgency);
+                        renderAgencyData();
+                    }
+                } else {
+                    alert('Error: ' + res.msg);
+                }
+            })
+            .catch(err => {
+                $('#trend-loading-overlay').hide();
+                alert('Error de conexión al cargar tendencias.');
+                console.error(err);
+            });
+    }
+
+    // Render Data for Selected Agency
+    function renderAgencyData() {
+        if(!currentAgency || !rawData[currentAgency]) return;
+        const data = rawData[currentAgency];
+        
+        // Render Indicators
+        const indRow = $('#indicators-row');
+        indRow.empty();
+        
+        Object.keys(varLabels).forEach(v => {
+            const trend = data.calculated_trends[v] || 0;
+            const colorClass = trend >= 0 ? 'text-success' : 'text-danger';
+            const icon = trend >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down';
+            
+            indRow.append(`
+                <div class="col-md">
+                    <div class="card trend-card mb-3">
+                        <div class="card-body p-3 text-center">
+                            <h6 class="text-muted text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 0.5px; font-weight: 700;">${varLabels[v]}</h6>
+                            <h4 class="font-weight-bold mb-0 ${colorClass}" style="font-size: 1.2rem;">
+                                <i class="fas ${icon} mr-1" style="font-size: 0.9rem;"></i> ${trend.toFixed(2)}%
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+
+        // Render Table
+        const tbody = $('#scenarios-tbody');
+        tbody.empty();
+        
+        Object.keys(varLabels).forEach(v => {
+            const trend = data.calculated_trends[v] || 0;
+            const method = data.calculated_methods[v] || 'N/A';
+            const scen = data.scenarios[v] || { base: trend, optimistic: trend + 2, pessimistic: trend - 2 };
+            
+            tbody.append(`
+                <tr data-var="${v}">
+                    <td class="pl-4 font-weight-bold text-wrap" style="color: #334155; font-size: 0.85rem; max-width: 120px; line-height: 1.2;">${varLabels[v]}</td>
+                    <td class="text-center align-middle">
+                        <span class="badge badge-info px-2 py-1" style="font-size: 0.70rem; color: #0284c7; background-color: #e0f2fe; border: 1px solid #bae6fd;">${method}</span>
+                    </td>
+                    <td class="text-center align-middle">
+                        <span class="badge badge-light px-2 py-1" style="font-size: 0.75rem; color: #64748b; border: 1px solid #cbd5e1;">${trend.toFixed(2)}%</span>
+                    </td>
+                    <td class="text-center align-middle px-1">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <input type="number" step="0.01" class="scenario-input val-pessimistic" value="${parseFloat(scen.pessimistic).toFixed(2)}">
+                            <span class="ml-1 text-muted" style="font-size: 0.8rem;">%</span>
+                        </div>
+                    </td>
+                    <td class="text-center align-middle px-1">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <input type="number" step="0.01" class="scenario-input val-base font-weight-bold" style="background: #eff6ff; border-color: #93c5fd; color: #1e3a8a;" value="${parseFloat(scen.base).toFixed(2)}">
+                            <span class="ml-1 text-muted" style="font-size: 0.8rem;">%</span>
+                        </div>
+                    </td>
+                    <td class="text-center align-middle px-1">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <input type="number" step="0.01" class="scenario-input val-optimistic" value="${parseFloat(scen.optimistic).toFixed(2)}">
+                            <span class="ml-1 text-muted" style="font-size: 0.8rem;">%</span>
+                        </div>
+                    </td>
+                    <td class="text-center align-middle pr-4">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-secondary btn-adj" data-var="${v}" data-dir="-1" title="Disminuir 1%" style="padding: 2px 6px;"><i class="fas fa-minus"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-adj" data-var="${v}" data-dir="1" title="Aumentar 1%" style="padding: 2px 6px;"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `);
+        });
+        
+        updateChart();
+    }
+
+    // Update Chart
+    function updateChart() {
+        if(!currentAgency || !rawData[currentAgency]) return;
+        const data = rawData[currentAgency];
+        const series = data.series;
+        if(series.length === 0) return;
+        
+        // Get scenarios from table
+        const tr = $(`#scenarios-tbody tr[data-var="${currentVar}"]`);
+        const basePct = parseFloat(tr.find('.val-base').val()) || 0;
+        const optPct = parseFloat(tr.find('.val-optimistic').val()) || 0;
+        const pessPct = parseFloat(tr.find('.val-pessimistic').val()) || 0;
+        
+        // Labels: Historical + 12 months proj
+        const labels = series.map(s => s.period);
+        const lastPeriodStr = labels[labels.length-1];
+        // Parse last period to generate 12 future months
+        let [mStr, yStr] = lastPeriodStr.split('-');
+        let mIdx = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'].indexOf(mStr);
+        let yNum = parseInt(yStr);
+        
+        for(let i=1; i<=36; i++) {
+            mIdx++;
+            if(mIdx > 11) { mIdx = 0; yNum++; }
+            labels.push(`${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][mIdx]}-${yNum}`);
+        }
+        
+        // Data points
+        const histData = series.map(s => s[currentVar]);
+        const lastVal = histData[histData.length-1] || 0;
+        
+        // Fill projection arrays with nulls for historical period to connect properly
+        const projBase = Array(histData.length-1).fill(null);
+        const projOpt = Array(histData.length-1).fill(null);
+        const projPess = Array(histData.length-1).fill(null);
+        
+        projBase.push(lastVal);
+        projOpt.push(lastVal);
+        projPess.push(lastVal);
+        
+        // Calculate future points (Compound monthly growth)
+        const baseMonthly = Math.pow(1 + (basePct/100), 1/12) - 1;
+        const optMonthly = Math.pow(1 + (optPct/100), 1/12) - 1;
+        const pessMonthly = Math.pow(1 + (pessPct/100), 1/12) - 1;
+        
+        let curBase = lastVal, curOpt = lastVal, curPess = lastVal;
+        for(let i=1; i<=36; i++) {
+            curBase = curBase * (1 + baseMonthly);
+            curOpt = curOpt * (1 + optMonthly);
+            curPess = curPess * (1 + pessMonthly);
+            projBase.push(curBase);
+            projOpt.push(curOpt);
+            projPess.push(curPess);
+        }
+        
+        // Filter chart data by horizon
+        const pIndex = histData.length;
+        const chartLabels = labels.slice(0, pIndex + projectionHorizon);
+        const chartProjBase = projBase.slice(0, pIndex + projectionHorizon);
+        const chartProjOpt = projOpt.slice(0, pIndex + projectionHorizon);
+        const chartProjPess = projPess.slice(0, pIndex + projectionHorizon);
+        const chartHistData = histData.concat(Array(projectionHorizon).fill(null));
+        
+        chartInstance.data.labels = chartLabels;
+        chartInstance.data.datasets = [
+            {
+                label: 'Histórico',
+                data: chartHistData,
+                borderColor: '#475569',
+                backgroundColor: 'rgba(71, 85, 105, 0.1)',
+                borderWidth: 2,
+                pointRadius: 3,
+                fill: true,
+                tension: 0.1
+            },
+            {
+                label: 'Base',
+                data: chartProjBase,
+                borderColor: '#3b82f6',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+            },
+            {
+                label: 'Optimista',
+                data: chartProjOpt,
+                borderColor: '#10b981',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+            },
+            {
+                label: 'Pesimista',
+                data: chartProjPess,
+                borderColor: '#ef4444',
+                borderDash: [5, 5],
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1
+            }
+        ];
+        
+        chartInstance.update();
+        
+        // Update Amounts Display (Horizontal Table)
+        $('#lbl-current-var').text(varLabels[currentVar]);
+        
+        function formatMoney(num) {
+            return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+        }
+        
+        const container = $('#tables-container');
+        container.empty();
+        
+        const totalYears = projectionHorizon / 12;
+        
+        for (let year = 0; year < totalYears; year++) {
+            let trHead = `<tr><th class="align-middle text-left pl-3" style="width: 150px;">Escenario (Año ${year+1})</th>`;
+            for(let m = 1; m <= 12; m++) {
+                trHead += `<th class="align-middle">${labels[pIndex + (year*12) + m - 1]}</th>`;
+            }
+            trHead += `</tr>`;
+            
+            let trPess = `<tr><td class="text-left font-weight-bold text-danger pl-3 bg-light">Pesimista</td>`;
+            let trBase = `<tr><td class="text-left font-weight-bold text-primary pl-3" style="background: #eff6ff;">Base</td>`;
+            let trOpt = `<tr><td class="text-left font-weight-bold text-success pl-3 bg-light">Optimista</td>`;
+            
+            for(let m = 1; m <= 12; m++) {
+                const valIdx = pIndex + (year*12) + m - 1;
+                trPess += `<td class="text-danger">${formatMoney(projPess[valIdx])}</td>`;
+                trBase += `<td class="text-primary font-weight-bold" style="background: #eff6ff;">${formatMoney(projBase[valIdx])}</td>`;
+                trOpt += `<td class="text-success">${formatMoney(projOpt[valIdx])}</td>`;
+            }
+            
+            trPess += `</tr>`;
+            trBase += `</tr>`;
+            trOpt += `</tr>`;
+            
+            container.append(`
+                <div class="table-responsive mb-0 ${year < 2 ? 'border-bottom' : ''}" style="${year > 0 ? 'margin-top: -1px;' : ''}">
+                    <table class="table table-sm table-bordered table-hover mb-0 text-center" style="font-size: 0.75rem;">
+                        <thead class="bg-light">${trHead}</thead>
+                        <tbody>${trPess}${trBase}${trOpt}</tbody>
+                    </table>
+                </div>
+            `);
+        }
+    }
+
+    // Events
+    $('#agency-selector').on('change', function() {
+        currentAgency = $(this).val();
+        renderAgencyData();
+    });
+
+    $('#chart-var-selector .btn').on('click', function() {
+        $('#chart-var-selector .btn').removeClass('active');
+        $(this).addClass('active');
+        currentVar = $(this).data('var');
+        updateChart();
+    });
+
+    $('#chart-horizon-selector .btn').on('click', function() {
+        $('#chart-horizon-selector .btn').removeClass('active');
+        $(this).addClass('active');
+        projectionHorizon = parseInt($(this).data('months'));
+        
+        // Update section title text
+        $('#tables-container').prev().find('h6').html(`<i class="fas fa-coins mr-2 text-indigo"></i> Montos Proyectados (${projectionHorizon} Meses)`);
+        
+        updateChart();
+    });
+
+    $('#scenarios-tbody').on('input', '.scenario-input', function() {
+        updateChart();
+    });
+
+    $('#scenarios-tbody').on('change blur', '.scenario-input', function() {
+        let val = parseFloat($(this).val()) || 0;
+        $(this).val(val.toFixed(2));
+    });
+
+    $('#scenarios-tbody').on('click', '.btn-adj', function() {
+        const row = $(this).closest('tr');
+        const dir = parseInt($(this).data('dir'));
+        const step = 1.00; // Increment/Decrement by 1%
+        
+        ['.val-pessimistic', '.val-base', '.val-optimistic'].forEach(sel => {
+            const input = row.find(sel);
+            let val = parseFloat(input.val()) || 0;
+            input.val((val + (dir * step)).toFixed(2));
+        });
+        
+        updateChart();
+    });
+
+    $('#btn-save-scenarios').on('click', function() {
+        const scenarios = {};
+        $('#scenarios-tbody tr').each(function() {
+            const v = $(this).data('var');
+            scenarios[v] = {
+                base: parseFloat($(this).find('.val-base').val()) || 0,
+                optimistic: parseFloat($(this).find('.val-optimistic').val()) || 0,
+                pessimistic: parseFloat($(this).find('.val-pessimistic').val()) || 0,
+            };
+        });
+        
+        // Update local data structure
+        if(rawData[currentAgency]) {
+            rawData[currentAgency].scenarios = scenarios;
+        }
+
+        const payload = {
+            agency: currentAgency,
+            scenarios: scenarios
+        };
+
+        const btn = $(this);
+        const originalHtml = btn.html();
+        btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...').prop('disabled', true);
+
+        fetch("{% url 'financial_planning:api_save_trend_scenarios' plan.id %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(res => {
+            btn.html(originalHtml).prop('disabled', false);
+            if(res.status === 'success') {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Escenarios guardados correctamente para ' + currentAgency);
+                } else {
+                    alert('Escenarios guardados correctamente para ' + currentAgency);
+                }
+            } else {
+                alert('Error: ' + res.msg);
+            }
+        })
+        .catch(err => {
+            btn.html(originalHtml).prop('disabled', false);
+            alert('Error de conexión al guardar.');
+            console.error(err);
+        });
+    });
+
+    // Start
+    loadData();
+});
+</script>

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Usuario{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h2>
+            <hr>
+            <p class="lead">¿Está seguro de que desea eliminar al usuario <strong>{{ user_instance.username }}</strong>?</p>
+            <p class="text-muted">Esta acción no se puede deshacer y el usuario perderá el acceso a todos los módulos del sistema.</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger mr-2">
+                    <i class="fas fa-trash-alt"></i> Sí, Eliminar Usuario
+                </button>
+                <a href="{% url 'users:user_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

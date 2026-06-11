@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title font-weight-bold">Declaración de Apetito por Tipo de Riesgo</h3>
+        <button class="btn btn-xs btn-primary ml-auto"><i class="fas fa-plus mr-1"></i> Nueva Declaración</button>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th>Tipo de Riesgo</th>
+                    <th>Objetivo Estratégico</th>
+                    <th>Declaración de Apetito</th>
+                    <th>Nivel Objetivo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Crédito</td>
+                    <td>Crecimiento Sostenible</td>
+                    <td>Mantener mora < 5.5% en Banca Persona</td>
+                    <td><span class="badge badge-info">Moderado</span></td>
+                    <td><span class="badge badge-success">Vigente</span></td>
+                    <td><i class="fas fa-edit text-muted cursor-pointer"></i></td>
+                </tr>
+                <tr>
+                    <td>Liquidez</td>
+                    <td>Solvencia y Estabilidad</td>
+                    <td>Cobertura de liquidez > 25% siempre</td>
+                    <td><span class="badge badge-success">Bajo</span></td>
+                    <td><span class="badge badge-success">Vigente</span></td>
+                    <td><i class="fas fa-edit text-muted cursor-pointer"></i></td>
+                </tr>
+                <tr>
+                    <td>Cumplimiento</td>
+                    <td>Integridad Institucional</td>
+                    <td>Cero multas regulatorias críticas</td>
+                    <td><span class="badge badge-danger">Muy Bajo</span></td>
+                    <td><span class="badge badge-success">Vigente</span></td>
+                    <td><i class="fas fa-edit text-muted cursor-pointer"></i></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

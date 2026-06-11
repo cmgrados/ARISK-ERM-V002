@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Ejecutivo RAF{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Resumen del Marco Activo -->
+    <div class="col-md-12">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-info-circle"></i> Marco de Apetito Vigente</h3>
+                <div class="card-tools">
+                    <span class="badge badge-success">{{ framework.state }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Nombre:</strong> {{ framework.name }}
+                    </div>
+                    <div class="col-sm-3">
+                        <strong>Versión:</strong> {{ framework.version }}
+                    </div>
+                    <div class="col-sm-3">
+                        <strong>Vigencia:</strong> {{ framework.start_date }} - {{ framework.end_date }}
+                    </div>
+                    <div class="col-sm-3">
+                        <a href="{% url 'risk_appetite:framework_config' %}" class="btn btn-sm btn-primary float-right">Ver Marco Completo</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- KPIs Principales en Semáforo -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success">
+            <div class="inner">
+                <h3>85%</h3>
+                <p>Dentro de Apetito</p>
+            </div>
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning">
+            <div class="inner">
+                <h3>12%</h3>
+                <p>Alerta Temprana</p>
+            </div>
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger">
+            <div class="inner">
+                <h3>3%</h3>
+                <p>Exceso de Tolerancia</p>
+            </div>
+            <div class="icon"><i class="fas fa-times-circle"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-dark">
+            <div class="inner">
+                <h3>0</h3>
+                <p>Exceso de Capacidad</p>
+            </div>
+            <div class="icon"><i class="fas fa-skull-crossbones"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Gráficos -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Mapa de Calor: Exposición vs Tolerancia</h3>
+            </div>
+            <div class="card-body">
+                <div id="heatmap-container" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Alineamiento Estratégico (Radar)</h3>
+            </div>
+            <div class="card-body">
+                <div id="radar-container" style="height: 350px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Últimas Mediciones -->
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Monitoreo de Indicadores Críticos</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>KRI</th>
+                            <th>Valor Actual</th>
+                            <th>Objetivo</th>
+                            <th>Tolerancia</th>
+                            <th>Capacidad</th>
+                            <th>Estado</th>
+                            <th>Tendencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in recent_measurements %}
+                        <tr>
+                            <td>{{ m.kri.name }}</td>
+                            <td>{{ m.value }} {{ m.kri.unit }}</td>
+                            <td>8%</td> <!-- Placeholder -->
+                            <td>10%</td>
+                            <td>12%</td>
+                            <td><span class="badge badge-{% if m.semaphore == 'GREEN' %}success{% elif m.semaphore == 'YELLOW' %}warning{% else %}danger{% endif %}">{{ m.semaphore }}</span></td>
+                            <td><i class="fas fa-arrow-up text-danger"></i></td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center">No hay mediciones recientes.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+<script>
+    // Radar Chart logic
+    var radarDom = document.getElementById('radar-container');
+    var radarChart = echarts.init(radarDom);
+    var radarOption = {
+        radar: {
+            indicator: [
+                { name: 'Crédito', max: 100 },
+                { name: 'Liquidez', max: 100 },
+                { name: 'Mercado', max: 100 },
+                { name: 'Operacional', max: 100 },
+                { name: 'Cumplimiento', max: 100 }
+            ]
+        },
+        series: [{
+            type: 'radar',
+            data: [
+                {
+                    value: [80, 90, 70, 85, 95],
+                    name: 'Exposición Actual'
+                },
+                {
+                    value: [100, 100, 100, 100, 100],
+                    name: 'Apetito',
+                    lineStyle: { type: 'dashed' }
+                }
+            ]
+        }]
+    };
+    radarChart.setOption(radarOption);
+
+    // Heatmap Placeholder
+    var heatDom = document.getElementById('heatmap-container');
+    var heatChart = echarts.init(heatDom);
+    var heatOption = {
+        tooltip: { position: 'top' },
+        grid: { height: '80%', top: '10%' },
+        xAxis: { type: 'category', data: ['Crédito', 'Liquidez', 'Mercado', 'Operacional', 'Cumplimiento'] },
+        yAxis: { type: 'category', data: ['Bajo', 'Medio', 'Alto', 'Crítico'] },
+        visualMap: {
+            min: 0, max: 10, calculable: true, orient: 'horizontal', left: 'center',
+            inRange: { color: ['#313695', '#abd9e9', '#ffffbf', '#fee090', '#d73027'] }
+        },
+        series: [{
+            name: 'Nivel Exposición', type: 'heatmap',
+            data: [[0,0,5],[1,1,2],[2,2,0],[3,3,8],[4,0,1]],
+            label: { show: true }
+        }]
+    };
+    heatChart.setOption(heatOption);
+</script>
+{% endblock %}

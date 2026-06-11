@@ -1,0 +1,678 @@
+{% extends 'base.html' %}
+{% load humanize risk_extras %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+{% if messages %}
+<div class="row">
+    <div class="col-12">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+<div class="row">
+    <div class="col-12">
+        <!-- Modelo Alfa Beta -->
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-microchip mr-2 text-primary"></i>Modelo ALFA BETA - Cálculo de Riesgo de Crédito
+                </h3>
+                <div class="card-tools ml-auto">
+                    <form method="get" class="form-inline">
+                        <label class="mr-2 small font-weight-bold text-muted">Periodo:</label>
+                        <select name="load_date" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                            {% for d in dates %}
+                                <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == selected_date %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                            {% endfor %}
+                        </select>
+                        
+                        <div class="btn-group ml-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle font-weight-bold" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-download mr-1"></i> Exportar Informe
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <a class="dropdown-item" href="{% url 'credit_risk:export_methodologies_excel' %}?load_date={{ selected_date }}"><i class="fas fa-file-excel mr-2 text-success"></i> Excel (XLSX)</a>
+                                <a class="dropdown-item" href="{% url 'credit_risk:export_methodologies_word' %}?load_date={{ selected_date }}"><i class="fas fa-file-word mr-2 text-primary"></i> Word (DOCX)</a>
+                                <a class="dropdown-item" href="{% url 'credit_risk:export_methodologies_pdf' %}?load_date={{ selected_date }}"><i class="fas fa-file-pdf mr-2 text-danger"></i> PDF (Documento)</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#" onclick="exportDashboardImage()"><i class="fas fa-image mr-2 text-info"></i> Imagen (PNG)</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Descripción Técnica del Modelo -->
+                <div class="d-flex justify-content-center">
+                    <div class="alert alert-light border-left border-info mb-4 shadow-sm w-100" style="max-width: 85%;">
+                        <div class="row">
+                            <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-info-circle fa-2x text-info"></i>
+                            </div>
+                            <div class="col-md-11">
+                                <h5 class="font-weight-bold text-info">Explicación Detallada: Modelo Alfa-Beta Dinámico</h5>
+                                <p class="small text-muted mb-0 text-justify">
+                                    El modelo <strong>Alfa-Beta</strong> es una metodología probabilística avanzada diseñada para capturar la naturaleza no lineal del riesgo de crédito. A diferencia de los modelos tradicionales de "Roll Rates", nuestra implementación es <strong>dinámica</strong>: recalcula el comportamiento de la cartera comparando el estado de cada crédito entre el mes actual y el mes anterior.
+                                </p>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <ul class="small text-muted">
+                                            <li><strong>Parámetro Alfa (α):</strong> Representa la "fuerza de retención". Un Alfa elevado indica que la cartera tiene una alta probabilidad de mantenerse en su estado actual (por ejemplo, clientes que están al día y siguen al día).</li>
+                                            <li><strong>Parámetro Beta (β):</strong> Representa la "fuerza de gravedad" o deterioro. Mide la probabilidad de que un crédito migre hacia tramos de mora más profundos o pérdida total.</li>
+                                            <li><strong>Cálculo Dinámico:</strong> El sistema identifica automáticamente el mes anterior y analiza cuántos créditos se mantuvieron estables vs. cuántos se deterioraron para ajustar α y β en tiempo real.</li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <ul class="small text-muted">
+                                            <li><strong>Distribución Beta:</strong> Utilizamos esta función porque permite modelar probabilidades que no son simétricas, lo cual es ideal para el crédito donde la mayoría de los eventos son "estabilidad" y pocos son "incumplimiento".</li>
+                                            <li><strong>VaR (Value at Risk):</strong> Representa la <strong>Pérdida no Esperada</strong>. Es el monto de capital que la institución debe tener como reserva para cubrir escenarios de estrés que superan la pérdida esperada (provisiones).</li>
+                                            <li><strong>Interpretación:</strong> Si Alfa baja y Beta sube, la "curva de riesgo" se desplaza, alertando sobre un deterioro sistémico antes de que se refleje en los estados financieros tradicionales.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive d-flex justify-content-center">
+                    <table class="table table-sm table-bordered text-center align-middle" style="font-size: 0.65rem; max-width: 85%; width: 100%;">
+                        <thead class="text-white" style="background: #1a2a6c;">
+                            <tr>
+                                <th class="py-2">Cartera de crédito<br><small class="text-white-50 font-weight-normal">(Categoría SBS)</small></th>
+                                <th class="py-2">Saldos<br><small class="text-white-50 font-weight-normal">(Σ EAD_i)</small></th>
+                                <th class="py-2">Proporción alfa simple (%)<br><small class="text-white-50 font-weight-normal">(S_i / ΣS)</small></th>
+                                <th class="py-2">Proporción alfa acumulada (%)<br><small class="text-white-50 font-weight-normal">(Σ w_i)</small></th>
+                                <th class="py-2">Probabilidad alfa simulada (%)<br><small class="text-white-50 font-weight-normal">(CDF_α(x_up))</small></th>
+                                <th class="py-2">Probabilidad beta simple (%)<br><small class="text-white-50 font-weight-normal">(CDF(x_up)-CDF(x_low))</small></th>
+                                <th class="py-2">Probabilidad beta acumulada (%)<br><small class="text-white-50 font-weight-normal">(Σ Prob_β)</small></th>
+                                <th class="py-2">Probabilidad beta simulada (%)<br><small class="text-white-50 font-weight-normal">(1-CDF(1-x_up))</small></th>
+                                <th class="py-2">Distribución Probabilística<br><small class="text-white-50 font-weight-normal">(P_β * ΣS)</small></th>
+                                <th class="py-2">Valor en riesgo<br><small class="text-white-50 font-weight-normal">(|D_p - S|)</small></th>
+                                <th class="py-2">Valor en riesgo (%)<br><small class="text-white-50 font-weight-normal">(VaR / ΣS)</small></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in alfa_beta_data %}
+                            <tr>
+                                <td class="bg-light font-weight-bold text-center px-2">{{ item.name }}</td>
+                                <td class="text-center px-2">{{ item.saldo|format_num:2 }}</td>
+                                <td class="text-center">{{ item.alfa_simple|format_num:2 }}%</td>
+                                <td class="text-center">{{ item.alfa_acum|format_num:2 }}%</td>
+                                <td class="text-center text-info">{{ item.prob_alfa_sim|format_num:2 }}%</td>
+                                <td class="text-center">{{ item.prob_beta_simple|format_num:2 }}%</td>
+                                <td class="text-center">{{ item.prob_beta_accum|format_num:2 }}%</td>
+                                <td class="text-center text-info">{{ item.prob_beta_sim|format_num:2 }}%</td>
+                                <td class="text-center px-2 font-weight-bold">{{ item.dist_prob|format_num:2 }}</td>
+                                <td class="text-center px-2 text-danger font-weight-bold">{{ item.var|format_num:2 }}</td>
+                                <td class="text-center {% if item.var_pct > 0 %}text-danger{% endif %}">{{ item.var_pct|format_num:2 }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-light font-weight-bold">
+                            <tr>
+                                <td class="text-center px-2">Total</td>
+                                <td class="text-center px-2">{{ total_cartera|format_num:2 }}</td>
+                                <td class="text-center">100.00%</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td class="text-right px-2">{{ total_cartera|format_num:2 }}</td>
+                                <td class="text-right px-2 text-danger">{{ alfa_params.monto_perdida_no_esp|format_num:2 }}</td>
+                                <td>{{ alfa_params.factor_perdida_no_esp|format_num:2 }}%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-center mt-4">
+                    <div class="row w-100" style="max-width: 85%;">
+                        <div class="col-md-5">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td width="50%" class="bg-orange text-white p-1" style="background-color: #ff851b !important;">Parámetro alfa</td>
+                                    <td class="bg-success text-white text-center p-1">{{ alfa_params.alfa|format_num:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-primary text-white p-1">Parámetro beta</td>
+                                    <td class="bg-success text-white text-center p-1">{{ alfa_params.beta|format_num:3 }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-navy text-white p-1" style="background-color: #001f3f !important;">Primero se ajusta alfa</td>
+                                    <td class="bg-navy text-white text-center p-1" style="background-color: #001f3f !important;">{{ alfa_params.fit_alfa|format_num:2 }}%</td>
+                                </tr>
+                                <tr>
+                                    <td class="bg-blue text-white p-1" style="background-color: #007bff !important;">Segundo se ajusta beta</td>
+                                    <td class="bg-blue text-white text-center p-1" style="background-color: #007bff !important;">{{ alfa_params.fit_beta|format_num:2 }}%</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-7">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td>Probabilidad que la cartera se mantenga al día</td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">{{ alfa_params.prob_mantenimiento|format_num:2 }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Cartera que potencialmente se deteriora</td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">{{ alfa_params.cartera_deterioro|format_num:2 }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Factor de Pérdida no esperada</td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">{{ alfa_params.factor_perdida_no_esp|format_num:4 }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Pérdida esperada (PE) <small class="text-muted">(PD &times; LGD &times; EAD)</small></td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">S/ {{ summary.total_pe|format_num:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Monto de Pérdida no esperada (VaR)</td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">S/ {{ alfa_params.monto_perdida_no_esp|format_num:2 }}</td>
+                                </tr>
+                                <tr class="font-weight-bold">
+                                    <td>Pérdida Total</td>
+                                    <td class="bg-navy text-white text-right px-2" style="background-color: #001f3f !important;">S/ {{ alfa_params.perdida_total|format_num:2 }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center mt-3">
+                    <div class="card shadow-sm border-0 w-100" style="max-width: 85%; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-file-alt mr-2"></i>Análisis Interpretativo del Periodo</h6>
+                                <button type="button" class="btn btn-xs btn-outline-primary" onclick="copyAnalysis(this, 'analysisText')">
+                                    <i class="fas fa-copy mr-1"></i>Copiar Análisis
+                                </button>
+                            </div>
+                            <div id="analysisText" class="text-justify" style="color: #000 !important; font-size: 0.92rem !important; line-height: 1.6 !important;">
+                                {{ alfa_beta_analysis|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <!-- SECCIÓN 1.2. MODELO IHH CREDITICIO -->
+        <div class="card card-outline shadow-sm mt-4" style="border-top-color: #1a2a6c;">
+            <div class="card-header d-flex align-items-center">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-layer-group mr-2 text-primary"></i>1.2. Modelo IHH Crediticio - Medición de Riesgo de Concentración
+                </h3>
+            </div>
+            <div class="card-body">
+                <!-- Descripción Técnica IHH -->
+                <div class="d-flex justify-content-center">
+                    <div class="alert alert-light border-left border-info mb-4 shadow-sm w-100" style="max-width: 85%;">
+                        <div class="row">
+                            <div class="col-md-1 d-flex align-items-center justify-content-center">
+                                <i class="fas fa-info-circle fa-2x text-info"></i>
+                            </div>
+                            <div class="col-md-11">
+                                <h5 class="font-weight-bold text-info">Metodología de Cálculo: Riesgo de Crédito y Capital</h5>
+                                <p class="small text-muted mb-3 text-justify">
+                                    La gestión de capital por riesgo de crédito se basa en la cuantificación de dos componentes fundamentales: lo esperado (PE) y lo inesperado (VaR).
+                                </p>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="p-2 border rounded bg-white h-100">
+                                            <h6 class="font-weight-bold text-primary small"><i class="fas fa-calculator mr-1"></i> 1. Pérdida Esperada (PE)</h6>
+                                            <div class="bg-light p-2 text-center my-2 rounded font-weight-bold">
+                                                PE = Σ (EAD × PD × LGD)
+                                            </div>
+                                            <ul class="x-small text-muted pl-3 mb-0" style="font-size: 0.75rem;">
+                                                <li><strong>EAD:</strong> Saldo de deuda expuesta.</li>
+                                                <li><strong>PD:</strong> Probabilidad de Incumplimiento.</li>
+                                                <li><strong>LGD:</strong> Severidad de la Pérdida.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-2 border rounded bg-white h-100">
+                                            <h6 class="font-weight-bold text-warning small"><i class="fas fa-chart-area mr-1"></i> 2. Pérdida No Esperada (VaR)</h6>
+                                            <div class="bg-light p-2 text-center my-2 rounded font-weight-bold" style="font-size: 0.85rem;">
+                                                VaR = α × √(PE × (1-PE) × IHH)
+                                            </div>
+                                            <ul class="x-small text-muted pl-3 mb-0" style="font-size: 0.75rem;">
+                                                <li><strong>α:</strong> Factor de confianza (99% = 2.326).</li>
+                                                <li><strong>IHH:</strong> Índice de Concentración.</li>
+                                                <li><strong>VaR:</strong> Capital por volatilidad.</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="p-2 border rounded bg-white h-100">
+                                            <h6 class="font-weight-bold text-success small"><i class="fas fa-shield-alt mr-1"></i> 3. Exposición Total</h6>
+                                            <div class="bg-light p-2 text-center my-2 rounded font-weight-bold">
+                                                Riesgo Total = PE + VaR
+                                            </div>
+                                            <p class="x-small text-muted mb-0" style="font-size: 0.75rem;">
+                                                Representa el requerimiento total de cobertura patrimonial frente a eventos de crédito normales y extremos.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-3 p-3 bg-white border rounded shadow-sm">
+                                    <h6 class="font-weight-bold text-dark mb-2 small"><i class="fas fa-microscope mr-2 text-info"></i>Interpretación Técnica del Modelo:</h6>
+                                    <p class="small text-muted mb-0 text-justify">
+                                        Esta metodología integra el <strong>Índice Herfindahl-Hirschman (IHH)</strong> para ajustar el requerimiento de capital según la concentración de la cartera. Mientras que la <strong>Pérdida Esperada (PE)</strong> debe ser cubierta por provisiones ordinarias, el <strong>Valor en Riesgo (VaR)</strong> determina el "Colchón de Capital" necesario para absorber desviaciones estadísticas inesperadas. Un IHH elevado indica una cartera concentrada en pocos deudores o segmentos, lo que incrementa exponencialmente el factor de volatilidad y, por ende, la exigencia de capital institucional para garantizar la solvencia y resiliencia financiera.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive d-flex justify-content-center">
+                    <table class="table table-sm table-bordered text-center align-middle" style="font-size: 0.7rem; max-width: 85%; width: 100%;">
+                        <thead class="text-white" style="background: #1a2a6c;">
+                            <tr>
+                                <th rowspan="2" class="align-middle bg-dark" style="width: 140px;">Indicador</th>
+                                {% for item in ihh_data %}
+                                <th class="py-1">{{ item.name }}</th>
+                                {% endfor %}
+                                <th class="py-1 bg-dark">TOTAL</th>
+                            </tr>
+                            <tr style="background: rgba(255,255,255,0.1); font-size: 0.6rem;">
+                                {% for item in ihh_data %}
+                                <td class="py-0 align-middle">{{ item.ihh|format_num:10 }}</td>
+                                {% endfor %}
+                                <td class="py-0 align-middle">{{ ihh_total|format_num:10 }}</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Saldo Cartera<br><small class="text-white-50 font-weight-normal">Σ EAD_i</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.balance|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ total_cartera|format_num:2 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Promedio<br><small class="text-white-50 font-weight-normal">ΣS / N</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.avg|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ total_cartera|div:summary.count|format_num:2 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Total IHH<br><small class="text-white-50 font-weight-normal">Σ (w_i)^2</small></th>
+                                <td colspan="{{ ihh_data|length }}" class="text-center px-3 font-weight-bold align-middle" style="background: #d4edda; color: #155724;">
+                                    {{ ihh_total|format_num:4 }}%
+                                </td>
+                                <td class="bg-light align-middle"></td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Prob. Impago<br><small class="text-white-50 font-weight-normal">PD SBS (%)</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.pd|format_num:2 }}%</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ ihh_results.pe_ratio|format_num:2 }}%</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Peso Relativo<br><small class="text-white-50 font-weight-normal">S_i / ΣS</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.weight|format_num:2 }}%</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">100%</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Impago Pond.<br><small class="text-white-50 font-weight-normal">PD * Peso</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.weighted_pd|format_num:4 }}%</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ ihh_weighted_pd_total|format_num:2 }}%</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Crédito Máx.</th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.max|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ total_cartera|format_num:2 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Crédito Mín.</th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.min|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ total_cartera|format_num:2 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">N° Créditos</th>
+                                {% for item in ihh_data %}
+                                <td class="text-center align-middle">{{ item.count|format_int }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-center align-middle">{{ summary.count|format_int }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Pérdida Esp.<br><small class="text-white-50 font-weight-normal">S * PD * LGD</small></th>
+                                {% for item in ihh_data %}
+                                <td class="text-danger text-center align-middle">{{ item.pe|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-danger text-center align-middle">{{ summary.total_pe|format_num:2 }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-center bg-dark text-white px-2 align-middle">Cartera Neta<br><small class="text-white-50 font-weight-normal">S - PE</small></th>
+                                {% for item in ihh_data %}
+                                <td class="font-weight-bold text-primary text-center align-middle">{{ item.net_balance|format_num:2 }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold text-primary text-center align-middle">{{ total_cartera|sub:summary.total_pe|format_num:2 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-center mt-4">
+                    <div class="row w-100" style="max-width: 85%;">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded shadow-sm border h-100" style="border-left: 5px solid #1a2a6c !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="font-weight-bold text-dark mb-0 small text-uppercase"><i class="fas fa-calculator mr-2"></i>Requerimientos de Capital</h6>
+                                    <div class="badge badge-success px-3" style="font-size: 0.8rem;">Nivel de Confianza: {{ ihh_results.conf_level|format_num:0 }}%</div>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">(a) Pérdida Esperada</span>
+                                    <span class="font-weight-bold" style="color: #007bff;">{{ ihh_results.pe_ratio|format_num:2 }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">(b) Factor α Asociado al nivel de confianza</span>
+                                    <span class="font-weight-bold text-success">{{ ihh_results.conf_alpha|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">(c) Raíz de Pérdida Esperada * 1-PE * IHH</span>
+                                    <span class="font-weight-bold" style="color: #605ca8;">{{ ihh_results.root_factor|format_num:2 }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">(d) Factor de Capital Mínimo Requerido (a+(b*c))</span>
+                                    <span class="font-weight-bold" style="color: #39cccc;">{{ ihh_results.min_capital_factor|format_num:2 }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Cartera de Crédito</span>
+                                    <span class="font-weight-bold" style="color: #1a2a6c;">S/ {{ total_cartera|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Saldo Cartera Cubierta:</span>
+                                    <span class="font-weight-bold text-success">S/ {{ ihh_results.saldo_cartera_cubierta|format_num:0 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Capital Para Riesgo Crédito:</span>
+                                    <span class="font-weight-bold text-success">S/ {{ ihh_results.capital_riesgo_credito|format_num:0 }}</span>
+                                </div>
+                                 <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                     <span class="small text-muted">Patrimonio Efectivo:</span>
+                                     <div id="monto-display-container">
+                                         <span class="font-weight-bold text-success">S/ {{ ihh_results.patrimonio_efectivo|format_num:0 }}</span>
+                                         <button type="button" class="btn btn-xs btn-link text-primary p-0 ml-1" onclick="toggleMontoEdit()" title="Editar Patrimonio Efectivo">
+                                             <i class="fas fa-edit"></i>
+                                         </button>
+                                     </div>
+                                 </div>
+                                 <form method="post" id="monto-edit-form" class="d-none mt-2 animate__animated animate__fadeIn">
+                                     {% csrf_token %}
+                                     <div class="input-group input-group-sm">
+                                         <input type="text" name="patrimonio_efectivo" class="form-control" value="{{ ihh_results.patrimonio_efectivo|stringformat:".2f" }}" placeholder="0.00">
+                                         <div class="input-group-append">
+                                             <button class="btn btn-primary" type="submit">Actualizar</button>
+                                             <button class="btn btn-secondary" type="button" onclick="toggleMontoEdit()">X</button>
+                                         </div>
+                                     </div>
+                                     <small class="text-muted">Ingrese el Patrimonio Efectivo institucional para recalcular el Monto Mitigador (10%).</small>
+                                 </form>
+                                 <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                     <span class="small text-muted">Monto Mitigador (10% PE):</span>
+                                     <span class="font-weight-bold text-info">S/ {{ ihh_results.monto_mitigador|format_num:0 }}</span>
+                                 </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded shadow-sm border h-100" style="border-left: 5px solid #28a745 !important;">
+                                <h6 class="font-weight-bold text-dark mb-3 small text-uppercase"><i class="fas fa-chart-line mr-2"></i>Indicadores de Solvencia</h6>
+                                
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Capital Requerido:</span>
+                                    <span class="font-weight-bold text-success">S/ {{ ihh_results.capital_required|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Capital Requerido con monto mitigador:</span>
+                                    <span class="font-weight-bold text-success">S/ {{ ihh_results.capital_req_mitigador|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Cobertura Requerida:</span>
+                                    <span class="font-weight-bold text-info">S/ {{ ihh_results.cobertura_requerida|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Pérdida Esperada (PE):</span>
+                                    <span class="font-weight-bold text-success">S/ {{ summary.total_pe|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Pérdida No Esperada (VaR):</span>
+                                    <span class="font-weight-bold text-warning">S/ {{ ihh_results.capital_required|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Razón de Capitalización Actual:</span>
+                                    <span class="font-weight-bold text-success">{{ ihh_results.razon_cap_actual|format_num:2 }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Factor de Máxima Concentración Permitida</span>
+                                    <span class="font-weight-bold text-success">{{ ihh_results.factor_max_conc|format_num:2 }}%</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2 border-bottom pb-1">
+                                    <span class="small text-muted">Monto Máximo de Crédito:</span>
+                                    <span class="font-weight-bold text-success">S/ {{ ihh_results.monto_max_credito|format_num:2 }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between font-weight-bold" style="color: #1a2a6c;">
+                                    <span class="small">Crédito Máximo Admisible a Cota de Concentración</span>
+                                    <span>S/ {{ ihh_results.credito_max_admisible|format_num:2 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-center mt-4">
+                    <div class="card shadow-sm border-0 w-100" style="max-width: 85%; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="font-weight-bold text-dark mb-0 small text-uppercase"><i class="fas fa-microscope mr-2"></i>Interpretación y Análisis de Concentración</h6>
+                                <button type="button" class="btn btn-xs btn-outline-primary" onclick="copyAnalysis(this, 'ihhAnalysisText')">
+                                    <i class="fas fa-copy mr-1"></i>Copiar Análisis
+                                </button>
+                            </div>
+                            <div id="ihhAnalysisText" class="text-justify" style="color: #000 !important; font-size: 0.92rem !important; line-height: 1.6 !important;">
+                                {{ ihh_analysis|safe }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 d-flex justify-content-center">
+        <div class="card shadow-sm border-0" style="max-width: 85%; width: 100%;">
+            <div class="card-header bg-navy text-white d-flex align-items-center" style="background-color: #001f3f !important;">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-th mr-2"></i>Distribución Multidimensional: Agencia vs Clasificación SBS
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered text-center align-middle" style="font-size: 0.65rem; width: 100%; table-layout: fixed;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="align-middle bg-dark text-white" style="width: 15%;">Agencia / Oficina</th>
+                                {% for cls in class_list %}
+                                <th class="align-middle" style="background-color: #e9ecef; width: 14%;">{{ cls }}</th>
+                                {% endfor %}
+                                <th class="align-middle bg-secondary text-white" style="width: 15%;">TOTAL AGENCIA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in cross_matrix %}
+                            <tr>
+                                <td class="font-weight-bold text-left px-3 bg-light text-uppercase">{{ row.agency|default:"SIN AGENCIA" }}</td>
+                                {% for cls in class_list %}
+                                    {% with cell=row.classifications|get_item:cls %}
+                                    <td class="py-1">
+                                        <div class="font-weight-bold {% if cell.balance > 1000000 %}text-danger{% elif cell.balance > 0 %}text-dark{% else %}text-muted opacity-50{% endif %}">
+                                            S/ {{ cell.balance|format_num:0 }}
+                                        </div>
+                                        <div class="x-small text-muted" style="font-size: 0.6rem;">{{ cell.count|format_int }} op.</div>
+                                    </td>
+                                    {% endwith %}
+                                {% endfor %}
+                                <td class="bg-light font-weight-bold py-1">
+                                    <div class="text-primary">S/ {{ row.total_balance|format_num:0 }}</div>
+                                    <div class="x-small text-muted" style="font-size: 0.6rem;">{{ row.total_count|format_int }} op.</div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-dark text-white font-weight-bold">
+                            <tr>
+                                <td class="text-center">TOTAL CLASIFICACIÓN</td>
+                                {% for item in ihh_data %}
+                                <td>
+                                    <div>S/ {{ item.balance|format_num:0 }}</div>
+                                    <div class="small text-white-50" style="font-size: 0.6rem;">{{ item.count|format_int }} op.</div>
+                                </td>
+                                {% endfor %}
+                                <td style="background-color: #1a2a6c;">
+                                    <div>S/ {{ total_cartera|format_num:0 }}</div>
+                                    <div class="small text-white-50" style="font-size: 0.6rem;">{{ summary.count|format_int }} op.</div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+</div>
+
+<div class="d-flex justify-content-center mt-2">
+    <div class="card shadow-sm border-0 w-100" style="max-width: 85%; background-color: #f1f3f5; border-left: 4px solid #1a2a6c;">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="font-weight-bold text-dark mb-0 small text-uppercase"><i class="fas fa-search-location mr-2"></i>Análisis Geográfico y de Calidad de Cartera</h6>
+                <button type="button" class="btn btn-xs btn-outline-primary" onclick="copyAnalysis(this, 'matrixAnalysisText')">
+                    <i class="fas fa-copy mr-1"></i>Copiar Análisis
+                </button>
+            </div>
+            <div id="matrixAnalysisText" class="text-justify" style="color: #000 !important; font-size: 0.92rem !important; line-height: 1.6 !important;">
+                {{ matrix_analysis|safe }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyAnalysis(btn, targetId) {
+    const text = document.getElementById(targetId).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const originalContent = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check mr-1"></i>¡Copiado!';
+        btn.classList.replace('btn-outline-primary', 'btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalContent;
+            btn.classList.replace('btn-success', 'btn-outline-primary');
+        }, 2000);
+    }).catch(err => {
+        console.error('Error al copiar: ', err);
+    });
+}
+</script>
+
+
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-light">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-exchange-alt text-warning mr-2"></i>Matrices de Transición</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Modelos de migración de estados de mora y clasificación crediticia.</p>
+                <a href="{% url 'credit_risk:transition_matrix' %}" class="btn btn-xs btn-outline-primary">Ver Matrices</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-light">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-history text-success mr-2"></i>Análisis de Cosechas</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Evolución del default por fecha de desembolso y segmento.</p>
+                <a href="{% url 'credit_risk:vintage_analysis' %}" class="btn btn-xs btn-outline-primary">Ver Cosechas</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-pie text-secondary mr-2"></i>Concentración</h3>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Análisis por sector económico, zona geográfica y tipo de producto.</p>
+                <a href="{% url 'credit_risk:concentration' %}" class="btn btn-xs btn-outline-primary">Ver Concentración</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+function exportDashboardImage() {
+    const dashboard = document.querySelector('.content-wrapper') || document.body;
+    const tools = document.querySelector('.card-tools');
+    if (tools) tools.style.visibility = 'hidden';
+
+    html2canvas(dashboard, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#f4f6f9',
+        windowWidth: dashboard.scrollWidth,
+        windowHeight: dashboard.scrollHeight
+    }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Reporte_ARISK_ERM_${new Date().getTime()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        if (tools) tools.style.visibility = 'visible';
+    });
+}
+function toggleMontoEdit() {
+    const display = document.getElementById('monto-display-container');
+    const form = document.getElementById('monto-edit-form');
+    if (form.classList.contains('d-none')) {
+        form.classList.remove('d-none');
+        display.classList.add('d-none');
+    } else {
+        form.classList.add('d-none');
+        display.classList.remove('d-none');
+    }
+}
+</script>
+{% endblock %}

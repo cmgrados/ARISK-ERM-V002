@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm" style="background-color: #161065; color: white;">
+            <div class="inner"><h3>24</h3><p>Alertas del Mes</p></div>
+            <div class="icon text-white-50"><i class="fas fa-bell"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm bg-white border">
+            <div class="inner"><h3 class="text-danger">5</h3><p>Casos Inusuales</p></div>
+            <div class="icon text-danger-50"><i class="fas fa-user-secret"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm bg-white border">
+            <div class="inner"><h3 class="text-success">220</h3><p>Reportes de Operaciones</p></div>
+            <div class="icon text-success-50"><i class="fas fa-file-invoice-dollar"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm" style="background-color: #ffcc00; color: #141313;">
+            <div class="inner"><h3>1</h3><p>ROS Generado</p></div>
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-chart-pie mr-2 text-warning"></i>Distribución de Riesgo por Perfil</h3></div>
+            <div class="card-body"><div id="riskPie" style="height: 350px;"></div></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-chart-bar mr-2" style="color: #161065;"></i>Evolución de Alertas Mensuales</h3></div>
+            <div class="card-body"><div id="alertsBar" style="height: 350px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var rPie = echarts.init(document.getElementById('riskPie'));
+    rPie.setOption({
+        tooltip: { trigger: 'item' },
+        color: ['#161065', '#ffcc00', '#2E9CCA', '#E84A5F'],
+        series: [{
+            type: 'pie', radius: ['40%', '70%'],
+            data: [
+                {value: 70, name: 'Bajo'},
+                {value: 20, name: 'Medio'},
+                {value: 7, name: 'Alto'},
+                {value: 3, name: 'Muy Alto'}
+            ]
+        }]
+    });
+    
+    var aBar = echarts.init(document.getElementById('alertsBar'));
+    aBar.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'] },
+        yAxis: { type: 'value' },
+        series: [{
+            data: [15, 22, 18, 24, 30, 24], type: 'bar',
+            itemStyle: { color: '#161065', borderRadius: [5,5,0,0] }
+        }]
+    });
+    window.addEventListener('resize', function(){ rPie.resize(); aBar.resize(); });
+});
+</script>
+{% endblock %}

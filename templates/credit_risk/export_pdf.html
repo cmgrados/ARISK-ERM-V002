@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+{% load risk_extras humanize %}
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page { size: A4; margin: 1cm; }
+        body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1a2a6c; padding-bottom: 10px; }
+        .title { color: #1a2a6c; font-size: 18px; font-weight: bold; }
+        .subtitle { color: #666; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th { background-color: #1a2a6c; color: white; padding: 5px; border: 1px solid #ddd; }
+        td { padding: 5px; border: 1px solid #ddd; text-align: center; }
+        .text-left { text-align: left; }
+        .font-bold { font-weight: bold; }
+        .bg-gray { background-color: #f8f9fa; }
+        .section-title { background-color: #e9ecef; padding: 5px; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #1a2a6c; }
+        .summary-box { border: 1px solid #ddd; padding: 10px; background-color: #fdfdfd; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">INFORME TÉCNICO DE METODOLOGÍAS DE RIESGO</div>
+        <div class="subtitle">Fecha de Reporte: {{ selected_date }} | Institución: A.RISK ERM</div>
+    </div>
+
+    <div class="section-title">1. MODELO ALFA-BETA (ANÁLISIS DE MIGRACIÓN)</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Tramo de Mora</th>
+                <th>Saldo (S/)</th>
+                <th>Alfa Simple</th>
+                <th>Prob. Beta</th>
+                <th>VaR (Monto)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in alfa_beta_data %}
+            <tr>
+                <td class="text-left">{{ item.name }}</td>
+                <td>{{ item.saldo|format_num }}</td>
+                <td>{{ item.alfa_simple|format_num:2 }}%</td>
+                <td>{{ item.prob_beta_simple|format_num:2 }}%</td>
+                <td>{{ item.var|format_num }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="summary-box">
+        <strong>Análisis Narrativo:</strong><br>
+        {{ alfa_beta_analysis|safe }}
+    </div>
+
+    <div class="section-title">2. MODELO IHH (CONCENTRACIÓN CREDITICIA)</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Categoría SBS</th>
+                <th>Saldo (S/)</th>
+                <th>Participación</th>
+                <th>PD Promedio</th>
+                <th>IHH Individual</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in ihh_data %}
+            <tr>
+                <td class="text-left">{{ item.name }}</td>
+                <td>{{ item.balance|format_num }}</td>
+                <td>{{ item.weight|format_num:2 }}%</td>
+                <td>{{ item.pd|format_num:2 }}%</td>
+                <td>{{ item.ihh|format_num:6 }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="font-bold bg-gray">
+                <td>TOTAL</td>
+                <td>{{ total_cartera|format_num }}</td>
+                <td>100.00%</td>
+                <td>{{ ihh_weighted_pd_total|format_num:2 }}%</td>
+                <td>{{ ihh_total|format_num:6 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">3. REQUERIMIENTOS DE CAPITAL Y SOLVENCIA</div>
+    <table>
+        <tr>
+            <td class="text-left font-bold" width="70%">Pérdida Esperada (a)</td>
+            <td>{{ ihh_results.pe_ratio|format_num:2 }}%</td>
+        </tr>
+        <tr>
+            <td class="text-left font-bold">Factor Alpha asociado a confianza (99%)</td>
+            <td>{{ ihh_results.conf_alpha }}</td>
+        </tr>
+        <tr>
+            <td class="text-left font-bold">Capital Requerido por Concentración (S/)</td>
+            <td>S/ {{ ihh_results.capital_required|format_num }}</td>
+        </tr>
+        <tr>
+            <td class="text-left font-bold">Monto Mitigador Admisible (S/)</td>
+            <td>S/ {{ ihh_results.monto_mitigador|format_num }}</td>
+        </tr>
+        <tr class="bg-gray">
+            <td class="text-left font-bold">Razón de Capitalización Actual</td>
+            <td class="font-bold">{{ ihh_results.razon_cap_actual|format_num:2 }}%</td>
+        </tr>
+    </table>
+
+    <div style="margin-top: 30px; font-size: 8px; color: #999; text-align: center;">
+        Este documento es un reporte generado automáticamente por el motor A.RISK ERM. 
+        Los cálculos están basados en las metodologías Alfa-Beta e IHH validadas institucionalmente.
+    </div>
+</body>
+</html>

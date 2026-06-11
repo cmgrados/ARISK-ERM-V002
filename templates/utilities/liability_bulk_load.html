@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Form Card -->
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-file-invoice-dollar mr-2 text-success"></i>Carga Masiva - Pasivos (Depósitos y Plazos Fijos)
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="p-3">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12 mb-4">
+                            <label class="font-weight-bold text-muted small text-uppercase">Archivo Excel o CSV con Múltiples Periodos:</label>
+                            <div class="custom-file">
+                                <input type="file" name="file" class="custom-file-input" id="customFile" accept=".xlsx, .xls, .csv" required>
+                                <label class="custom-file-label" for="customFile">Seleccionar archivo de pasivos...</label>
+                            </div>
+                            <small class="text-muted">El sistema detectará automáticamente los periodos usando la columna "FECHA DE CORTE" o "PERIODO".</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info border-0 shadow-xs mb-4">
+                        <h6 class="font-weight-bold d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-info-circle mr-1"></i> Requerimientos del Formato:</span>
+                            <div>
+                                <a href="{% url 'utilities:download_liability_template' %}" class="btn btn-sm btn-info shadow-xs">
+                                    <i class="fas fa-download mr-1"></i> Plantilla Ahorros
+                                </a>
+                                <a href="{% url 'utilities:download_liability_template' %}" class="btn btn-sm btn-success shadow-xs ml-1">
+                                    <i class="fas fa-download mr-1"></i> Plantilla DPF
+                                </a>
+                            </div>
+                        </h6>
+                        <p class="mb-2 small">Columnas requeridas para detección automática:</p>
+                        <div class="row small">
+                            <div class="col-md-6">
+                                <ul class="mb-0">
+                                    <li><b>ID / SOCIO:</b> Identificador del cliente.</li>
+                                    <li><b>FECHA DE CORTE:</b> Fecha del reporte (YYYY-MM-DD).</li>
+                                    <li><b>SALDO:</b> Monto del depósito.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <ul class="mb-0">
+                                    <li><b>CERTIFICADO:</b> (Solo para Plazo Fijo).</li>
+                                    <li><b>VENCIMIENTO:</b> (Solo para Plazo Fijo).</li>
+                                    <li><b>MONEDA:</b> MN o ME.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-right mt-4">
+                        <a href="{% url 'utilities:dashboard' %}" class="btn btn-light px-4 mr-2">Cancelar</a>
+                        <button type="submit" class="btn btn-dark px-5 font-weight-bold shadow-sm">
+                            <i class="fas fa-cloud-upload-alt mr-2"></i> Iniciar Procesamiento Masivo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-history mr-2 text-success"></i>Historial de Cargas de Pasivos
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light text-uppercase small">
+                            <tr>
+                                <th>Fecha Carga</th>
+                                <th>Archivo</th>
+                                <th>Periodos</th>
+                                <th>Registros</th>
+                                <th>Estado</th>
+                                <th class="text-right">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in history %}
+                            <tr>
+                                <td class="align-middle small">{{ log.load_date|date:"d/m/Y H:i" }}</td>
+                                <td class="align-middle"><code>{{ log.file_name }}</code></td>
+                                <td class="align-middle">
+                                    <div style="max-height: 80px; overflow-y: auto; max-width: 300px;">
+                                        {% for date in log.dates_list %}
+                                            <span class="badge badge-soft-success mb-1 border" style="background:#e8f5e9; color:#2e7d32;">{{ date }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="align-middle text-center font-weight-bold">{{ log.records_processed }}</td>
+                                <td class="align-middle">
+                                    {% if log.status == 'Success' %}
+                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Éxito</span>
+                                    {% elif log.status == 'Warning' %}
+                                        <span class="badge badge-warning text-dark"><i class="fas fa-exclamation-triangle mr-1"></i> Advertencia</span>
+                                        <div class="small text-warning mt-1" style="max-width: 200px; word-wrap: break-word;">0 registros procesados</div>
+                                    {% else %}
+                                        <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Error</span>
+                                        <div class="small text-danger mt-1" style="max-width: 200px; word-wrap: break-word;">{{ log.error_message }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-right">
+                                    <a href="{% url 'utilities:bulk_load_liability_detail' log.id %}" class="btn btn-xs btn-outline-primary mr-1" title="Visualizar Detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'utilities:delete_bulk_load_log' log.id %}" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Log">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No hay historial de cargas de pasivos.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+        var fileName = document.getElementById("customFile").files[0].name;
+        var nextSibling = e.target.nextElementSibling;
+        nextSibling.innerText = fileName;
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Catálogo Maestro de KRIs{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Maestro de Indicadores Clave de Riesgo (KRIs)</h3>
+                <div class="card-tools">
+                    <button class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Añadir KRI</button>
+                    <button class="btn btn-default btn-sm"><i class="fas fa-file-excel"></i> Importar</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Tipo Riesgo</th>
+                            <th>Nivel</th>
+                            <th>Sentido</th>
+                            <th>Frecuencia</th>
+                            <th>Unidad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in kris %}
+                        <tr>
+                            <td><code>{{ k.code }}</code></td>
+                            <td>{{ k.name }}</td>
+                            <td>{{ k.risk_type }}</td>
+                            <td>{{ k.get_kri_level_display }}</td>
+                            <td><i class="fas {% if k.direction == 'UP' %}fa-arrow-up text-danger{% elif k.direction == 'DOWN' %}fa-arrow-down text-danger{% else %}fa-exchange-alt{% endif %}"></i></td>
+                            <td>{{ k.frequency }}</td>
+                            <td>{{ k.unit }}</td>
+                            <td>
+                                <a href="#" class="btn btn-xs btn-default"><i class="fas fa-eye"></i></a>
+                                <a href="#" class="btn btn-xs btn-default"><i class="fas fa-edit"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center p-4 text-muted">No hay KRIs registrados en el catálogo.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-sitemap mr-2"></i>Evaluación RCSA (Risk Control Self Assessment)</h3>
+            </div>
+            <div class="card-body">
+                <p>Configuración de los parámetros para el cálculo del Riesgo Inherente y Riesgo Residual bajo la metodología 5x5.</p>
+                <div class="row mb-3">
+                    <div class="col-sm-6">
+                        <label>Escala de Probabilidad</label>
+                        <ul class="list-group list-group-sm text-sm">
+                            <li class="list-group-item d-flex justify-content-between p-2">Raro (1) <span class="badge badge-light">10%</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Improbable (2) <span class="badge badge-light">25%</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Posible (3) <span class="badge badge-light">50%</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Probable (4) <span class="badge badge-light">75%</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Casi Certeza (5) <span class="badge badge-light">90%</span></li>
+                        </ul>
+                    </div>
+                    <div class="col-sm-6">
+                        <label>Escala de Impacto Económico</label>
+                        <ul class="list-group list-group-sm text-sm">
+                            <li class="list-group-item d-flex justify-content-between p-2">Insignificante (1) <span class="badge badge-light">< S/ 5K</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Menor (2) <span class="badge badge-light">S/ 5K - 20K</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Moderado (3) <span class="badge badge-light">S/ 20K - 100K</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Mayor (4) <span class="badge badge-light">S/ 100K - 500K</span></li>
+                            <li class="list-group-item d-flex justify-content-between p-2">Catastrófico (5) <span class="badge badge-light">> S/ 500K</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" class="btn text-white w-100 mt-2" style="background-color: #161065;">Guardar Metodología PxI</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card card-outline shadow-sm border" style="border-top-color: #ffcc00;">
+            <div class="card-header bg-light">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-layer-group text-warning mr-2"></i>Tipologías Basilea</h3>
+            </div>
+            <div class="card-body p-0 table-responsive" style="max-height: 400px;">
+                <table class="table table-striped table-valign-middle text-sm">
+                    <thead>
+                        <tr>
+                            <th>Nivel 1 (Tipología)</th>
+                            <th>Apetito Validado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Fraude Interno</td><td><span class="badge badge-danger">Tolerancia Cero</span></td></tr>
+                        <tr><td>Fraude Externo</td><td><span class="badge badge-warning">Aversión al Riesgo</span></td></tr>
+                        <tr><td>Relaciones Laborales / Seg.</td><td><span class="badge badge-info">Bajo</span></td></tr>
+                        <tr><td>Clientes, Productos, Prácticas</td><td><span class="badge badge-primary">Medio</span></td></tr>
+                        <tr><td>Ejecución, Entrega, Procesos</td><td><span class="badge badge-success">Aceptable</span></td></tr>
+                        <tr><td>Fallas en TI y Sistemas</td><td><span class="badge badge-danger">Tolerancia Mínima</span></td></tr>
+                        <tr><td>Daños a Activos Físicos</td><td><span class="badge badge-success">Aceptable</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+{% load humanize risk_extras %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="w-100" style="max-width: 98%;">
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-filter mr-2 text-primary"></i>Filtros de Análisis</h3>
+                <form method="get" class="form-inline">
+                    <label class="mr-2 small font-weight-bold text-muted">Periodo:</label>
+                    <select name="load_date" class="form-control form-control-sm" onchange="this.form.submit()">
+                        {% for d in dates %}
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == selected_date %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert shadow-sm border-0 mb-0 py-2 d-flex align-items-center" style="background-color: #f0f7ff; border-radius: 8px; color: #004085;">
+            <i class="fas fa-info-circle mr-3 fa-lg text-primary"></i>
+            <div class="small">
+                <span class="font-weight-bold">TEA Promedio:</span> Tasa Efectiva Anual bruta ponderada por saldo. 
+                <span class="mx-3 text-muted">|</span>
+                <span class="font-weight-bold">TEA Ajustada:</span> Rentabilidad real neta tras descontar el costo de la Pérdida Esperada (Ingresos - PE) / Saldo.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="section-segmento-tipo">
+    <!-- By Segment -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mb-3" id="card-segmento">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-users text-info mr-2"></i>Concentración por Segmento</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-segmento','Concentracion_Segmento')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-segmento','Concentración por Segmento')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn btn-outline-info btn-sm" onclick="exportSectionJPG('card-segmento','Concentracion_Segmento.jpg')" title="Imagen"><i class="fas fa-image"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" style="color:#2b5797;border-color:#2b5797;" onclick="exportSectionWord('card-segmento','Concentracion_Segmento.doc')" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-segmento" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-primary text-white">
+                        <tr>
+                            <th class="text-center">Segmento</th>
+                            <th class="text-center">Operaciones</th>
+                            <th class="text-center">Saldo Total</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_segment %}
+                        <tr>
+                            <td class="text-center">{{ item.customer__segment }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center" style="white-space: nowrap;">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold" style="white-space: nowrap;">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-info">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- By Product Type -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mb-3" id="card-tipo-credito">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-tags text-warning mr-2"></i>Concentración por Tipo de Crédito</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-tipo-credito','Concentracion_TipoCredito')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-tipo-credito','Concentración por Tipo de Crédito')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn btn-outline-info btn-sm" onclick="exportSectionJPG('card-tipo-credito','Concentracion_TipoCredito.jpg')" title="Imagen"><i class="fas fa-image"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" style="color:#2b5797;border-color:#2b5797;" onclick="exportSectionWord('card-tipo-credito','Concentracion_TipoCredito.doc')" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-tipo-credito" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-warning text-dark">
+                        <tr>
+                            <th class="text-center">Tipo de Crédito</th>
+                            <th class="text-center">Operaciones</th>
+                            <th class="text-center">Saldo Total</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_credit_type %}
+                        <tr>
+                            <td class="text-center">{{ item.credit_type|default:"Otros" }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-warning">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- By Disbursement Range -->
+    <div class="col-12">
+        <div class="card shadow-sm border-0 mb-3" id="card-rango">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-layer-group text-danger mr-2"></i>Concentración por Rango de Desembolso</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-rango','Concentracion_RangoDesembolso')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-rango','Concentración por Rango de Desembolso')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn btn-outline-info btn-sm" onclick="exportSectionJPG('card-rango','Concentracion_RangoDesembolso.jpg')" title="Imagen"><i class="fas fa-image"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" style="color:#2b5797;border-color:#2b5797;" onclick="exportSectionWord('card-rango','Concentracion_RangoDesembolso.doc')" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-rango" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-danger text-white">
+                        <tr>
+                            <th class="text-center">Rango de Monto Original (Desembolso)</th>
+                            <th class="text-center">N° Créditos</th>
+                            <th class="text-center">Monto Desembolsado</th>
+                            <th class="text-center">Saldo Actual</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_disbursement_range %}
+                        <tr>
+                            <td class="font-weight-bold text-center">{{ item.range }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center">S/ {{ item.total_disbursement|format_num:0 }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-danger">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- By Product Name -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mb-3" id="card-producto">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-box text-success mr-2"></i>Concentración por Producto</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-producto','Concentracion_Producto')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-producto','Concentración por Producto')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn btn-outline-info btn-sm" onclick="exportSectionJPG('card-producto','Concentracion_Producto.jpg')" title="Imagen"><i class="fas fa-image"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" style="color:#2b5797;border-color:#2b5797;" onclick="exportSectionWord('card-producto','Concentracion_Producto.doc')" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-producto" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-success text-white">
+                        <tr>
+                            <th class="text-center">Producto</th>
+                            <th class="text-center">Operaciones</th>
+                            <th class="text-center">Saldo Total</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_product %}
+                        <tr>
+                            <td class="text-center">{{ item.product_name|default:"Sin Definir" }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-success">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- By Agency -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 mb-3" id="card-agencia">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-building text-secondary mr-2"></i>Distribución por Agencia</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-agencia','Distribucion_Agencia')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-agencia','Distribución por Agencia')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                    <button class="btn btn-outline-info btn-sm" onclick="exportSectionJPG('card-agencia','Distribucion_Agencia.jpg')" title="Imagen"><i class="fas fa-image"></i></button>
+                    <button class="btn btn-outline-primary btn-sm" style="color:#2b5797;border-color:#2b5797;" onclick="exportSectionWord('card-agencia','Distribucion_Agencia.doc')" title="Word"><i class="fas fa-file-word"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-agencia" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-secondary text-white">
+                        <tr>
+                            <th class="text-center">Agencia / Oficina</th>
+                            <th class="text-center">Operaciones</th>
+                            <th class="text-center">Saldo Total</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_agency %}
+                        <tr>
+                            <td class="text-center">{{ item.agency|default:"Sede Central" }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-secondary">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- By SBS Classification -->
+    <div class="col-12">
+        <div class="card shadow-sm border-0 mb-3" id="card-rating">
+            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold small mb-0"><i class="fas fa-medal text-primary mr-2"></i>Concentración por Clasificación del Deudor (SBS)</h3>
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary btn-sm" onclick="exportTableCSV('tbl-rating','Concentracion_Clasificacion')" title="Excel"><i class="fas fa-file-excel"></i></button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="exportSectionPDF('card-rating','Concentración por Clasificación')" title="PDF"><i class="fas fa-file-pdf"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table id="tbl-rating" class="table table-hover table-sm table-striped mb-0" style="font-size: 0.78rem;">
+                    <thead class="bg-info text-white">
+                        <tr>
+                            <th class="text-center">Clasificación SBS</th>
+                            <th class="text-center">Operaciones</th>
+                            <th class="text-center">Saldo Total</th>
+                            <th class="text-center">Tasa Promedio (%)</th>
+                            <th class="text-center">Tasa Ajustada (%)</th>
+                            <th class="text-center">Participación %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in by_rating %}
+                        <tr>
+                            <td class="text-center font-weight-bold">{{ item.sbs_classification|default:"Sin Clasificación" }}</td>
+                            <td class="text-center">{{ item.count|format_int }}</td>
+                            <td class="text-center font-weight-bold" style="white-space: nowrap;">S/ {{ item.total_balance|format_num:0 }}</td>
+                            <td class="text-center" style="white-space: nowrap;">{{ item.avg_rate|format_num:2 }}%</td>
+                            <td class="text-center text-primary font-weight-bold" style="white-space: nowrap;">{{ item.avg_adjusted_rate|format_num:2 }}%</td>
+                            <td class="text-center">
+                                <span class="badge badge-info">{{ item.percentage|format_num:1 }}%</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+// ============================================================
+// UTILIDAD: Guardar archivo usando FileSaver.js
+// ============================================================
+function guardarArchivo(blob, nombre) {
+    console.log('[EXPORT] Iniciando descarga:', nombre, 'Tamaño:', blob.size, 'bytes');
+    try {
+        saveAs(blob, nombre);
+        console.log('[EXPORT] Descarga completada para:', nombre);
+    } catch (e) {
+        console.error('[EXPORT] Error con FileSaver:', e);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombre;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 1000);
+    }
+}
+
+// ============================================================
+// EXPORT: Excel (XLSX)
+// ============================================================
+function exportTableCSV(tableId, filename) {
+    console.log('[EXPORT EXCEL] Iniciando para tabla:', tableId);
+    try {
+        const table = document.getElementById(tableId);
+        if (!table) {
+            console.error('[EXPORT EXCEL] Tabla no encontrada:', tableId);
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table, { raw: false });
+
+        // Auto-ancho
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const cols = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+            let max = 10;
+            for (let r = range.s.r; r <= range.e.r; r++) {
+                const cell = ws[XLSX.utils.encode_cell({r, c})];
+                if (cell && cell.v) max = Math.max(max, String(cell.v).length + 2);
+            }
+            cols.push({ wch: Math.min(max, 50) });
+        }
+        ws['!cols'] = cols;
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const fname = `${filename}_${new Date().toISOString().slice(0,10)}.xlsx`;
+        
+        guardarArchivo(blob, fname);
+    } catch (e) {
+        console.error('[EXPORT EXCEL] Error crítico:', e);
+        alert('Error al exportar Excel: ' + e.message);
+    }
+}
+
+// ============================================================
+// EXPORT: PDF (jsPDF + html2canvas)
+// ============================================================
+function exportSectionPDF(containerId, title) {
+    console.log('[EXPORT PDF] Iniciando captura para:', containerId);
+    try {
+        const section = document.getElementById(containerId);
+        if (!section) return;
+
+        const btns = section.querySelectorAll('.btn-group');
+        btns.forEach(b => b.style.visibility = 'hidden');
+
+        html2canvas(section, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            console.log('[EXPORT PDF] Canvas generado');
+            btns.forEach(b => b.style.visibility = 'visible');
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const isLandscape = canvas.width > canvas.height;
+            const pdf = new jsPDF({
+                orientation: isLandscape ? 'landscape' : 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfW = pdf.internal.pageSize.getWidth() - 20;
+            const pdfH = (canvas.height * pdfW) / canvas.width;
+            
+            pdf.setFontSize(14);
+            pdf.setTextColor(30, 58, 138);
+            pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 12, { align: 'center' });
+            pdf.addImage(imgData, 'JPEG', 10, 18, pdfW, pdfH);
+            
+            const fname = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+            pdf.save(fname);
+            console.log('[EXPORT PDF] Archivo guardado:', fname);
+        }).catch(e => {
+            btns.forEach(b => b.style.visibility = 'visible');
+            console.error('[EXPORT PDF] Error en canvas:', e);
+        });
+    } catch (e) {
+        console.error('[EXPORT PDF] Error crítico:', e);
+    }
+}
+
+// ============================================================
+// EXPORT: Imagen (JPG)
+// ============================================================
+function exportSectionJPG(containerId, filename) {
+    console.log('[EXPORT JPG] Iniciando captura para:', containerId);
+    try {
+        const section = document.getElementById(containerId);
+        if (!section) return;
+
+        const btns = section.querySelectorAll('.btn-group');
+        btns.forEach(b => b.style.visibility = 'hidden');
+
+        html2canvas(section, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            btns.forEach(b => b.style.visibility = 'visible');
+            canvas.toBlob(blob => {
+                guardarArchivo(blob, filename);
+            }, 'image/jpeg', 0.95);
+        });
+    } catch (e) {
+        console.error('[EXPORT JPG] Error crítico:', e);
+    }
+}
+
+// ============================================================
+// EXPORT: Word (DOCX)
+// ============================================================
+function exportSectionWord(containerId, filename) {
+    console.log('[EXPORT WORD] Generando para:', containerId);
+    try {
+        const section = document.getElementById(containerId);
+        if (!section) return;
+
+        const clone = section.cloneNode(true);
+        clone.querySelectorAll('.btn-group').forEach(b => b.remove());
+
+        const html = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'>
+            <style>
+                @page { size: landscape; margin: 1.5cm; }
+                body { font-family: Calibri, sans-serif; font-size: 11pt; }
+                table { border-collapse: collapse; width: 100%; }
+                th { background-color: #1e3a8a; color: #fff; font-weight: bold; padding: 8px; border: 1px solid #1e3a8a; text-align: center; }
+                td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+            </style></head>
+            <body>${clone.innerHTML}</body></html>`;
+
+        const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+        const docxName = filename.replace(/\.(doc|docx)$/, '') + '.docx';
+        guardarArchivo(blob, docxName);
+    } catch (e) {
+        console.error('[EXPORT WORD] Error crítico:', e);
+    }
+}
+
+</script>
+{% endblock %}
+
+

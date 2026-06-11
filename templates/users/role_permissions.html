@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load custom_tags %}
+{% block content %}
+<div class="content-wrapper">
+  <section class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="font-weight-bold" style="color: var(--primary-deep);">Perfil de usuario : {{ role.name }}</h1>
+        </div>
+        <div class="col-sm-6 text-right">
+          <a href="{% url 'users:role_list' %}" class="btn btn-danger" style="background-color: #b82b2b; border-color: #b82b2b;">
+            <i class="fas fa-arrow-left"></i> Volver atrás...
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="content">
+    <div class="container-fluid">
+      
+      <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist" style="border-bottom: 1px solid #ddd;">
+        <li class="nav-item">
+          <a class="nav-link active" id="custom-tabs-one-home-tab" data-toggle="pill" href="#custom-tabs-one-home" role="tab" aria-controls="custom-tabs-one-home" aria-selected="true" style="color: #555; border-top: 3px solid transparent;">Modulos</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" id="custom-tabs-one-profile-tab" data-toggle="pill" href="#custom-tabs-one-profile" role="tab" aria-controls="custom-tabs-one-profile" aria-selected="false" style="color: #007bff;">Otras Opciones</a>
+        </li>
+      </ul>
+
+      <div class="card" style="border-top-left-radius: 0; border: 1px solid #ccc; box-shadow: none;">
+        <div class="card-body">
+          <div class="tab-content" id="custom-tabs-one-tabContent">
+            <div class="tab-pane fade show active" id="custom-tabs-one-home" role="tabpanel" aria-labelledby="custom-tabs-one-home-tab">
+              <h6 class="font-weight-bold mb-3 text-dark">Configurar permisos por cada modulo:</h6>
+              <form method="post">
+                {% csrf_token %}
+                <div class="table-responsive">
+                  <table class="table table-bordered text-center align-middle" style="font-size: 0.9rem;">
+                    <thead style="background-color: #f8f9fa; color: #555;">
+                      <tr>
+                        <th class="text-left font-weight-normal">Módulo</th>
+                        <th class="font-weight-normal">Acceder</th>
+                        <th class="font-weight-normal">Crear</th>
+                        <th class="font-weight-normal">Editar</th>
+                        <th class="font-weight-normal">Eliminar</th>
+                        <th class="font-weight-normal">Ver Todo</th>
+                        <th class="font-weight-normal">Ver<br>Sucursales</th>
+                        <th class="font-weight-normal">Exportar</th>
+                        <th class="font-weight-normal">Otros</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for mod in modules %}
+                      <tr style="{% cycle '' 'background-color: #f9f9f9;' as rowcolors %}">
+                        <td class="text-left text-muted" {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}>{{ mod.name }}</td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="acceder_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'acceder' %}checked{% endif %}></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="crear_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'crear' %}checked{% endif %}></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="editar_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'editar' %}checked{% endif %}></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="eliminar_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'eliminar' %}checked{% endif %}></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="ver_todo_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'ver_todo' %}checked{% endif %}></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" disabled></td>
+                        <td {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}><input type="checkbox" name="exportar_{{ mod.id }}" {% if role.permissions|get_item:mod.id|get_item:'exportar' %}checked{% endif %}></td>
+                        <td class="text-left" {% if forloop.counter == 5 %}style="background-color: #e8f5e9;"{% endif %}>
+                          <!-- Placeholder for other specific permissions like the image shows -->
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                
+                <div class="mt-4 text-center">
+                  <button type="submit" class="btn btn-success px-4 font-weight-bold" style="background-color: #5cb85c; border-color: #4cae4c;">Guardar</button>
+                </div>
+              </form>
+            </div>
+            <div class="tab-pane fade" id="custom-tabs-one-profile" role="tabpanel" aria-labelledby="custom-tabs-one-profile-tab">
+              <p class="p-3">Otras opciones de configuración del perfil irían aquí.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+</div>
+<style>
+  .nav-tabs .nav-link.active {
+    border-top: 3px solid #007bff !important;
+    border-radius: 0;
+    font-weight: bold;
+    color: #333 !important;
+  }
+  .nav-tabs .nav-link {
+    border-radius: 0;
+  }
+</style>
+{% endblock %}

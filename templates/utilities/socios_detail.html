@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="font-weight-bold text-dark mb-0">
+                <i class="fas fa-users mr-2 text-primary"></i>Detalle de Socios
+            </h2>
+            <a href="{% url 'utilities:bulk_load_socios' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver a Cargas
+            </a>
+        </div>
+        <p class="text-muted mt-2">Archivo Origen: <strong>{{ log.file_name }}</strong> | Fecha: <strong>{{ log.load_date|date:"d/m/Y H:i" }}</strong></p>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table class="table table-hover table-bordered mb-0 align-middle" style="font-size: 0.85rem;">
+                <thead class="bg-light sticky-top">
+                    <tr>
+                        <th>Código Socio</th>
+                        <th>NID</th>
+                        <th>Razón Social / Nombres</th>
+                        <th>Condición</th>
+                        <th>Oficina</th>
+                        <th>Aportes</th>
+                        <th>Fecha Ingreso</th>
+                        <th>Fecha Corte</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for socio in socios %}
+                    <tr>
+                        <td class="font-weight-bold text-primary">{{ socio.csocio|default:"-" }}</td>
+                        <td class="font-weight-bold">{{ socio.nid }}</td>
+                        <td>{{ socio.ncl }}</td>
+                        <td>
+                            {% if socio.condsocio == 'HABIL' %}
+                                <span class="badge badge-success">{{ socio.condsocio }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ socio.condsocio|default:"-" }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ socio.oficina|default:"-" }}</td>
+                        <td>{{ socio.aportes|floatformat:2|intcomma }}</td>
+                        <td>{{ socio.fingreso|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ socio.corte|date:"d/m/Y"|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No se encontraron registros en esta carga.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

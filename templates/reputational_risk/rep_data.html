@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-rss text-warning mr-2"></i>Monitoreo de Medios y Redes Sociales</h3>
+        <div class="card-tools">
+            <span class="badge badge-danger">3 Alertas Críticas</span>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover text-sm">
+            <thead class="bg-light">
+                <tr><th>Fecha/Hora</th><th>Canal</th><th>Mención / Nota</th><th>Sentimiento</th><th>Alcance</th><th>Acción</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>27/04 14:00</td><td>Twitter/X</td><td>"Mala atención en la agencia de Huancayo..."</td><td><span class="badge badge-danger">Negativo</span></td><td>1.2k</td><td><button class="btn btn-xs btn-primary">Atender</button></td></tr>
+                <tr><td>27/04 10:30</td><td>Facebook</td><td>"Sorteo de aniversario de la cooperativa..."</td><td><span class="badge badge-success">Positivo</span></td><td>5.5k</td><td><button class="btn btn-xs btn-outline-dark">Compartir</button></td></tr>
+                <tr><td>26/04 18:45</td><td>Diario Local</td><td>"Nuevas tasas de interés de COOPAC..."</td><td><span class="badge badge-info">Neutral</span></td><td>10k</td><td><button class="btn btn-xs btn-outline-dark">Archivar</button></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

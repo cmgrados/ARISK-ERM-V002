@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold" style="color:#141313;">Límites de Exposición</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="info-box bg-light shadow-sm">
+                    <div class="info-box-content">
+                        <span class="info-box-text">Límite VaR 99%</span>
+                        <span class="info-box-number">S/ 150,000</span>
+                        <div class="progress"><div class="progress-bar bg-success" style="width: 45%"></div></div>
+                        <span class="progress-description">45% utilizado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-box bg-light shadow-sm">
+                    <div class="info-box-content">
+                        <span class="info-box-text">Límite Posición Cambiaria</span>
+                        <span class="info-box-number">S/ 2,000,000</span>
+                        <div class="progress"><div class="progress-bar bg-warning" style="width: 82%"></div></div>
+                        <span class="progress-description">82% utilizado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-box bg-light shadow-sm">
+                    <div class="info-box-content">
+                        <span class="info-box-text">Límite Sensibilidad Tasa</span>
+                        <span class="info-box-number">S/ 80,000</span>
+                        <div class="progress"><div class="progress-bar bg-danger" style="width: 95%"></div></div>
+                        <span class="progress-description">95% utilizado - ALERTA</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Planificación Financiera{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0" style="border-left: 4px solid #161065 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="bg-light p-3 rounded-circle mr-3">
+                        <i class="fas fa-calculator fa-2x text-indigo"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1 font-weight-bold">Módulo de Planificación Financiera</h5>
+                        <p class="text-muted mb-0">Gestión de presupuestos, proyecciones financieras y análisis de desviaciones.</p>
+                        <div class="mt-2">
+                            <a href="{% url 'financial_planning:trial_balance_viewer_no_id' %}" class="btn btn-sm btn-success shadow-sm font-weight-bold px-3">
+                                <i class="fas fa-sitemap mr-1"></i> Explorar Balance de Comprobación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Indicadores Financieros -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white border shadow-sm">
+            <div class="inner">
+                <h3 class="text-indigo">S/ 0.00</h3>
+                <p>Presupuesto Total</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-coins text-light"></i>
+            </div>
+            <a href="#" class="small-box-footer text-dark">Ver detalles <i class="fas fa-arrow-circle-right ml-1"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white border shadow-sm">
+            <div class="inner">
+                <h3 class="text-success">0%</h3>
+                <p>Ejecución Presupuestal</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chart-line text-light"></i>
+            </div>
+            <a href="#" class="small-box-footer text-dark">Ver análisis <i class="fas fa-arrow-circle-right ml-1"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white border shadow-sm">
+            <div class="inner">
+                <h3 class="text-warning">S/ 0.00</h3>
+                <p>Variación Acumulada</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-balance-scale text-light"></i>
+            </div>
+            <a href="#" class="small-box-footer text-dark">Revisar variaciones <i class="fas fa-arrow-circle-right ml-1"></i></a>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-white border shadow-sm">
+            <div class="inner">
+                <h3 class="text-info">0</h3>
+                <p>Planes Activos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-calendar-check text-light"></i>
+            </div>
+            <a href="#" class="small-box-footer text-dark">Gestionar planes <i class="fas fa-arrow-circle-right ml-1"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-area mr-2 text-indigo"></i>Ejecución vs. Presupuesto</h3>
+            </div>
+            <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 300px;">
+                <div class="text-center text-muted">
+                    <i class="fas fa-chart-bar fa-4x mb-3 opacity-25"></i>
+                    <p>No hay datos suficientes para generar el gráfico de ejecución.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fas fa-list-ul mr-2 text-indigo"></i>Últimos Planes</h3>
+                <div>
+                    <a href="{% url 'financial_planning:plan_wizard_new' %}" class="btn btn-sm btn-indigo shadow-sm">
+                        <i class="fas fa-plus mr-1"></i> Nuevo Plan Financiero
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for plan in plans %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="d-block font-weight-bold">{{ plan.name }}</span>
+                            <small class="text-muted">{{ plan.get_version_type_display }} | {{ plan.start_date|date:"d/m/Y" }}</small>
+                        </div>
+                        <div>
+                            {% if plan.is_active %}
+                            <span class="badge badge-soft-success mb-2">Activo</span>
+                            {% else %}
+                            <span class="badge badge-soft-secondary mb-2">Inactivo</span>
+                            {% endif %}
+                            <div class="mt-2 d-flex flex-column gap-1">
+                                <a href="{% url 'financial_planning:plan_wizard' plan.id %}?step=1" class="btn btn-sm btn-outline-primary rounded-pill px-3 mb-1" style="font-size: 0.8rem;">
+                                    <i class="fas fa-magic mr-1"></i> Proyectar / Gestionar
+                                </a>
+                                <a href="{% url 'financial_planning:trial_balance_viewer' plan.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 mb-1" style="font-size: 0.8rem;">
+                                    <i class="fas fa-sitemap mr-1"></i> Ver Balance Jerárquico
+                                </a>
+                                <form method="POST" action="{% url 'financial_planning:delete_plan' plan.id %}" onsubmit="return confirm('¿Está seguro que desea eliminar este Plan Financiero? Esta acción no se puede deshacer.');" class="m-0 p-0">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 w-100 text-left" style="font-size: 0.8rem; display: block; text-align: center !important;">
+                                        <i class="fas fa-trash mr-1"></i> Eliminar Plan
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-muted py-4">
+                        <i class="fas fa-info-circle mb-2 d-block"></i> No hay planes creados
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer bg-white text-center">
+                <a href="{% url 'admin:financial_planning_financialplan_changelist' %}" class="btn btn-sm btn-outline-primary">Gestionar Planes</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

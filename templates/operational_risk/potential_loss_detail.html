@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Main Card -->
+        <div class="card card-outline shadow-sm mb-4" style="border-top-color: #161065;">
+            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                <h3 class="card-title font-weight-bold small text-uppercase">
+                    <i class="fas fa-info-circle text-primary mr-2"></i>Información General - {{ loss.code }}
+                </h3>
+                <div class="ml-auto d-flex align-items-center">
+                    <a href="{% url 'operational_risk:potential_loss_edit' loss.pk %}" class="btn btn-xs btn-outline-primary px-3 rounded-pill mr-2">
+                        <i class="fas fa-pencil-alt mr-1"></i> Editar
+                    </a>
+                    <a href="{% url 'operational_risk:potential_loss_adjust' loss.pk %}" class="btn btn-xs btn-success px-3 rounded-pill mr-2">
+                        <i class="fas fa-coins mr-1"></i> Ajustar Montos
+                    </a>
+                    <form method="POST" action="{% url 'operational_risk:potential_loss_delete' loss.pk %}" onsubmit="return confirm('¿Está seguro de que desea eliminar este registro permanentemente?');" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-xs btn-outline-danger px-3 rounded-pill">
+                            <i class="fas fa-trash-alt mr-1"></i> Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="row no-gutters">
+                    <div class="col-md-4 bg-light border-right p-4 text-center">
+                        <div class="small text-muted font-weight-bold text-uppercase mb-1">Monto Estimado</div>
+                        <h3 class="font-weight-bold text-indigo mb-3">{{ loss.currency }} {{ loss.estimated_amount|floatformat:2 }}</h3>
+                        
+                        <div class="mb-3">
+                            <span class="small text-muted d-block font-weight-bold">ESTADO ACTUAL</span>
+                            {% if loss.status == 'preliminary' %}
+                                <span class="badge badge-secondary px-3 py-2 rounded-pill">Preliminar</span>
+                            {% elif loss.status == 'linked' %}
+                                <span class="badge badge-info px-3 py-2 rounded-pill">Vinculada</span>
+                            {% elif loss.status == 'closed' %}
+                                <span class="badge badge-success px-3 py-2 rounded-pill">Cerrada</span>
+                            {% else %}
+                                <span class="badge badge-light border px-3 py-2 rounded-pill">{{ loss.get_status_display }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="small text-left border-top pt-3">
+                            <div class="mb-1"><i class="fas fa-calendar-alt text-muted mr-2"></i>Detección: <b>{{ loss.detection_date|date:"d/m/Y" }}</b></div>
+                            <div class="mb-1"><i class="fas fa-user-edit text-muted mr-2"></i>Registrado por: <b>{% if loss.created_by %}{{ loss.created_by.get_full_name|default:loss.created_by.username }}{% else %}Sistema{% endif %}</b></div>
+                            <div><i class="fas fa-clock text-muted mr-2"></i>Fecha Reg: <b>{{ loss.registration_date|date:"d/m/Y H:i" }}</b></div>
+                        </div>
+                    </div>
+                    <div class="col-md-8 p-4">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="small text-muted font-weight-bold text-uppercase d-block mb-1">Proceso / Subproceso</label>
+                                <span class="badge badge-light border px-2 py-1">{{ loss.process.name }}</span>
+                                <i class="fas fa-chevron-right mx-1 small text-muted"></i>
+                                <span class="badge badge-light border px-2 py-1">{{ loss.subprocess.name|default:"General" }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="small text-muted font-weight-bold text-uppercase d-block mb-1">Área / Unidad</label>
+                                <span><i class="fas fa-building text-muted mr-2"></i>{{ loss.area.name|default:"No especificado" }}</span>
+                            </div>
+                        </div>
+
+                        <h6 class="font-weight-bold text-indigo small text-uppercase border-bottom pb-1 mb-2">Descripción del Incidente</h6>
+                        <p class="small text-justify mb-4">{{ loss.description }}</p>
+
+                        {% if loss.evidence %}
+                        <div class="alert alert-light border small py-2 mb-4">
+                            <i class="fas fa-paperclip mr-2 text-info"></i> Evidencia Adjunta: 
+                            <a href="{{ loss.evidence.url }}" target="_blank" class="font-weight-bold text-primary ml-1">{{ loss.evidence.name|slice:"17:" }}</a>
+                        </div>
+                        {% endif %}
+
+                        <h6 class="font-weight-bold text-indigo small text-uppercase border-bottom pb-1 mb-2">Consolidación Financiera</h6>
+                        <div class="row text-center">
+                            <div class="col-4 border-right">
+                                <div class="small text-muted font-weight-bold">Bruto Final</div>
+                                <div class="h5 font-weight-bold mb-0">{{ loss.currency }} {{ loss.gross_loss|floatformat:2 }}</div>
+                            </div>
+                            <div class="col-4 border-right">
+                                <div class="small text-muted font-weight-bold">Recuperado</div>
+                                <div class="h5 font-weight-bold text-success mb-0">{{ loss.currency }} {{ loss.recovery_amount|floatformat:2 }}</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted font-weight-bold">Pérdida Neta</div>
+                                <div class="h5 font-weight-bold text-danger mb-0">{{ loss.currency }} {{ loss.net_loss|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Linking Section -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom-0">
+                <h3 class="card-title font-weight-bold small text-uppercase text-secondary">
+                    <i class="fas fa-link mr-2"></i>Vinculación con Evento Operacional
+                </h3>
+            </div>
+            <div class="card-body pt-0">
+                {% if loss.incident %}
+                <div class="callout callout-info py-3 mb-0">
+                    <div class="row align-items-center">
+                        <div class="col-md-9">
+                            <h6 class="font-weight-bold mb-1">Vinculado a: #{{ loss.incident.id|stringformat:"05d" }} - {{ loss.incident.title }}</h6>
+                            <p class="small mb-0 text-muted">Fecha de vinculación: {{ loss.linking_date|date:"d/m/Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-3 text-right">
+                            <a href="{% url 'operational_risk:op_data' %}" class="btn btn-sm btn-outline-info rounded-pill">Ver Evento</a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-4 bg-light rounded border border-dashed">
+                    <p class="small text-muted mb-3">Esta pérdida aún no ha sido vinculada a un evento operacional formal en la base de datos.</p>
+                    <button type="button" class="btn btn-sm btn-indigo rounded-pill px-4" data-toggle="modal" data-target="#linkModal">
+                        <i class="fas fa-link mr-1"></i> Vincular a un Evento Existente
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline / Audit -->
+    <div class="col-md-4">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header py-2">
+                <h3 class="card-title font-weight-bold small text-uppercase"><i class="fas fa-history text-muted mr-2"></i>Bitácora de Trazabilidad</h3>
+            </div>
+            <div class="card-body p-3" style="max-height: 600px; overflow-y: auto;">
+                <div class="timeline timeline-inverse small">
+                    {% for log in audit_log %}
+                    <div>
+                        <i class="fas {% if log.action == 'Creado' %}fa-plus bg-primary{% elif log.action == 'Vinculado' %}fa-link bg-info{% else %}fa-edit bg-success{% endif %}"></i>
+                        <div class="timeline-item shadow-none border-light">
+                            <span class="time"><i class="far fa-clock"></i> {{ log.timestamp|date:"d/m H:i" }}</span>
+                            <h3 class="timeline-header font-weight-bold border-0">{{ log.action }}</h3>
+                            <div class="timeline-body py-1">
+                                {{ log.new_value }}
+                                {% if log.field_name %}
+                                <br><small class="text-muted">Campo: {{ log.field_name }} | Antes: {{ log.old_value }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div>
+                        <i class="far fa-clock bg-gray"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Link Modal -->
+<div class="modal fade" id="linkModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="POST" class="modal-content border-0 shadow">
+            {% csrf_token %}
+            <div class="modal-header" style="background-color: #161065; color: white;">
+                <h5 class="modal-title small font-weight-bold text-uppercase">Vincular a Evento Operacional</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-3">Busque y seleccione el evento operacional consolidado al que pertenece esta pérdida.</p>
+                <div class="form-group">
+                    <label class="small font-weight-bold">Seleccionar Evento:</label>
+                    <select name="incident_id" class="form-control select2" style="width: 100%;">
+                        <option value="">--- Seleccione un evento ---</option>
+                        {% for inc in incidents %}
+                            <option value="{{ inc.id }}">#{{ inc.id|stringformat:"05d" }} - {{ inc.title }} ({{ inc.incident_date|date:"d/m/Y" }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill" style="background-color: #161065; border: none;">Confirmar Vinculación</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .btn-indigo {
+        background-color: #4f46e5;
+        color: white;
+    }
+    .btn-indigo:hover {
+        background-color: #3730a3;
+        color: white;
+    }
+    .text-indigo { color: #161065; }
+    .border-dashed { border-style: dashed !important; }
+</style>
+{% endblock %}

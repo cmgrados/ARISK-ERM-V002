@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Historial y Auditoría{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <h3 class="card-title">Log de Cambios y Versiones (Pista de Auditoría)</h3>
+                <div class="card-tools">
+                    <button class="btn btn-default btn-sm"><i class="fas fa-print"></i></button>
+                    <button class="btn btn-default btn-sm"><i class="fas fa-download"></i></button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="timeline timeline-inverse">
+                    {% for l in logs %}
+                    <div class="time-label">
+                        <span class="bg-primary">{{ l.date|date:"d M. Y" }}</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-edit bg-info"></i>
+                        <div class="timeline-item">
+                            <span class="time"><i class="far fa-clock"></i> {{ l.date|time:"H:i" }}</span>
+                            <h3 class="timeline-header"><a href="#">{{ l.user.get_full_name }}</a> modificó {{ l.entity }}</h3>
+                            <div class="timeline-body">
+                                <strong>Campo:</strong> {{ l.field }}<br>
+                                <span class="text-danger"><del>{{ l.old_value }}</del></span> &rarr; <span class="text-success">{{ l.new_value }}</span>
+                            </div>
+                            <div class="timeline-footer">
+                                <span class="text-xs text-muted">Razón: {{ l.reason }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-3 text-center text-muted">No hay registros de auditoría recientes.</div>
+                    {% endfor %}
+                    <div>
+                        <i class="far fa-clock bg-gray"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

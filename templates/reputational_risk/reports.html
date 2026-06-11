@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header text-white" style="background-color: #161065;">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-file-alt text-warning mr-2"></i>Informes de Reputación y Marca</h3>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <i class="fas fa-heart text-danger fa-2x mb-2"></i>
+                    <p class="font-weight-bold mb-1">Informe Salud de Marca</p>
+                    <button class="btn btn-xs btn-dark">Ver Reporte</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <i class="fas fa-file-contract text-primary fa-2x mb-2"></i>
+                    <p class="font-weight-bold mb-1">Anexo 12 (Reputacional)</p>
+                    <button class="btn btn-xs btn-dark">Extraer CSV</button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light mb-3">
+                    <i class="fas fa-user-friends text-info fa-2x mb-2"></i>
+                    <p class="font-weight-bold mb-1">Impacto Redes Sociales</p>
+                    <button class="btn btn-xs btn-dark">PDF Semanal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

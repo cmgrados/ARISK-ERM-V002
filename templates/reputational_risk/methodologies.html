@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-brain text-primary mr-2"></i>Metodología de Sentimiento e Impacto</h3></div>
+            <div class="card-body">
+                <p class="text-muted">Algoritmo de calificación de menciones basado en palabras clave y autoridad del medio.</p>
+                <div class="form-group">
+                    <label>Peso del Medio (Tier 1: Nacional, Tier 2: Local)</label>
+                    <input type="range" class="custom-range" min="1" max="5" value="4">
+                </div>
+                <div class="form-group border p-2 rounded bg-light">
+                    <label>Palabras Clave de Crisis (Alertas Inmediatas)</label>
+                    <p><span class="badge badge-secondary mr-1">estafa</span> <span class="badge badge-secondary mr-1">quiebra</span> <span class="badge badge-secondary mr-1">denuncia</span> <span class="badge badge-secondary mr-1">fallo</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <div class="info-box shadow-sm mb-3 border">
+            <span class="info-box-icon bg-success"><i class="fas fa-smile"></i></span>
+            <div class="info-box-content"><span class="info-box-text">Índice Net Promoter Score</span><span class="info-box-number">+45 (Saludable)</span></div>
+        </div>
+        <div class="info-box shadow-sm mb-3 border">
+            <span class="info-box-icon bg-danger"><i class="fas fa-frown"></i></span>
+            <div class="info-box-content"><span class="info-box-text">Ratio de Reclamos Críticos</span><span class="info-box-number">2.5%</span></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

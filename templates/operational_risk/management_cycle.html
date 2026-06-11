@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ciclo de Gestión Operativo | A.RISK ERM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-indigo { color: #4f46e5 !important; }
+    .bg-indigo { background-color: #4f46e5 !important; }
+    .bg-soft-indigo { background-color: #eef2ff !important; }
+    
+    .cycle-container { max-width: 1100px; margin: 0 auto; }
+    
+    .stepper-v { position: relative; padding-left: 60px; }
+    .stepper-v::before {
+        content: ''; position: absolute; left: 30px; top: 20px; bottom: 20px;
+        width: 2px; background: dashed #cbd5e1;
+    }
+    
+    .step-card {
+        background: #ffffff; border-radius: 20px;
+        padding: 30px; margin-bottom: 40px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative; border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    
+    .step-card:hover {
+        transform: translateX(10px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: #4f46e5;
+    }
+    
+    .step-number {
+        position: absolute; left: -55px; top: 15px;
+        width: 45px; height: 45px; background: #fff;
+        border: 2px solid #4f46e5; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10; font-weight: 800; color: #4f46e5;
+        font-size: 1.2rem;
+    }
+    
+    .phase-badge {
+        font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.1em; padding: 4px 12px; border-radius: 6px;
+        margin-bottom: 8px; display: inline-block;
+    }
+
+    .io-pill {
+        font-size: 0.75rem; padding: 6px 12px; border-radius: 8px;
+        background: #f1f5f9; color: #475569; font-weight: 600;
+        margin-right: 8px; border: 1px solid #e2e8f0;
+    }
+    
+    .methodology-box {
+        background: #f8fafc; border-radius: 14px; padding: 20px;
+        margin-top: 20px; border-left: 4px solid #4f46e5;
+    }
+
+    .icon-container {
+        width: 50px; height: 50px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; margin-right: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cycle-container py-5">
+    <div class="text-center mb-5">
+        <span class="badge badge-pill badge-soft-indigo text-indigo px-4 py-2 mb-3 font-weight-bold">METODOLOGÍA A.RISK</span>
+        <h1 class="display-4 font-weight-bold text-dark mb-3">Ciclo de Gestión de Riesgo Operacional</h1>
+        <p class="text-muted lead mx-auto mb-4" style="max-width: 800px;">
+            Un proceso iterativo de 8 etapas diseñado para transformar datos operativos en decisiones estratégicas de control y resiliencia.
+        </p>
+    </div>
+
+    <div class="stepper-v">
+        {% for step in steps %}
+        <div class="step-item">
+            <div class="step-number shadow-sm">{{ forloop.counter }}</div>
+            
+            <div class="step-card">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="icon-container bg-soft-indigo text-indigo">
+                        <i class="{{ step.icon }}"></i>
+                    </div>
+                    <div>
+                        <span class="phase-badge {% if forloop.counter <= 2 %}bg-info text-white{% elif forloop.counter <= 5 %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
+                            Nivel {% if forloop.counter <= 2 %}Estructural{% elif forloop.counter <= 5 %}Analítico{% else %}Ejecutivo{% endif %}
+                        </span>
+                        <h3 class="font-weight-bold text-dark mb-0">{{ step.name }}</h3>
+                        <p class="text-muted mb-0">{{ step.description }}</p>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{% url step.url_name %}" class="btn btn-indigo px-4 py-2 font-weight-bold rounded-pill">
+                            Ir al Módulo <i class="fas fa-chevron-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="methodology-box">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-info-circle text-indigo mr-2"></i>
+                        <span class="font-weight-bold small text-indigo">PROCEDIMIENTO Y OBJETIVO</span>
+                    </div>
+                    <p class="text-muted mb-3" style="line-height: 1.6;">
+                        {{ step.instruction }}
+                    </p>
+                    
+                    <div class="d-flex flex-wrap">
+                        <div class="io-pill">
+                            <i class="fas fa-sign-in-alt mr-1 opacity-50"></i> <span class="opacity-50">INPUT:</span> 
+                            {% if forloop.counter == 1 %}Organigrama / Listado de Actividades
+                            {% elif forloop.counter == 2 %}Encuestas / Cuestionarios COSO
+                            {% elif forloop.counter == 3 %}Talleres de Riesgos / Brechas
+                            {% elif forloop.counter == 4 %}Reportes de Error / Incidentes
+                            {% elif forloop.counter == 5 %}Pérdidas Contables / Estimaciones
+                            {% elif forloop.counter == 6 %}Resultados RCSA / Debilidades
+                            {% elif forloop.counter == 7 %}Data Consolidada (Pasos 1-6)
+                            {% elif forloop.counter == 8 %}Snapshots de Ciclo / Evolución
+                            {% endif %}
+                        </div>
+                        <div class="io-pill">
+                            <i class="fas fa-sign-out-alt mr-1 opacity-50"></i> <span class="opacity-50">OUTPUT:</span> 
+                            {% if forloop.counter == 1 %}Mapa de Procesos Consolidado
+                            {% elif forloop.counter == 2 %}Índice de Madurez Institucional
+                            {% elif forloop.counter == 3 %}Matriz de Riesgo Residual
+                            {% elif forloop.counter == 4 %}Base de Datos de Eventos
+                            {% elif forloop.counter == 5 %}Exposición Financiera Bruta/Neta
+                            {% elif forloop.counter == 6 %}Planes de Mitigación / Responsables
+                            {% elif forloop.counter == 7 %}Panel de KPIs en Tiempo Real
+                            {% elif forloop.counter == 8 %}Informe de Gestión Estratégica
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Final CTA -->
+    <div class="card bg-indigo text-white p-5 border-0 rounded-lg text-center mt-5">
+        <h2 class="font-weight-bold">¿Listo para el Cierre Estratégico?</h2>
+        <p class="opacity-75 mb-4">Recuerde que el ciclo no termina hasta que los aprendizajes del Informe Final retroalimentan el Mapa de Procesos.</p>
+        <div class="d-flex justify-content-center">
+            <a href="{% url 'operational_risk:executive_report' %}" class="btn btn-light btn-lg px-5 font-weight-bold text-indigo rounded-pill">
+                Generar Informe Final de Ciclo
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-indigo { background-color: #4f46e5; color: white; border: none; }
+    .btn-indigo:hover { background-color: #4338ca; color: white; }
+    .badge-soft-indigo { background: #e0e7ff; color: #4338ca; }
+</style>
+{% endblock %}

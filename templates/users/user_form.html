@@ -1,0 +1,559 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+    .suite-header {
+        font-size: 2.2rem;
+        font-weight: 300;
+        color: #555;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+    
+    .suite-btn {
+        background-color: #fa7b75;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-right: 5px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+    
+    .suite-btn:hover {
+        background-color: #e66a5d;
+        color: white;
+    }
+    
+    .suite-tabs {
+        display: flex;
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 0;
+    }
+    
+    .suite-tab {
+        padding: 10px 15px;
+        background-color: #fff;
+        border: 1px solid #ccc;
+        border-bottom: none;
+        margin-right: 2px;
+        font-weight: 600;
+        color: #555;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .suite-tab.active {
+        background-color: #718196;
+        color: white;
+        border-color: #718196;
+    }
+    
+    .suite-content {
+        background-color: #fcfcfc;
+        border: 1px solid #ccc;
+        border-top: none;
+        padding: 0 0 20px 0;
+    }
+    
+    .suite-section-header {
+        background-color: #718196;
+        color: white;
+        padding: 8px 15px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+    
+    .suite-section-title {
+        color: #555;
+        font-size: 1.2rem;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+        margin: 15px 20px 20px 20px;
+    }
+    
+    .suite-form-group {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        padding: 0 15px;
+    }
+    
+    .suite-label {
+        width: 35%;
+        text-align: right;
+        padding-right: 15px;
+        font-weight: 600;
+        color: #555;
+        font-size: 0.85rem;
+    }
+    
+    .suite-input-wrapper {
+        width: 65%;
+    }
+    
+    .suite-input {
+        width: 100%;
+        background-color: #d1f5e8;
+        border: 1px solid #a3e4cd;
+        padding: 6px 8px;
+        color: #333;
+        border-radius: 2px;
+        font-size: 0.85rem;
+    }
+    
+    .suite-input:focus {
+        outline: none;
+        border-color: #8ed1ba;
+        box-shadow: 0 0 3px rgba(142, 209, 186, 0.5);
+    }
+    
+    .suite-select {
+        background-color: #fff;
+        border: 1px solid #ccc;
+        padding: 5px 8px;
+        border-radius: 2px;
+        font-size: 0.85rem;
+        color: #333;
+        width: 60%;
+    }
+    
+    .suite-asterisk {
+        color: red;
+        font-weight: bold;
+        margin-left: 3px;
+    }
+    
+    .suite-helper-text {
+        font-size: 0.75rem;
+        color: #777;
+        margin-top: 4px;
+        display: block;
+    }
+    
+    /* Hide unselected tabs */
+    .tab-pane {
+        display: none;
+    }
+    .tab-pane.active {
+        display: block;
+    }
+    
+    .list-box {
+        width: 100%;
+        height: 150px;
+        border: 1px solid #a3e4cd;
+        padding: 5px;
+        border-radius: 2px;
+        background-color: #fff;
+    }
+    .list-box option {
+        padding: 3px;
+        color: #555;
+        font-size: 0.85rem;
+    }
+</style>
+
+<div class="content-wrapper" style="background-color: #f4f6f9; padding: 20px;">
+    <form method="post">
+        {% csrf_token %}
+        
+        <h1 class="suite-header">{% if action == 'create' %}Crear{% else %}Editar{% endif %}</h1>
+        
+        <div class="d-flex flex-wrap mb-3">
+            <button type="submit" class="suite-btn">Guardar</button>
+            <a href="{% url 'users:user_list' %}" class="btn suite-btn" style="padding-top: 9px;">Cancelar</a>
+            <button type="button" class="suite-btn" style="opacity: 0.8;">Restablecer Preferencias de Usuario</button>
+            <button type="button" class="suite-btn" style="opacity: 0.8;">Restablecer Página de Inicio</button>
+        </div>
+        
+        <div class="suite-tabs" id="userTabs">
+            <div class="suite-tab active" onclick="switchTab('perfil')">Perfil de usuario</div>
+            <div class="suite-tab" onclick="switchTab('password')">Contraseña</div>
+            <div class="suite-tab" onclick="switchTab('avanzado')">Avanzado</div>
+            <div class="suite-tab" onclick="switchTab('diseno')">Opciones de Diseño</div>
+        </div>
+        
+        <div class="suite-content">
+            <!-- PESTAÑA PERFIL DE USUARIO -->
+            <div id="tab-perfil" class="tab-pane active">
+                <div class="suite-section-header">PERFIL DE USUARIO</div>
+                
+                <div class="row m-0">
+                    <!-- Columna Izquierda -->
+                    <div class="col-md-6">
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="username">Nombre de usuario:<span class="suite-asterisk">*</span></label>
+                            <div class="suite-input-wrapper">
+                                <input type="text" class="suite-input" style="width: 60%;" id="username" name="username" required value="{{ current_user.username }}" {% if action == 'update' %}readonly{% endif %}>
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="is_active">Estado:<span class="suite-asterisk">*</span></label>
+                            <div class="suite-input-wrapper">
+                                <select class="suite-select" id="is_active" name="is_active" style="background-color: #d1f5e8; border-color: #a3e4cd; width: 40%;">
+                                    <option value="on" {% if current_user.is_active or action == 'create' %}selected{% endif %}>Activo</option>
+                                    <option value="" {% if not current_user.is_active and action == 'update' %}selected{% endif %}>Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="role_id">Tipo de Usuario:</label>
+                            <div class="suite-input-wrapper">
+                                <select name="role_id" id="role_id" class="suite-select" style="background-color: #d1f5e8; border-color: #a3e4cd; width: 80%;">
+                                    <option value="">Usuario Normal</option>
+                                    {% for role in roles %}
+                                    <option value="{{ role.id }}" {% if current_user.role_id == role.id %}selected{% endif %}>{{ role.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <span class="suite-helper-text">El usuario puede acceder a módulos y registros en base a la seguridad de equipos y roles.</span>
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group mt-3">
+                            <label class="suite-label">Foto:</label>
+                            <div class="suite-input-wrapper">
+                                <input type="file" style="font-size: 0.8rem;">
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group mt-3">
+                            <label class="suite-label">Autenticación de dos factores:</label>
+                            <div class="suite-input-wrapper">
+                                <input type="checkbox">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna Derecha -->
+                    <div class="col-md-6">
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="first_name">Nombre:</label>
+                            <div class="suite-input-wrapper">
+                                <input type="text" class="suite-input" id="first_name" name="first_name" value="{{ current_user.first_name }}" style="width: 80%;">
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="last_name">Apellidos:<span class="suite-asterisk">*</span></label>
+                            <div class="suite-input-wrapper">
+                                <input type="text" class="suite-input" id="last_name" name="last_name" required value="{{ current_user.last_name }}" style="width: 80%;">
+                            </div>
+                        </div>
+                        
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="email">Correo Electrónico:</label>
+                            <div class="suite-input-wrapper">
+                                <input type="email" class="suite-input" id="email" name="email" value="{{ current_user.email }}" style="width: 80%;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="suite-section-header mt-4">INFORMACIÓN SOBRE EL EMPLEADO</div>
+                
+                <div class="row m-0">
+                    <div class="col-md-6">
+                        <div class="suite-form-group">
+                            <label class="suite-label">Estado del Empleado:</label>
+                            <div class="suite-input-wrapper">
+                                <select class="suite-select" style="background-color: #d1f5e8; border-color: #a3e4cd; width: 50%;">
+                                    <option>Activo</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Puesto de trabajo:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Departamento:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Informa a:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input" style="width: 70%;"> <button type="button" class="btn btn-sm btn-danger" style="background-color: #fa7b75; border:none;"><i class="fas fa-times"></i></button></div>
+                        </div>
+                        <div class="suite-form-group mt-4">
+                            <label class="suite-label">Tipo de Mensajería Instantánea:</label>
+                            <div class="suite-input-wrapper">
+                                <select class="suite-select" style="background-color: #d1f5e8; border-color: #a3e4cd; width: 40%;"></select>
+                            </div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Calle de dirección:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Estado/Provincia de dirección:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="suite-form-group">
+                            <label class="suite-label">Visualización del Registro de Empleados:</label>
+                            <div class="suite-input-wrapper"><input type="checkbox" checked></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Teléfono de trabajo:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Móvil:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Otro teléfono:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group mt-2">
+                            <label class="suite-label">Fax:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Teléfono de casa:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group mt-2">
+                            <label class="suite-label">Cuenta de Mensajería Instantánea:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">Ciudad de dirección:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label">CP de dirección:</label>
+                            <div class="suite-input-wrapper"><input type="text" class="suite-input"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PESTAÑA CONTRASEÑA -->
+            <div id="tab-password" class="tab-pane">
+                <div class="suite-section-title">Contraseña</div>
+                <div class="row m-0 mt-4">
+                    <div class="col-md-8">
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="password" style="width: 25%;">Nueva contraseña<span class="suite-asterisk">*</span></label>
+                            <div class="suite-input-wrapper" style="width: 75%;">
+                                <input type="password" class="suite-input" id="password" name="password" {% if action == 'create' %}required{% endif %} style="width: 50%;">
+                                {% if action == 'update' %}
+                                <span class="suite-helper-text">Dejar en blanco para no cambiar la contraseña.</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="suite-form-group">
+                            <label class="suite-label" for="confirm_password" style="width: 25%;">Confirmar contraseña</label>
+                            <div class="suite-input-wrapper" style="width: 75%;">
+                                <input type="password" class="suite-input" id="confirm_password" name="confirm_password" style="width: 50%;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- PESTAÑA AVANZADO -->
+            <div id="tab-avanzado" class="tab-pane">
+                <div class="suite-section-title">Avanzado</div>
+                <div class="p-4 text-center text-muted">
+                    <i>Opciones avanzadas del sistema estarán disponibles aquí.</i>
+                </div>
+            </div>
+            
+            <!-- PESTAÑA DISEÑO -->
+            <div id="tab-diseno" class="tab-pane">
+                <div class="suite-section-title">Opciones de Diseño</div>
+                <div class="row m-0 mt-4">
+                    <div class="col-md-10 offset-md-1">
+                        <div class="suite-form-group" style="justify-content: flex-start;">
+                            <label class="suite-label" style="text-align: left; width: 30%;">Estilo:</label>
+                            <div class="suite-input-wrapper">
+                                <select class="suite-select" style="background-color: #fff; border-color: #a3e4cd; width: 40%;">
+                                    <option>Crepúsculo</option>
+                                    <option>Amanecer</option>
+                                    <option>Día</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="suite-form-group" style="justify-content: flex-start;">
+                            <label class="suite-label" style="text-align: left; width: 30%;">Filtros del Menú de Módulos : <i class="fas fa-info-circle text-muted"></i></label>
+                            <div class="suite-input-wrapper">
+                                <input type="checkbox" checked>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4" style="border-bottom: 1px solid #ddd; padding-bottom: 5px; color: #555; font-size: 1.1rem; margin-bottom: 15px;">
+                            Elegir módulos para la Barra de Navegación <i class="fas fa-info-circle text-muted" style="font-size: 0.9rem;"></i>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-5 text-center">
+                                <label class="font-weight-bold" style="color: #555;">Mostrar Pestañas</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-2 d-flex flex-column">
+                                        <i class="fas fa-arrow-up text-muted mb-2" id="move-up-btn" style="cursor: pointer;" title="Mover arriba"></i>
+                                        <i class="fas fa-arrow-down text-muted" id="move-down-btn" style="cursor: pointer;" title="Mover abajo"></i>
+                                    </div>
+                                    <select multiple class="list-box" id="show-tabs-list">
+                                        <option>Dashboard ERM</option>
+                                        <option>Riesgo Crédito</option>
+                                        <option>Riesgo Liquidez</option>
+                                        <option>Riesgo de Mercado</option>
+                                        <option>Riesgo Operacional</option>
+                                        <option>Riesgo de Cumplimiento</option>
+                                        <option>Riesgo PLAFT</option>
+                                        <option>Riesgo Reputacional</option>
+                                        <option>Apetito y Tolerancia</option>
+                                        <option>Planificación Financiera</option>
+                                        <option>Estrategia y Objetivos</option>
+                                        <option>Reportes e Informes</option>
+                                        <option>Agente Inteligente IA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-2 d-flex flex-column justify-content-center align-items-center">
+                                <i class="fas fa-caret-left text-muted mb-2" id="move-left-btn" style="font-size: 1.5rem; cursor: pointer;" title="Mover a Mostrar"></i>
+                                <i class="fas fa-caret-right text-muted" id="move-right-btn" style="font-size: 1.5rem; cursor: pointer;" title="Mover a Ocultar"></i>
+                            </div>
+                            <div class="col-5 text-center">
+                                <label class="font-weight-bold" style="color: #555;">Ocultar Pestañas</label>
+                                <select multiple class="list-box" id="hide-tabs-list">
+                                    <option>Usuarios</option>
+                                    <option>Perfiles de Usuarios</option>
+                                    <option>Registro de Auditoría</option>
+                                    <option>Catálogos y Parámetros</option>
+                                    <option>Utilitarios</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Botones Inferiores -->
+        <div class="d-flex flex-wrap mt-4" style="background-color: #f4f6f9;">
+            <input type="hidden" name="hidden_modules" id="hidden_modules_input">
+            <button type="submit" class="suite-btn">Guardar</button>
+            <a href="{% url 'users:user_list' %}" class="btn suite-btn" style="padding-top: 9px;">Cancelar</a>
+            <button type="button" class="suite-btn" style="opacity: 0.8;">Restablecer Preferencias de Usuario</button>
+            <button type="button" class="suite-btn" style="opacity: 0.8;">Restablecer Página de Inicio</button>
+        </div>
+        
+    </form>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        // Reset all tabs
+        document.querySelectorAll('.suite-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        
+        // Active selected tab
+        const tabTrigger = document.querySelector(`.suite-tab[onclick*="${tabId}"]`);
+        if (tabTrigger) tabTrigger.classList.add('active');
+        const tabPane = document.getElementById('tab-' + tabId);
+        if (tabPane) tabPane.classList.add('active');
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const showList = document.getElementById("show-tabs-list");
+        const hideList = document.getElementById("hide-tabs-list");
+        const hiddenInput = document.getElementById("hidden_modules_input");
+
+        // Load current hidden modules
+        const hiddenModules = {{ current_user.hidden_modules|safe|default:"[]" }};
+        
+        // Move options based on saved hidden modules
+        const allOptions = Array.from(showList.options).concat(Array.from(hideList.options));
+        allOptions.forEach(opt => {
+            if (hiddenModules.includes(opt.value)) {
+                hideList.appendChild(opt);
+            } else {
+                showList.appendChild(opt);
+            }
+        });
+
+        // Form validation for hidden tabs & serialize hidden modules
+        document.querySelector('form').addEventListener('click', function(e) {
+            if (e.target.type === 'submit') {
+                const form = e.target.form;
+                
+                // Serialize hidden tabs
+                const hiddenVals = Array.from(hideList.options).map(opt => opt.value);
+                hiddenInput.value = JSON.stringify(hiddenVals);
+
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    // Find first invalid element
+                    const invalidEl = form.querySelector(':invalid');
+                    if (invalidEl) {
+                        const tabPane = invalidEl.closest('.tab-pane');
+                        if (tabPane) {
+                            const tabId = tabPane.id.replace('tab-', '');
+                            switchTab(tabId);
+                            setTimeout(() => invalidEl.reportValidity(), 50);
+                        }
+                    }
+                }
+            }
+        });
+
+
+        // Mover a Mostrar (Left)
+        document.getElementById("move-left-btn").addEventListener("click", function() {
+            moveOptions(hideList, showList);
+        });
+
+        // Mover a Ocultar (Right)
+        document.getElementById("move-right-btn").addEventListener("click", function() {
+            moveOptions(showList, hideList);
+        });
+
+        // Mover arriba
+        document.getElementById("move-up-btn").addEventListener("click", function() {
+            moveOptionUp(showList);
+        });
+
+        // Mover abajo
+        document.getElementById("move-down-btn").addEventListener("click", function() {
+            moveOptionDown(showList);
+        });
+
+        function moveOptions(fromList, toList) {
+            Array.from(fromList.selectedOptions).forEach(option => {
+                toList.appendChild(option);
+            });
+        }
+
+        function moveOptionUp(list) {
+            const selectedOptions = Array.from(list.selectedOptions);
+            for (let i = 0; i < selectedOptions.length; i++) {
+                const option = selectedOptions[i];
+                if (option.previousElementSibling) {
+                    list.insertBefore(option, option.previousElementSibling);
+                }
+            }
+        }
+
+        function moveOptionDown(list) {
+            const selectedOptions = Array.from(list.selectedOptions).reverse();
+            for (let i = 0; i < selectedOptions.length; i++) {
+                const option = selectedOptions[i];
+                if (option.nextElementSibling) {
+                    list.insertBefore(option.nextElementSibling, option);
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

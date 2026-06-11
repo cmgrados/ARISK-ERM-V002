@@ -1,0 +1,484 @@
+{% extends base_template|default:"base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-sliders-h mr-2 text-indigo"></i>Gestión de Supuestos</h1>
+                <p class="text-muted">Plan Financiero: <strong>{{ plan.name }}</strong> ({{ plan.get_version_type_display }})</p>
+            </div>
+            {% if base_template != 'base_empty.html' %}
+            <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="nav flex-column nav-pills card shadow-sm p-3 border-0" id="v-pills-tab" role="tablist" aria-orientation="vertical">
+                <a class="nav-link active" id="v-pills-global-tab" data-toggle="pill" href="#v-pills-global" role="tab" aria-controls="v-pills-global" aria-selected="true">
+                    <i class="fas fa-globe mr-2"></i> Supuestos Globales
+                </a>
+                <a class="nav-link" id="v-pills-portfolio-tab" data-toggle="pill" href="#v-pills-portfolio" role="tab" aria-controls="v-pills-portfolio" aria-selected="false">
+                    <i class="fas fa-wallet mr-2"></i> Cartera y Metas
+                </a>
+
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="tab-content" id="v-pills-tabContent">
+                <!-- TAB 1: GLOBALES -->
+                <div class="tab-pane fade show active" id="v-pills-global" role="tabpanel" aria-labelledby="v-pills-global-tab">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                            <h5 class="card-title font-weight-bold mb-0">Variables Macroeconómicas y Corporativas</h5>
+                            <p class="text-muted small">Estos supuestos aplican a toda la institución y al plan en general.</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="">
+                                {% csrf_token %}
+                                <input type="hidden" name="save_global" value="1">
+                                
+                                <h6 class="text-indigo font-weight-bold border-bottom pb-2 mt-2"><i class="fas fa-chart-area mr-2"></i>Entorno Macroeconómico</h6>
+                                <div class="row">
+                                    <div class="col-md-4 form-group">
+                                        <label>{{ macro_form.inflation_rate.label }}</label>
+                                        {{ macro_form.inflation_rate }}
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>{{ macro_form.exchange_rate.label }}</label>
+                                        {{ macro_form.exchange_rate }}
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>{{ macro_form.gdp_growth.label }}</label>
+                                        {{ macro_form.gdp_growth }}
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>{{ macro_form.market_rate.label }}</label>
+                                        {{ macro_form.market_rate }}
+                                    </div>
+                                    <div class="col-md-4 form-group">
+                                        <label>{{ macro_form.unemployment_rate.label }}</label>
+                                        {{ macro_form.unemployment_rate }}
+                                    </div>
+                                </div>
+
+                                <h6 class="text-success font-weight-bold border-bottom pb-2 mt-4"><i class="fas fa-water mr-2"></i>Supuestos de Liquidez</h6>
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label>{{ liq_form.savings_withdrawal_rate.label }}</label>
+                                        {{ liq_form.savings_withdrawal_rate }}
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label>{{ liq_form.dpf_renewal_rate.label }}</label>
+                                        {{ liq_form.dpf_renewal_rate }}
+                                    </div>
+                                </div>
+
+                                <h6 class="text-warning font-weight-bold border-bottom pb-2 mt-4"><i class="fas fa-piggy-bank mr-2"></i>Supuestos Patrimoniales</h6>
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label>{{ eq_form.retained_earnings_rate.label }}</label>
+                                        {{ eq_form.retained_earnings_rate }}
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label>{{ eq_form.capital_contributions.label }}</label>
+                                        {{ eq_form.capital_contributions }}
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-indigo mt-3"><i class="fas fa-save mr-1"></i> Guardar Variables Globales</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: CARTERA -->
+                <div class="tab-pane fade" id="v-pills-portfolio" role="tabpanel" aria-labelledby="v-pills-portfolio-tab">
+                    
+                    <!-- METAS ANUALES GLOBALES -->
+                    <!-- METAS ANUALES GLOBALES -->
+                    <div class="card border-0 shadow-sm mb-5" style="border-radius: 16px; overflow: hidden; background: #ffffff;">
+                        <div class="card-header bg-transparent pt-4 pb-3 px-4" style="border-bottom: 1px solid rgba(0,0,0,0.05);">
+                            <div class="d-flex align-items-center">
+                                <div class="mr-3 text-indigo" style="font-size: 1.5rem;">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div>
+                                    <h5 class="card-title font-weight-bold mb-1" style="color: #1e293b; letter-spacing: -0.5px;">Metas Anuales de Crecimiento</h5>
+                                    <p class="text-muted small mb-0" style="font-size: 0.85rem;">Establezca los objetivos de crecimiento porcentual para las principales variables del modelo.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body px-4 py-4">
+                            <form method="POST" action="">
+                                {% csrf_token %}
+                                <input type="hidden" name="save_annual_goals" value="1">
+                                <input type="hidden" name="annual_goals_json" id="annual_goals_json">
+                                
+                                <div class="table-responsive" style="overflow-x: auto;">
+                                    <table class="table mb-0" id="annual-goals-table" style="min-width: 800px;">
+                                        <thead>
+                                            <tr>
+                                                <th class="border-top-0 border-bottom-0 text-uppercase text-muted" style="font-size: 0.75rem; letter-spacing: 0.5px; padding-left: 0;">Variable</th>
+                                                <th class="border-top-0 border-bottom-0 text-uppercase text-muted text-right" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 180px;">Saldo Dic {{ base_year }}</th>
+                                                {% for y in projection_years_range %}
+                                                    <th class="border-top-0 border-bottom-0 text-uppercase text-muted text-center" style="font-size: 0.75rem; letter-spacing: 0.5px; width: 220px;">Año {{ y }}</th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for var_id, var_name in annual_goals_vars %}
+                                            <tr data-var-id="{{ var_id }}" style="border-bottom: 1px solid #f1f5f9;">
+                                                <td class="align-middle font-weight-bold" style="color: #334155; padding-left: 0; font-size: 0.95rem;">
+                                                    {{ var_name }}
+                                                </td>
+                                                <td class="align-middle px-2">
+                                                    <input type="text" class="form-control form-control-sm text-right base-input font-weight-bold" value="0.00" style="color: #4f46e5; background-color: rgba(79, 70, 229, 0.04); border: 1px solid transparent; border-radius: 6px; font-size: 0.95rem; transition: all 0.2s;">
+                                                </td>
+                                                {% for y in projection_years_range %}
+                                                    <td class="align-middle py-3 px-3">
+                                                        <div class="d-flex flex-column" style="max-width: 160px; margin: 0 auto;">
+                                                            <div class="d-flex justify-content-center mb-3">
+                                                                <div class="input-group input-group-sm shadow-sm" style="width: 110px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1;">
+                                                                    <input type="text" class="form-control text-center goal-input font-weight-bold" data-year="{{ y }}" value="0.00" style="color: #1e293b; border: none; font-size: 0.95rem; height: 32px; background: #ffffff;">
+                                                                    <div class="input-group-append">
+                                                                        <span class="input-group-text bg-light text-muted" style="border: none; border-left: 1px solid #e2e8f0; height: 32px;"><i class="fas fa-percentage" style="font-size: 0.7rem;"></i></span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                                                <span class="text-muted font-weight-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">SALDO</span>
+                                                                <div class="calculated-amount font-weight-bold" style="color: #0f766e; font-size: 0.85rem;">
+                                                                    <span class="text-muted mr-1 font-weight-normal" style="font-size: 0.75rem;">S/</span>0.00
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex w-100 justify-content-between align-items-center border-top pt-1" style="border-color: #f1f5f9 !important;">
+                                                                <span class="text-muted font-weight-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">VAR.</span>
+                                                                <div class="growth-amount font-weight-bold" style="color: #64748b; font-size: 0.80rem;">
+                                                                    <span class="text-muted mr-1 font-weight-normal" style="font-size: 0.70rem;">+ S/</span>0.00
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-flex justify-content-end mt-4 pt-3" style="border-top: 1px solid rgba(0,0,0,0.05);">
+                                    <button type="submit" class="btn btn-indigo px-4 py-2 font-weight-bold shadow-sm" onclick="serializeAnnualGoals()" style="border-radius: 8px; transition: all 0.2s;">
+                                        <i class="fas fa-save mr-2"></i> Guardar Metas Anuales
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                            <h5 class="card-title font-weight-bold mb-0">Prepagos y Crecimiento por Producto</h5>
+                            <p class="text-muted small">Configuración detallada por producto y agencia.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="font-weight-bold">Filtro por Producto:</label>
+                                <select class="form-control product-select" data-target="gridPortfolioWrapper">
+                                    <option value="">-- Seleccionar --</option>
+                                    {% for p in products %}
+                                        <option value="{{ p.id }}">[{{ p.get_category_display }}] {{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="table-responsive mt-3 product-grid-wrapper" style="display: none;" id="gridPortfolioWrapper">
+                                <table class="table table-bordered table-sm table-hover bg-white assumptions-table">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Agencia</th>
+                                            <th class="text-right">Meta Crecimiento (S/)</th>
+                                            <th class="text-right">Prepagos (%)</th>
+                                            <th class="text-right">Refinanciación (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for a in agencies %}
+                                        <tr data-agency-id="{{ a.id }}">
+                                            <td class="align-middle font-weight-bold">{{ a.name }}</td>
+                                            <td><input type="number" class="form-control form-control-sm text-right input-growth" step="0.01" value="0.00"></td>
+                                            <td><input type="number" class="form-control form-control-sm text-right input-prepayment" step="0.01" value="0.00"></td>
+                                            <td><input type="number" class="form-control form-control-sm text-right input-refinance" step="0.01" value="0.00"></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                <button class="btn btn-sm btn-success btn-save-assumptions"><i class="fas fa-save mr-1"></i> Guardar Grilla</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function formatNumber(numStr, decimals=2) {
+        if (!numStr) return decimals === 0 ? "0" : "0.00";
+        // Remove existing commas
+        let cleanNum = String(numStr).replace(/,/g, '');
+        let floatNum = parseFloat(cleanNum);
+        if (isNaN(floatNum)) return decimals === 0 ? "0" : "0.00";
+        return floatNum.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+    }
+
+    function calculateAnnualAmounts() {
+        $('#annual-goals-table tbody tr').each(function() {
+            const varId = $(this).data('var-id');
+            const isSocios = varId === 'numero_socios';
+            const symbol = isSocios ? '' : 'S/';
+            const decimals = isSocios ? 0 : 2;
+
+            let rawBase = $(this).find('.base-input').val().replace(/,/g, '');
+            let currentAmount = parseFloat(rawBase) || 0;
+            $(this).find('td').each(function() {
+                const goalInput = $(this).find('.goal-input');
+                if (goalInput.length > 0) {
+                    const previousAmount = currentAmount;
+                    const percentage = parseFloat(goalInput.val()) || 0;
+                    currentAmount = currentAmount * (1 + (percentage / 100));
+                    if (isSocios) {
+                        currentAmount = Math.round(currentAmount);
+                    }
+                    const growthAmount = currentAmount - previousAmount;
+                    
+                    // Formato
+                    const formatted = currentAmount.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+                    $(this).find('.calculated-amount').html('<span class="text-muted mr-1 font-weight-normal" style="font-size: 0.75rem;">' + symbol + '</span>' + formatted);
+                    
+                    // Formato de crecimiento
+                    const formattedGrowth = Math.abs(growthAmount).toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+                    const sign = growthAmount >= 0 ? '+' : '-';
+                    const color = growthAmount >= 0 ? '#3b82f6' : '#ef4444'; // Azul para positivo, Rojo para negativo
+                    $(this).find('.growth-amount').html('<span class="mr-1 font-weight-bold" style="font-size: 0.75rem;">' + sign + ' ' + symbol + '</span>' + formattedGrowth).css('color', color);
+                }
+            });
+        });
+    }
+
+    function serializeAnnualGoals() {
+        const result = {};
+        $('#annual-goals-table tbody tr').each(function() {
+            const varId = $(this).data('var-id');
+            const rawBase = $(this).find('.base-input').val().replace(/,/g, '');
+            const baseBalance = parseFloat(rawBase) || 0;
+            const goals = [];
+            $(this).find('.goal-input').each(function() {
+                goals.push(parseFloat($(this).val()) || 0);
+            });
+            result[varId] = {
+                base: baseBalance,
+                goals: goals
+            };
+        });
+        $('#annual_goals_json').val(JSON.stringify(result));
+    }
+
+    $(document).ready(function(){
+        
+        const defaultBaseBalances = {{ default_base_balances_json|safe }};
+        
+        // Cargar valores iniciales de metas anuales
+        const initialAnnualGoals = {{ annual_goals_json|safe }};
+        if (initialAnnualGoals && Object.keys(initialAnnualGoals).length > 0) {
+            for (let varId in initialAnnualGoals) {
+                const dataObj = initialAnnualGoals[varId];
+                const tr = $('#annual-goals-table tr[data-var-id="' + varId + '"]');
+                const isSocios = varId === 'numero_socios';
+                const dec = isSocios ? 0 : 2;
+                
+                if (tr.length) {
+                    if (dataObj.hasOwnProperty('base') && parseFloat(dataObj.base) !== 0) {
+                        tr.find('.base-input').val(formatNumber(dataObj.base, dec));
+                    } else if (defaultBaseBalances && defaultBaseBalances.hasOwnProperty(varId)) {
+                        tr.find('.base-input').val(formatNumber(defaultBaseBalances[varId], dec));
+                    }
+                    
+                    if (dataObj.hasOwnProperty('goals')) {
+                        tr.find('.goal-input').each(function(index) {
+                            if (index < dataObj.goals.length) {
+                                $(this).val(dataObj.goals[index]);
+                            }
+                        });
+                    } else if (Array.isArray(dataObj)) {
+                        // For backwards compatibility before the base field was added
+                        tr.find('.goal-input').each(function(index) {
+                            if (index < dataObj.length) {
+                                $(this).val(dataObj[index]);
+                            }
+                        });
+                    }
+                }
+            }
+            
+            // Si alguna variable falta en el JSON guardado, intentar pre-cargarla
+            for (let varId in defaultBaseBalances) {
+                if (!initialAnnualGoals.hasOwnProperty(varId)) {
+                    const tr = $('#annual-goals-table tr[data-var-id="' + varId + '"]');
+                    const isSocios = varId === 'numero_socios';
+                    const dec = isSocios ? 0 : 2;
+                    if (tr.length) {
+                        tr.find('.base-input').val(formatNumber(defaultBaseBalances[varId], dec));
+                    }
+                }
+            }
+        } else if (defaultBaseBalances) {
+            // Si no hay metas guardadas, pre-cargar los saldos base por defecto
+            for (let varId in defaultBaseBalances) {
+                const tr = $('#annual-goals-table tr[data-var-id="' + varId + '"]');
+                const isSocios = varId === 'numero_socios';
+                const dec = isSocios ? 0 : 2;
+                if (tr.length) {
+                    tr.find('.base-input').val(formatNumber(defaultBaseBalances[varId], dec));
+                }
+            }
+        }
+        
+        calculateAnnualAmounts();
+        
+        // Auto-format on blur
+        $('#annual-goals-table').on('blur', '.base-input', function() {
+            const varId = $(this).closest('tr').data('var-id');
+            const isSocios = varId === 'numero_socios';
+            const dec = isSocios ? 0 : 2;
+            $(this).val(formatNumber($(this).val(), dec));
+            calculateAnnualAmounts();
+        });
+        
+        // Remove formatting on focus for easier editing
+        $('#annual-goals-table').on('focus', '.base-input', function() {
+            let val = $(this).val().replace(/,/g, '');
+            $(this).val(val);
+        });
+        
+        // Auto-format goal inputs to 2 decimals on blur
+        $('#annual-goals-table').on('blur', '.goal-input', function() {
+            let val = parseFloat($(this).val());
+            if (isNaN(val)) val = 0;
+            $(this).val(val.toFixed(2));
+            calculateAnnualAmounts();
+        });
+        
+        $('#annual-goals-table').on('input', '.base-input, .goal-input', function() {
+            calculateAnnualAmounts();
+        });
+        // Sync selects across tabs so changing product in one tab changes it everywhere
+        $('.product-select').on('change', function(){
+            const val = $(this).val();
+            $('.product-select').val(val);
+            
+            if(val){
+                $('.product-grid-wrapper').fadeIn();
+                loadProductData(val);
+            } else {
+                $('.product-grid-wrapper').hide();
+            }
+        });
+
+        function loadProductData(productId) {
+            $.ajax({
+                url: "{% url 'financial_planning:api_get_assumptions_product' plan.id %}?product_id=" + productId,
+                method: "GET",
+                success: function(res) {
+                    if(res.status === 'success'){
+                        // Populate all grids
+                        res.data.forEach(function(row){
+                            // Find row in each tab by agency id
+                            const trs = $('tr[data-agency-id="' + row.agency_id + '"]');
+                            
+                            // Portfolio
+                            trs.find('.input-growth').val(row.growth_goal);
+                            trs.find('.input-prepayment').val(row.prepayment_rate);
+                            trs.find('.input-refinance').val(row.refinance_rate);
+                        });
+                    }
+                },
+                error: function(err){
+                    alert("Error al cargar datos del producto.");
+                }
+            });
+        }
+
+        $('.btn-save-assumptions').on('click', function(){
+            const productId = $('.product-select').first().val();
+            if(!productId) return;
+            
+            const btn = $(this);
+            const originalText = btn.html();
+            btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...');
+            btn.prop('disabled', true);
+            
+            // Gather all data from all grids for this product
+            const rowsData = [];
+            // We can iterate over the portfolio table to get all agency IDs, then pick values from all tables
+            $('#v-pills-portfolio tbody tr').each(function(){
+                const agencyId = $(this).data('agency-id');
+                
+                // Find all inputs across the DOM for this agency
+                const trs = $('tr[data-agency-id="' + agencyId + '"]');
+                
+                const growth = trs.find('.input-growth').val() || 0;
+                const prepayment = trs.find('.input-prepayment').val() || 0;
+                const refinance = trs.find('.input-refinance').val() || 0;
+                
+                rowsData.push({
+                    'agency_id': agencyId,
+                    'growth_goal': growth,
+                    'prepayment_rate': prepayment,
+                    'refinance_rate': refinance
+                });
+            });
+            
+            const payload = {
+                'product_id': productId,
+                'rows': rowsData
+            };
+            
+            $.ajax({
+                url: "{% url 'financial_planning:api_save_assumptions_product' plan.id %}",
+                method: "POST",
+                contentType: "application/json",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                data: JSON.stringify(payload),
+                success: function(res) {
+                    if(res.status === 'success'){
+                        alert("Supuestos guardados correctamente para este producto.");
+                    } else {
+                        alert("Error: " + res.msg);
+                    }
+                },
+                error: function(err){
+                    alert("Error en la conexión al guardar.");
+                },
+                complete: function(){
+                    btn.html(originalText);
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+        
+    });
+</script>
+{% endblock %}

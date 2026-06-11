@@ -1,0 +1,474 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - A. RISK ERM</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-dark: #0f172a;
+            --bg-darker: #020617;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-darker);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.15), transparent 25%);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .blob-1 {
+            top: 10%;
+            left: 20%;
+            width: 300px;
+            height: 300px;
+            background: rgba(37, 99, 235, 0.4);
+            animation-delay: 0s;
+        }
+        .blob-2 {
+            bottom: 10%;
+            right: 20%;
+            width: 400px;
+            height: 400px;
+            background: rgba(14, 165, 233, 0.3);
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -50px) scale(1.1); }
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .login-info {
+            flex: 1.2;
+            padding: 60px 50px;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-modules {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .module-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .module-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(5px);
+            border-color: rgba(37, 99, 235, 0.3);
+        }
+
+        .module-item.selected {
+            background: rgba(37, 99, 235, 0.15);
+            border-color: rgba(37, 99, 235, 0.6);
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+            transform: translateX(10px);
+        }
+
+        .module-item.selected .module-icon {
+            background: #3b82f6;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+
+        .module-check {
+            margin-left: auto;
+            color: #60a5fa;
+            font-size: 1.2rem;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .module-item.selected .module-check {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .module-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(37, 99, 235, 0.1);
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .module-text {
+            font-weight: 500;
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+        }
+
+        .login-form-wrapper {
+            flex: 1;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 14px 16px 14px 45px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-control:focus + i, .form-control:not(:placeholder-shown) + i {
+            color: #3b82f6;
+        }
+
+        .errornote {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+            color: #fca5a5;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #2563eb, #0284c7);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -10px rgba(37, 99, 235, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -10px rgba(37, 99, 235, 0.6);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .login-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            .login-container {
+                flex-direction: column;
+                max-width: 500px;
+                margin: 20px;
+            }
+            .login-info {
+                padding: 40px 30px;
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+            }
+            .login-form-wrapper {
+                padding: 40px 30px;
+            }
+            .brand-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="login-container">
+        <!-- Brand Info Side -->
+        <div class="login-info">
+            <div class="brand-subtitle" style="color: #60a5fa; font-weight: 700; font-size: 1.2rem; letter-spacing: 3px;">ERM RISK ADVISOR</div>
+            <h1 class="brand-title" style="font-size: 3.2rem; margin-bottom: 10px;">Enterprise Risk Management</h1>
+            <p style="color: var(--text-muted); font-size: 1.3rem; margin-bottom: 30px; line-height: 1.5; font-weight: 400;">
+                ASESOR DE RIESGOS ERM<br>
+                <span style="font-size: 1.1rem; opacity: 0.85;">(Métodos y estrategias Gestión de Riesgos Empresariales)</span>
+            </p>
+            
+            <div class="brand-modules">
+                <div class="module-item selected" data-url="/?erm=1">
+                    <div class="module-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <div class="module-text">GESTIÓN INTEGRAL DE RIESGOS</div>
+                    <div class="module-check"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="module-item" data-url="/planificacion-financiera/">
+                    <div class="module-icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="module-text">PLANEAMIENTO FINANCIERO</div>
+                    <div class="module-check"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="module-item" data-url="/estrategico/">
+                    <div class="module-icon"><i class="fa-solid fa-chess-knight"></i></div>
+                    <div class="module-text">PLANEAMIENTO ESTRATÉGICO</div>
+                    <div class="module-check"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="module-item" data-url="/?all_modules=1">
+                    <div class="module-icon"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="module-text">TODOS LOS MÓDULOS (Superadmin)</div>
+                    <div class="module-check"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Form Side -->
+        <div class="login-form-wrapper">
+            <div class="login-header">
+                <h2>Bienvenido</h2>
+                <p>Inicie sesión para acceder a la plataforma</p>
+            </div>
+
+            {% if form.errors and not form.non_field_errors %}
+            <div class="errornote">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {% if form.errors.items|length == 1 %}Por favor corrija el error.{% else %}Por favor corrija los errores.{% endif %}
+            </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+            {% for error in form.non_field_errors %}
+            <div class="errornote">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                {{ error }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if user.is_authenticated %}
+            <div class="errornote" style="background: rgba(234, 179, 8, 0.1); border-color: #eab308; color: #fde047;">
+                <i class="fa-solid fa-circle-info"></i>
+                Está autenticado como {{ username }}, pero no está autorizado para acceder a esta página.
+            </div>
+            {% endif %}
+
+            <form action="{{ app_path }}" method="post" id="login-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username">{{ form.username.label }}</label>
+                    <div class="input-group">
+                        <i class="fa-regular fa-user" style="z-index: 10;"></i>
+                        {{ form.username }}
+                    </div>
+                    {% if form.username.errors %}
+                        <div style="color: #fca5a5; font-size: 0.8rem; margin-top: 5px;">{{ form.username.errors.0 }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_password">{{ form.password.label }}</label>
+                    <div class="input-group">
+                        <i class="fa-solid fa-lock" style="z-index: 10;"></i>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                        <div style="color: #fca5a5; font-size: 0.8rem; margin-top: 5px;">{{ form.password.errors.0 }}</div>
+                    {% endif %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    Ingresar <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                &copy; {% now "Y" %} A. RISK ERM. Todos los derechos reservados.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add classes to Django's auto-generated form inputs for styling
+        document.addEventListener('DOMContentLoaded', function() {
+            var usernameInput = document.getElementById('id_username');
+            var passwordInput = document.getElementById('id_password');
+            var nextInput = document.querySelector('input[name="next"]');
+            
+            if (usernameInput) {
+                usernameInput.classList.add('form-control');
+                usernameInput.placeholder = "Ingrese su usuario";
+            }
+            if (passwordInput) {
+                passwordInput.classList.add('form-control');
+                passwordInput.placeholder = "Ingrese su contraseña";
+            }
+
+            // Handle module selection
+            var modules = document.querySelectorAll('.module-item');
+            
+            // Default behavior: ensure next points to selected default
+            if (!nextInput.value || nextInput.value === '/admin/') {
+                nextInput.value = '/'; // Default selected is GESTIÓN INTEGRAL DE RIESGOS
+            }
+
+            modules.forEach(function(module) {
+                module.addEventListener('click', function() {
+                    // Remove selected class from all
+                    modules.forEach(m => m.classList.remove('selected'));
+                    
+                    // Add selected class to clicked
+                    this.classList.add('selected');
+                    
+                    // Update the next hidden input to redirect user on login
+                    if (nextInput) {
+                        nextInput.value = this.getAttribute('data-url');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

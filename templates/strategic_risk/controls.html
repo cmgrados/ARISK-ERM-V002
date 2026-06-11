@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Balanced Scorecard y Metas Planeadas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Balanced Scorecard Section -->
+    <div class="card shadow-sm border-0 mb-4" style="border-left: 5px solid #161065;">
+        <div class="card-header bg-white">
+            <h3 class="card-title font-weight-bold text-indigo"><i class="fas fa-columns mr-2"></i>Balanced Scorecard (Cuadro de Mando Integral)</h3>
+        </div>
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="info-box shadow-sm">
+                        <span class="info-box-icon bg-success"><i class="fas fa-dollar-sign"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text font-weight-bold">Financiera</span>
+                            <span class="info-box-number text-success">92%</span>
+                            <small class="text-muted">ROA/ROE dentro de metas</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box shadow-sm">
+                        <span class="info-box-icon bg-warning"><i class="fas fa-users"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text font-weight-bold">Cliente/Socio</span>
+                            <span class="info-box-number text-warning">78%</span>
+                            <small class="text-muted">Satisfacci&oacute;n en observaci&oacute;n</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box shadow-sm">
+                        <span class="info-box-icon bg-primary"><i class="fas fa-cogs"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text font-weight-bold">Procesos</span>
+                            <span class="info-box-number text-primary">85%</span>
+                            <small class="text-muted">Eficiencia operativa</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-box shadow-sm">
+                        <span class="info-box-icon bg-danger"><i class="fas fa-graduation-cap"></i></span>
+                        <div class="info-box-content">
+                            <span class="info-box-text font-weight-bold">Aprendizaje</span>
+                            <span class="info-box-number text-danger">45%</span>
+                            <small class="text-muted">Brecha en capacitaci&oacute;n</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metas Planeadas Section -->
+    <div class="card shadow-sm border-0" style="border-top: 5px solid #10b981;">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h3 class="card-title font-weight-bold text-success"><i class="fas fa-bullseye mr-2"></i>Metas Planeadas</h3>
+            <button class="btn btn-sm btn-outline-success" onclick="addMetaRow()">
+                <i class="fas fa-plus mr-1"></i> Nueva Meta
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 text-center align-middle" id="metas-table">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th style="width: 5%">#</th>
+                            <th style="width: 15%">Perspectiva</th>
+                            <th style="width: 20%">Objetivo Estrat&eacute;gico</th>
+                            <th style="width: 15%">Indicador (KPI)</th>
+                            <th style="width: 10%">L&iacute;nea Base</th>
+                            <th style="width: 10%">Meta 1</th>
+                            <th style="width: 10%">Meta 2</th>
+                            <th style="width: 10%">Meta 3</th>
+                            <th style="width: 5%">Acci&oacute;n</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if metas_data %}
+                            {% for row in metas_data %}
+                            <tr>
+                                <td class="align-middle index-cell">{{ forloop.counter }}</td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-perspectiva">
+                                        <option value="Financiera" {% if row.perspectiva == 'Financiera' %}selected{% endif %}>Financiera</option>
+                                        <option value="Cliente/Socio" {% if row.perspectiva == 'Cliente/Socio' %}selected{% endif %}>Cliente/Socio</option>
+                                        <option value="Procesos" {% if row.perspectiva == 'Procesos' %}selected{% endif %}>Procesos</option>
+                                        <option value="Aprendizaje" {% if row.perspectiva == 'Aprendizaje' %}selected{% endif %}>Aprendizaje</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="form-control form-control-sm meta-objetivo" value="{{ row.objetivo }}"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-indicador" value="{{ row.indicador }}"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-base" value="{{ row.base }}"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-1" value="{{ row.meta1 }}"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-2" value="{{ row.meta2 }}"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-3" value="{{ row.meta3 }}"></td>
+                                <td class="align-middle">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <!-- Fila por defecto para Cliente/Socio -->
+                            <tr>
+                                <td class="align-middle index-cell">1</td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-perspectiva">
+                                        <option value="Financiera">Financiera</option>
+                                        <option value="Cliente/Socio" selected>Cliente/Socio</option>
+                                        <option value="Procesos">Procesos</option>
+                                        <option value="Aprendizaje">Aprendizaje</option>
+                                    </select>
+                                </td>
+                                <td><input type="text" class="form-control form-control-sm meta-objetivo" value="Incrementar la satisfacci&oacute;n general" placeholder="Ej. Aumentar SOCIOS..."></td>
+                                <td><input type="text" class="form-control form-control-sm meta-indicador" value="NPS" placeholder="KPI"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-base" value="50%" placeholder="Base"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-1" value="60%" placeholder="Meta 1"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-2" value="70%" placeholder="Meta 2"></td>
+                                <td><input type="text" class="form-control form-control-sm meta-3" value="85%" placeholder="Meta 3"></td>
+                                <td class="align-middle">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white text-right">
+            <button class="btn btn-success" onclick="saveBscSection()">
+                <i class="fas fa-save mr-1"></i> Guardar Metas Planeadas
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function updateIndexes() {
+        $('#metas-table tbody tr').each(function(index) {
+            $(this).find('.index-cell').text(index + 1);
+        });
+    }
+
+    function addMetaRow() {
+        const tr = `
+            <tr>
+                <td class="align-middle index-cell"></td>
+                <td>
+                    <select class="form-control form-control-sm meta-perspectiva">
+                        <option value="Financiera">Financiera</option>
+                        <option value="Cliente/Socio">Cliente/Socio</option>
+                        <option value="Procesos">Procesos</option>
+                        <option value="Aprendizaje">Aprendizaje</option>
+                    </select>
+                </td>
+                <td><input type="text" class="form-control form-control-sm meta-objetivo" placeholder="Nuevo objetivo"></td>
+                <td><input type="text" class="form-control form-control-sm meta-indicador" placeholder="KPI"></td>
+                <td><input type="text" class="form-control form-control-sm meta-base" placeholder="Base"></td>
+                <td><input type="text" class="form-control form-control-sm meta-1" placeholder="Meta 1"></td>
+                <td><input type="text" class="form-control form-control-sm meta-2" placeholder="Meta 2"></td>
+                <td><input type="text" class="form-control form-control-sm meta-3" placeholder="Meta 3"></td>
+                <td class="align-middle">
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+        $('#metas-table tbody').append(tr);
+        updateIndexes();
+    }
+
+    function removeRow(btn) {
+        $(btn).closest('tr').remove();
+        updateIndexes();
+    }
+
+    function saveBscSection() {
+        const metas = [];
+        $('#metas-table tbody tr').each(function() {
+            metas.push({
+                perspectiva: $(this).find('.meta-perspectiva').val(),
+                objetivo: $(this).find('.meta-objetivo').val(),
+                indicador: $(this).find('.meta-indicador').val(),
+                base: $(this).find('.meta-base').val(),
+                meta1: $(this).find('.meta-1').val(),
+                meta2: $(this).find('.meta-2').val(),
+                meta3: $(this).find('.meta-3').val()
+            });
+        });
+
+        // Add loading state
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Estamos procesando tu información.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch("{% url 'save_metas_planeadas' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(metas)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Guardado!',
+                    text: 'Las Metas Planeadas se guardaron con éxito.',
+                    confirmButtonColor: '#10b981'
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Hubo un error al guardar las metas.',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Red',
+                text: 'No se pudo contactar al servidor. Revisa tu conexión.',
+                confirmButtonColor: '#ef4444'
+            });
+        });
+    }
+
+    // Inicializar índices al cargar
+    $(document).ready(function() {
+        updateIndexes();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Límites y Umbrales Quantitative{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-warning card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Configuración de Zonas de Riesgo (RAF) - Marco: {{ framework.name }}</h3>
+                <div class="card-tools">
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Guardar Cambios</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered table-sm text-center">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle text-left">Indicador (KRI)</th>
+                            <th rowspan="2" class="align-middle">Objetivo</th>
+                            <th colspan="4" class="text-center">Umbrales de Gestión</th>
+                            <th rowspan="2" class="align-middle">Capacidad</th>
+                        </tr>
+                        <tr>
+                            <th class="bg-success text-white">Verde (Apetito)</th>
+                            <th class="bg-warning">Amarillo (Alerta)</th>
+                            <th class="bg-orange text-white">Naranja (Tolerancia)</th>
+                            <th class="bg-danger text-white">Rojo (Exceso)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in thresholds %}
+                        <tr>
+                            <td class="text-left"><strong>{{ t.kri.name }}</strong></td>
+                            <td>{{ t.target_value }}</td>
+                            <td class="table-success">< {{ t.green_threshold }}</td>
+                            <td class="table-warning">{{ t.green_threshold }} - {{ t.yellow_threshold }}</td>
+                            <td class="table-orange" style="background-color: #ffd8a8;">{{ t.yellow_threshold }} - {{ t.red_threshold }}</td>
+                            <td class="table-danger">> {{ t.red_threshold }}</td>
+                            <td>{{ t.capacity_value|default:"N/A" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center p-4">No hay umbrales configurados para el marco actual.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <i class="icon fas fa-exclamation-triangle"></i>
+            Nota: Al superar el umbral de <strong>Tolerancia (Naranja)</strong>, se requiere el escalamiento inmediato al Comité de Riesgos.
+        </div>
+    </div>
+</div>
+{% endblock %}

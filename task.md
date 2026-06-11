@@ -1,0 +1,17 @@
+# Tareas - [x] Rediseño de Arquitectura ORM (Modelos Jerárquicos)
+- [x] Motor de Riesgos Paramétrico (Matriz 5x5)
+- [x] Ciclo de Gestión de 10 Pasos (Back-end y Front-end)
+- [x] Dashboards y Heatmaps Dinámicos (Visualización Premium)
+- [x] Integración de Agente de IA con Conocimiento COSO
+- [x] Migración de Datos y Scripts de Inicialización
+- [x] Interfaz de Análisis de Brechas Interactiva
+- [x] Cálculo de Volatilidad Histórica y Saldo Mínimo Estable
+- [x] Implementación de Escenarios (Contractual, Esperado, Estrés)
+- [x] Relocate logical views from `liquidity_risk/views.py` to `utilities/views.py`.
+- [x] Register new paths in `apps/utilities/urls.py`.
+- [x] Remove old paths from `apps/liquidity_risk/urls.py`.
+- [x] Restructure sidebar in `templates/base.html` to move items to "Utilitarios" treeview.
+- [x] Update `templates/utilities/dashboard.html` with new entry cards.
+- [x] Update URL namespaces (`liquidity_risk` -> `utilities`) in all relevant templates.
+- [x] Clean up and remove redundant view definitions from `apps/liquidity_risk/views.py`.
+- [x] Verify imports (`io`, `process_balance_load`, etc.) in `apps/utilities/views.py`.

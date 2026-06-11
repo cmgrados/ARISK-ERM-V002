@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load core_tags %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+
+<div class="row">
+    <!-- Resumen de Madurez por Componente -->
+    {% for stat in component_stats %}
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="card shadow-none border mb-3">
+            <div class="card-body p-2 text-center">
+                <p class="mb-1 text-muted small font-weight-bold text-uppercase">{{ stat.component.name }}</p>
+                <div class="knob-container mb-1">
+                    <h3 class="{% if stat.maturity_pct < 50 %}text-danger{% elif stat.maturity_pct < 80 %}text-warning{% else %}text-success{% endif %} mb-0 font-weight-bold">
+                        {{ stat.maturity_pct|floatformat:1 }}%
+                    </h3>
+                </div>
+                <div class="progress progress-xxs">
+                    <div class="progress-bar {% if stat.maturity_pct < 50 %}bg-danger{% elif stat.maturity_pct < 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                         style="width: {{ stat.maturity_pct }}%"></div>
+                </div>
+                <p class="mt-1 mb-0 small text-muted">{{ stat.assessed_count }} / {{ stat.principles_count }} Principios</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    <!-- Score Global -->
+    <div class="col-lg-2 col-md-4 col-sm-6">
+        <div class="card shadow-none border mb-3 bg-light">
+            <div class="card-body p-2 text-center">
+                <p class="mb-1 text-primary small font-weight-bold text-uppercase">Madurez Global</p>
+                <h3 class="mb-0 font-weight-bold">{{ overall_maturity|floatformat:1 }}%</h3>
+                <p class="mt-1 mb-0 small font-italic">Nivel: {% if overall_maturity < 50 %}Poco Favorable{% elif overall_maturity < 80 %}Favorable{% else %}Muy Favorable{% endif %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-none border">
+    <div class="card-header bg-white py-2">
+        <h3 class="card-title font-weight-bold text-secondary"><i class="fas fa-clipboard-check mr-2"></i>Evaluación de Principios COSO III</h3>
+        <div class="card-tools">
+            <form method="get" class="form-inline">
+                <label class="mr-2 small">Periodo:</label>
+                <input type="date" name="date" value="{{ selected_date }}" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+            </form>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover table-sm mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th style="width: 50px" class="text-center">Ref</th>
+                    <th>Principio / Descripción</th>
+                    <th style="width: 180px">Nivel de Madurez</th>
+                    <th>Sustento / Evidencia</th>
+                    <th>Análisis de Brecha</th>
+                    <th style="width: 50px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comp in components %}
+                <tr class="bg-gray-light">
+                    <td colspan="6" class="font-weight-bold py-2"><i class="fas fa-layer-group mr-2"></i>{{ comp.name }}</td>
+                </tr>
+                {% for p in comp.principles.all %}
+                {% with assessment=assessment_dict|get_item:p.id %}
+                <tr id="row-{{ p.id }}">
+                    <td class="text-center font-weight-bold">{{ p.code }}</td>
+                    <td>
+                        <span class="d-block font-weight-bold">{{ p.name }}</span>
+                        <span class="text-muted small">{{ p.description|default:"Sin descripción detallada." }}</span>
+                    </td>
+                    <td>
+                        <select class="form-control form-control-sm score-select" data-principle="{{ p.id }}">
+                            {% for score_val, score_label in score_choices %}
+                            <option value="{{ score_val }}" {% if assessment.score == score_val %}selected{% endif %}>{{ score_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <textarea class="form-control form-control-sm evidence-text" rows="1" placeholder="Ej: Existe manual de ética..." data-principle="{{ p.id }}">{{ assessment.evidence }}</textarea>
+                    </td>
+                    <td>
+                        <textarea class="form-control form-control-sm gap-text" rows="1" placeholder="Ej: Falta capacitación..." data-principle="{{ p.id }}">{{ assessment.gap_analysis }}</textarea>
+                    </td>
+                    <td class="text-center">
+                        <button class="btn btn-xs btn-outline-success save-btn" data-principle="{{ p.id }}">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endwith %}
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white text-right py-2">
+        <span class="text-muted small mr-3"><i class="fas fa-info-circle mr-1"></i>Los cambios se guardan automáticamente por cada principio.</span>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.save-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const pId = this.dataset.principle;
+        const score = document.querySelector(`.score-select[data-principle="${pId}"]`).value;
+        const evidence = document.querySelector(`.evidence-text[data-principle="${pId}"]`).value;
+        const gap = document.querySelector(`.gap-text[data-principle="${pId}"]`).value;
+        const date = "{{ selected_date }}";
+
+        const formData = new FormData();
+        formData.append('principle_id', pId);
+        formData.append('score', score);
+        formData.append('evidence', evidence);
+        formData.append('gap_analysis', gap);
+        formData.append('date', date);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch("{% url 'operational_risk:save_coso_assessment' %}", {
+            method: 'POST',
+            body: formData
+        }).then(response => {
+            if (response.ok) {
+                this.classList.replace('btn-outline-success', 'btn-success');
+                setTimeout(() => this.classList.replace('btn-success', 'btn-outline-success'), 2000);
+            }
+        });
+    });
+});
+</script>
+
+<style>
+    .bg-gray-light { background-color: #f4f6f9; }
+    .knob-container h3 { font-size: 1.5rem; }
+    .table td, .table th { vertical-align: middle !important; }
+</style>
+
+{% endblock %}

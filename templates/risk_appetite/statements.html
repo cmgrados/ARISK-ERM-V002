@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Declaraciones de Apetito{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="callout callout-info">
+            <h5>Declaración Global de Apetito</h5>
+            <p>"La Cooperativa mantiene una postura de riesgo <strong>Moderada</strong>, priorizando la solvencia y la liquidez sobre el crecimiento agresivo, aceptando niveles controlados de riesgo de crédito y mercado alineados a la rentabilidad esperada por los socios."</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for s in statements %}
+    <div class="col-md-4">
+        <div class="card card-outline {% if s.risk_posture == 'CONSERVATIVE' %}card-success{% elif s.risk_posture == 'ZERO_TOLERANCE' %}card-danger{% else %}card-warning{% endif %}">
+            <div class="card-header">
+                <h3 class="card-title">Riesgo: {{ s.risk_type }}</h3>
+                <div class="card-tools">
+                    <span class="badge badge-secondary">{{ s.risk_posture }}</span>
+                </div>
+            </div>
+            <div class="card-body" style="min-height: 120px;">
+                <p class="text-sm">{{ s.qualitative_statement }}</p>
+            </div>
+            <div class="card-footer">
+                <span class="text-xs text-muted">Objetivo: {{ s.strategic_objective }}</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center p-5">
+        <p>No hay declaraciones cualitativas aprobadas para el marco vigente.</p>
+        <button class="btn btn-primary"><i class="fas fa-plus"></i> Agregar Declaración</button>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

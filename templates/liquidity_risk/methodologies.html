@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Columna Izquierda: Parámetros -->
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold">Simulación y Escenarios (Pruebas de Estrés)</h3>
+            </div>
+            <div class="card-body">
+                <p>Las pruebas de estrés permiten determinar la supervivencia operativa (Survival Horizon) ante escenarios imprevistos.</p>
+                <form>
+                  <div class="row">
+                    <div class="col-sm-6">
+                      <div class="form-group">
+                        <label>Escenario de Retiro (%)</label>
+                        <input type="number" class="form-control" placeholder="Ej: 15.5">
+                      </div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="form-group">
+                        <label>Shock de No Renovación (Vencimientos %)</label>
+                        <input type="number" class="form-control" placeholder="Ej: 30%">
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn text-white w-100" style="background-color: #161065;">Correr Escenario de Estrés</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm border mt-3">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold m-0">Ratios de Liquidez Normativos (SBS)</h3>
+                <a href="{% url 'liquidity_risk:sbs_parameters' %}" class="btn btn-xs btn-primary rounded-pill px-3">
+                    <i class="fas fa-cog mr-1"></i> Configurar
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>Ratio</th><th>Regulación</th><th>Límite Mínimo</th><th>Valor Actual</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Ratio de Cobertura de Liquidez (LCR)</td><td>Basilea III / SBS</td><td>100.00%</td><td class="text-danger font-weight-bold">85.40%</td></tr>
+                        <tr><td>Ratio de Fondeo Estable Neto (NSFR)</td><td>Basilea III / SBS</td><td>100.00%</td><td class="text-success font-weight-bold">112.30%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Columna Derecha: Concentración -->
+    <div class="col-md-5">
+        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+            <div class="card-header">
+                <h3 class="card-title" style="color: #141313;">Padrón de Concentración de Depósitos</h3>
+            </div>
+            <div class="card-body p-0 table-responsive" style="max-height: 400px;">
+                <table class="table table-striped table-valign-middle">
+                    <thead>
+                        <tr>
+                            <th>Depositante Principal</th>
+                            <th>Monto S/</th>
+                            <th>% del Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Fondo MIVIVIENDA</td><td>15,000,000</td><td><span class="badge badge-danger">12%</span></td></tr>
+                        <tr><td>COFIDE</td><td>8,500,000</td><td><span class="badge badge-warning">6.8%</span></td></tr>
+                        <tr><td>Consorcio SAC</td><td>5,200,000</td><td><span class="badge badge-info">4.1%</span></td></tr>
+                        <tr><td>Municipalidad Provincial</td><td>3,100,000</td><td><span class="badge badge-primary">2.4%</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

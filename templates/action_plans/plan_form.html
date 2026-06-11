@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom d-flex align-items-center">
+                    <h5 class="card-title mb-0 font-weight-bold text-indigo">
+                        <i class="fas fa-tasks mr-2"></i>{{ page_title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label font-weight-bold small">Título de la Acción</label>
+                                {{ form.title }}
+                                {% if form.title.errors %}<div class="text-danger small">{{ form.title.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label font-weight-bold small">Descripción Detallada</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}<div class="text-danger small">{{ form.description.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold small">Riesgo Asociado</label>
+                                {{ form.risk }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold small">Control Relacionado</label>
+                                {{ form.control }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold small">Responsable</label>
+                                {{ form.responsible }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label font-weight-bold small">Estado Inicial</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label font-weight-bold small">Fecha Inicio</label>
+                                {{ form.start_date }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label font-weight-bold small">Fecha Vencimiento</label>
+                                {{ form.due_date }}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label font-weight-bold small">Progreso (%)</label>
+                                {{ form.progress }}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'action_plans:plan_list' %}" class="btn btn-light mr-2">Cancelar</a>
+                            <button type="submit" class="btn btn-indigo shadow-sm" style="background: #1e1b4b; color: white;">
+                                <i class="fas fa-save mr-1"></i> Guardar Plan de Acción
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>A.RISK ERM | Supuestos</title>
+
+  <!-- Google Font: Inter -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <!-- Theme style -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+  <style>
+      :root {
+          --primary-deep: #1e293b;
+          --primary-soft: #334155;
+          --accent-gold: #fbbf24;
+          --bg-gradient: transparent;
+          --glass-bg: rgba(255, 255, 255, 0.8);
+          --sidebar-indigo: #1e1b4b;
+      }
+
+      body { 
+          font-family: 'Inter', sans-serif; 
+          background: transparent;
+          color: #334155;
+      }
+
+      /* Cards & Content */
+      .content-wrapper { background: transparent !important; margin-left: 0 !important; }
+      .card {
+          border: none !important;
+          border-radius: 12px !important;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+          background: #ffffff !important;
+      }
+      .card-header {
+          background: transparent !important;
+          border-bottom: 1px solid #f1f5f9 !important;
+          padding: 0.5rem 0.75rem !important;
+      }
+
+      /* Custom Utilities */
+      .text-indigo { color: #4f46e5 !important; }
+      .badge-soft-danger { background: #fee2e2; color: #ef4444; }
+      .badge-soft-success { background: #dcfce7; color: #22c55e; }
+      .badge-soft-warning { background: #fef3c7; color: #d97706; }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="hold-transition text-sm" style="background-color: transparent;">
+<div class="wrapper" style="background-color: transparent;">
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper" style="background-color: transparent;">
+    <!-- Main content -->
+    <section class="content p-0" style="background-color: transparent;">
+      <div class="container-fluid p-0">
+        {% block content %}{% endblock %}
+      </div>
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+</div>
+<!-- ./wrapper -->
+
+<!-- REQUIRED SCRIPTS -->
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Bootstrap 4 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE App -->
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

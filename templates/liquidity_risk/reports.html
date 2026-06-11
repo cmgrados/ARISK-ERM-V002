@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Reports Blocks -->
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm border" style="background-color: white;">
+            <span class="info-box-icon text-danger"><i class="fas fa-file-pdf"></i></span>
+            <div class="info-box-content text-dark">
+                <span class="info-box-text">Informe Anexo SBS Nº15</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Descargar .PDF</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm border" style="background-color: white;">
+            <span class="info-box-icon text-success"><i class="fas fa-file-excel"></i></span>
+            <div class="info-box-content text-dark">
+                <span class="info-box-text">Brechas Acumuladas</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Exportar .XLSX</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm text-white" style="background-color: #161065;">
+            <span class="info-box-icon"><i class="fas fa-exclamation-triangle text-white-50"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Resumen de Alertas (LCR)</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Ver Detalle</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm" style="background-color: #ffcc00; color: #141313;">
+            <span class="info-box-icon"><i class="fas fa-robot text-dark"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text d-block text-truncate">Recomendaciones Contingentes</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Diagnóstico IA</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-2 shadow-sm border-0">
+    <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-book-open text-primary mr-2"></i>Paquete de Presentación ALM</h3>
+    </div>
+    <div class="card-body">
+        <p class="mb-4 text-muted">Genera automáticamente el "Informe de Gestión de Liquidez" mensual para el Comité de Gestión de Activos y Pasivos (ALCO).</p>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="mb-4">
+                    <li class="mb-2"><strong>Informe Ejecutivo de Liquidez.</strong> (Ratios y Brechas estáticas)</li>
+                    <li class="mb-2"><strong>Resumen de Escenarios de Estrés.</strong> (Impacto y Plan de Contingencia)</li>
+                    <li><strong>Monitoreo de Depositantes Top.</strong> (Nivel de renovación y volatilidad de depósitos)</li>
+                </ul>
+            </div>
+        </div>
+        <button class="btn text-dark text-bold" style="background-color: #ffcc00; border: none;">
+            <i class="fas fa-layer-group mr-2"></i> Ensamblar Informe ALCO
+        </button>
+    </div>
+</div>
+{% endblock %}

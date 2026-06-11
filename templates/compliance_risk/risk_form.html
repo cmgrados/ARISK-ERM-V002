@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Nueva Evaluación de Cumplimiento{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">Registro de Requisito y Evaluación</h3>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-2">
+                                <label style="font-size: 0.9rem;">{{ form.responsible_area.label }}</label>
+                                {{ form.responsible_area }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-2">
+                                <label style="font-size: 0.9rem;">{{ form.source.label }}</label>
+                                {{ form.source }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-2">
+                        <label style="font-size: 0.9rem;">{{ form.requirement_description.label }}</label>
+                        {{ form.requirement_description }}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label style="font-size: 0.9rem;">{{ form.potential_sanction.label }}</label>
+                        {{ form.potential_sanction }}
+                    </div>
+
+                    <div class="bg-light p-2 rounded mb-3">
+                        <h6 class="mb-2" style="font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Evaluación de Riesgo</h6>
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <small class="text-muted d-block mb-2">RIESGO INHERENTE</small>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-group mb-1">
+                                            <label style="font-size: 0.8rem;">Probabilidad</label>
+                                            {{ form.inherent_probability }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-group mb-1">
+                                            <label style="font-size: 0.8rem;">Impacto</label>
+                                            {{ form.inherent_impact }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted d-block mb-2">RIESGO RESIDUAL</small>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-group mb-1">
+                                            <label style="font-size: 0.8rem;">Probabilidad</label>
+                                            {{ form.residual_probability }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-group mb-1">
+                                            <label style="font-size: 0.8rem;">Impacto</label>
+                                            {{ form.residual_impact }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label style="font-size: 0.9rem;">Controles Existentes</label>
+                        {{ form.existing_controls }}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group mb-2">
+                                <label style="font-size: 0.9rem;">Indicador</label>
+                                {{ form.indicator }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-2">
+                                <label style="font-size: 0.9rem;">Frecuencia</label>
+                                {{ form.monitoring_frequency }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group mb-2">
+                                <label style="font-size: 0.9rem;">Periodo</label>
+                                {{ form.evaluation_period }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <button type="submit" class="btn btn-primary">Guardar Evaluación</button>
+                    <a href="{% url 'compliance_risk:matrix' %}" class="btn btn-default">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

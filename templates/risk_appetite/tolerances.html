@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+            <div class="card-header"><h3 class="card-title font-weight-bold" style="color:#141313;">Indicadores Clave de Riesgo (KRIs) y Niveles de Tolerancia</h3></div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-bordered mb-0 text-center">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle">KRI</th>
+                            <th rowspan="2" class="align-middle">Unidad</th>
+                            <th rowspan="2" class="align-middle">Meta (Apetito)</th>
+                            <th colspan="4">Umbrales de Tolerancia</th>
+                            <th rowspan="2" class="align-middle">Frecuencia</th>
+                        </tr>
+                        <tr>
+                            <th class="bg-success text-xs">Verde</th>
+                            <th class="bg-warning text-xs">Amarillo</th>
+                            <th class="bg-orange text-xs text-white">Naranja</th>
+                            <th class="bg-danger text-xs">Rojo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="text-left font-weight-bold">Ratio de Mora Total</td>
+                            <td>%</td>
+                            <td>< 6.0%</td>
+                            <td><= 8%</td>
+                            <td>8.1% - 10%</td>
+                            <td>10.1% - 12%</td>
+                            <td>> 12%</td>
+                            <td>Mensual</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left font-weight-bold">Brecha Liquidez (90d)</td>
+                            <td>S/</td>
+                            <td>> 0</td>
+                            <td>>= 0</td>
+                            <td>0 a -100K</td>
+                            <td>-101K a -500K</td>
+                            <td>< -500K</td>
+                            <td>Semanal</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left font-weight-bold">Eventos Pérdida Oper.</td>
+                            <td>S/</td>
+                            <td>< 5K</td>
+                            <td>< 10K</td>
+                            <td>10K - 30K</td>
+                            <td>31K - 50K</td>
+                            <td>> 50K</td>
+                            <td>Trimestral</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left font-weight-bold">Alertas PLAFT Vencidas</td>
+                            <td>Cant</td>
+                            <td>0</td>
+                            <td>0</td>
+                            <td>1 - 5</td>
+                            <td>6 - 10</td>
+                            <td>> 10</td>
+                            <td>Diario</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

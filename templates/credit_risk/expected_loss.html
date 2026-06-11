@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load risk_extras %}
+{% load humanize %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">{{ page_title }}</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <form method="get" class="form-inline justify-content-end">
+                    <label class="mr-2">Comparar:</label>
+                    <select name="date_t0" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                        {% for d in dates %}
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t0 %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="mr-2">vs</label>
+                    <select name="date_t1" class="form-control form-control-sm" onchange="this.form.submit()">
+                        {% for d in dates %}
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t1 %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Summary Cards -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 bg-info">
+                    <div class="card-body text-white">
+                        <h6 class="text-uppercase small mb-1">PE Total (t1)</h6>
+                        <h3 class="mb-0 font-weight-bold">S/ {{ summary.t1_pe|format_num:0 }}</h3>
+                        <p class="small mb-0 mt-1">vs S/ {{ summary.t0_pe|format_num:0 }} (t0)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 {% if summary.variation_abs > 0 %}bg-danger{% else %}bg-success{% endif %}">
+                    <div class="card-body text-white">
+                        <h6 class="text-uppercase small mb-1">Variación PE</h6>
+                        <h3 class="mb-0 font-weight-bold">{{ summary.variation_pct|format_num:1 }}%</h3>
+                        <p class="small mb-0 mt-1">S/ {{ summary.variation_abs|format_num:0 }} (Absoluto)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 bg-primary">
+                    <div class="card-body text-white">
+                        <h6 class="text-uppercase small mb-1">EAD Total (t1)</h6>
+                        <h3 class="mb-0 font-weight-bold">S/ {{ summary.t1_ead|format_num:0 }}</h3>
+                        <p class="small mb-0 mt-1">Exposición a incumplimiento</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 bg-secondary">
+                    <div class="card-body text-white">
+                        <h6 class="text-uppercase small mb-1">PD Promedio (t1)</h6>
+                        <h3 class="mb-0 font-weight-bold">{{ summary.t1_pd_avg|format_num:2 }}%</h3>
+                        <p class="small mb-0 mt-1">Probabilidad de Incumplimiento</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <!-- Comparison Table -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom">
+                        <h3 class="card-title font-weight-bold">
+                            <i class="fas fa-table mr-2 text-primary"></i> Análisis por Periodo y Segmento
+                        </h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0 text-center">
+                                <thead class="bg-dark text-white">
+                                    <tr>
+                                        <th>Periodo</th>
+                                        <th>Segmento</th>
+                                        <th>EAD Total</th>
+                                        <th>PD Avg (%)</th>
+                                        <th>LGD Avg (%)</th>
+                                        <th>PE Total</th>
+                                        <th>PE % de EAD</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in report_data %}
+                                    <tr>
+                                        <td class="font-weight-bold">{{ row.Periodo }}</td>
+                                        <td class="text-left pl-3">{{ row.Segmento }}</td>
+                                        <td>{{ row.EAD_total|format_num:2 }}</td>
+                                        <td>{{ row.PD_avg|format_num:2 }}%</td>
+                                        <td>{{ row.LGD_avg|format_num:2 }}%</td>
+                                        <td class="font-weight-bold text-primary">{{ row.PE_total|format_num:2 }}</td>
+                                        <td class="badge-pill {% if row.PE_pct > 2 %}text-danger{% else %}text-success{% endif %}">
+                                            {{ row.PE_pct|format_num:2 }}%
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts & Insights -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white border-bottom d-flex align-items-center">
+                        <h3 class="card-title font-weight-bold mb-0">
+                            <i class="fas fa-chart-pie mr-2 text-warning"></i> Distribución de PE
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 220px;">
+                            <canvas id="peSegmentChart"></canvas>
+                        </div>
+                        <hr class="my-3">
+                        <div class="mb-3">
+                            <h6 class="font-weight-bold text-uppercase small text-muted mb-2">
+                                <i class="fas fa-robot mr-2"></i> Análisis Inteligente de Riesgo
+                            </h6>
+                            <div class="alert {% if summary.variation_abs > 0 %}alert-light-danger{% else %}alert-light-success{% endif %} border-0 p-3">
+                                <p class="text-justify small mb-0 leading-relaxed text-dark">
+                                    {{ analysis_text|safe }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mb-0">
+                            <h6 class="font-weight-bold text-uppercase small text-muted mb-2">
+                                <i class="fas fa-tachometer-alt mr-2"></i> Drivers de Variación
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="small text-muted">EAD (t1)</div>
+                                        <div class="font-weight-bold text-primary">S/ {{ summary.t1_ead|format_num:0 }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="small text-muted">PD Promedio</div>
+                                        <div class="font-weight-bold text-warning">{{ summary.t1_pd_avg|format_num:2 }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white border-top small text-muted py-2">
+                        <i class="fas fa-shield-alt mr-1"></i> Modelo de Riesgo Basilea II / IFRS 9 (Simplificado)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .alert-light-danger { background-color: #fff5f5; border-left: 4px solid #dc3545 !important; }
+    .alert-light-success { background-color: #f0fff4; border-left: 4px solid #28a745 !important; }
+    .leading-relaxed { line-height: 1.7; }
+</style>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const ctxPe = document.getElementById('peSegmentChart').getContext('2d');
+    
+    // Prepare data for Chart.js
+    const reportData = {{ report_data|safe }};
+    const segments = [...new Set(reportData.map(d => d.Segmento))];
+    const dateT0 = "{{ date_t0 }}";
+    const dateT1 = "{{ date_t1 }}";
+    
+    const dataT0 = segments.map(s => {
+        const row = reportData.find(d => d.Segmento === s && d.Periodo === dateT0);
+        return row ? row.PE_total : 0;
+    });
+    
+    const dataT1 = segments.map(s => {
+        const row = reportData.find(d => d.Segmento === s && d.Periodo === dateT1);
+        return row ? row.PE_total : 0;
+    });
+
+    new Chart(ctxPe, {
+        type: 'bar',
+        data: {
+            labels: segments,
+            datasets: [
+                {
+                    label: `PE ${dateT0}`,
+                    data: dataT0,
+                    backgroundColor: 'rgba(108, 117, 125, 0.5)',
+                    borderColor: 'rgb(108, 117, 125)',
+                    borderWidth: 1
+                },
+                {
+                    label: `PE ${dateT1}`,
+                    data: dataT1,
+                    backgroundColor: 'rgba(0, 123, 255, 0.7)',
+                    borderColor: 'rgb(0, 123, 255)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            scales: {
+                x: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+
+<style>
+    .leading-relaxed { line-height: 1.6; }
+    .table td, .table th { vertical-align: middle; }
+</style>
+{% endblock %}

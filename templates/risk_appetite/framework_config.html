@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Marco Institucional RAF{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Gestión del Marco Institucional de Apetito al Riesgo</h3>
+                <div class="card-tools">
+                    <button class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Nueva Versión</button>
+                    <button class="btn btn-info btn-sm"><i class="fas fa-file-export"></i> Exportar</button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre del Marco</th>
+                            <th>Versión</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Estado</th>
+                            <th>Aprobado por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in frameworks %}
+                        <tr>
+                            <td>{{ f.code }}</td>
+                            <td>{{ f.name }}</td>
+                            <td>{{ f.version }}</td>
+                            <td>{{ f.start_date }}</td>
+                            <td>{{ f.end_date|default:"-" }}</td>
+                            <td>
+                                <span class="badge badge-{% if f.state == 'APPROVED' %}success{% elif f.state == 'DRAFT' %}info{% elif f.state == 'EXPIRED' %}secondary{% else %}warning{% endif %}">
+                                    {{ f.get_state_display }}
+                                </span>
+                            </td>
+                            <td>{{ f.approved_by|default:"-" }}</td>
+                            <td>
+                                <a href="#" class="btn btn-xs btn-default"><i class="fas fa-edit"></i></a>
+                                <a href="#" class="btn btn-xs btn-default"><i class="fas fa-clone"></i></a>
+                                <a href="#" class="btn btn-xs btn-info"><i class="fas fa-eye"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="8" class="text-center">No hay marcos registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer clearfix">
+                <p class="text-sm text-muted">El marco debe revisarse al menos anualmente según política institucional.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card card-outline card-info">
+            <div class="card-header">
+                <h3 class="card-title">Principios del RAF</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Vinculación estratégica Top-Down.</li>
+                    <li>Semaforización cuantitativa operativa Bottom-Up.</li>
+                    <li>Diferenciación entre Apetito, Tolerancia y Capacidad.</li>
+                    <li>Gobernanza participativa.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-center">
+    <div class="card card-outline shadow-sm w-100" style="border-top-color: #161065; max-width: 85%;">
+        <div class="card-header">
+            <h3 class="card-title font-weight-bold"><i class="fas fa-database mr-2 text-primary"></i>Cartera de Operaciones</h3>
+            <div class="card-tools d-flex align-items-center">
+                <form method="get" class="form-inline mr-3">
+                    <label class="mr-2 small font-weight-bold text-muted">Periodo:</label>
+                    <select name="load_date" class="form-control form-control-sm" onchange="this.form.submit()">
+                        <option value="">Todos los periodos</option>
+                        {% for d in dates %}
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == selected_date %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+                <a href="{% url 'utilities:export_credit_data' %}" class="btn btn-sm btn-outline-dark mr-1">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                </a>
+                <a href="{% url 'utilities:bulk_load_credit' %}" class="btn btn-sm btn-dark mr-1">
+                    <i class="fas fa-file-import mr-1"></i> Carga
+                </a>
+                <a href="/admin/credit_risk/creditoperation/add/" class="btn btn-sm btn-primary" style="background-color: #161065; border-color: #161065;">
+                    <i class="fas fa-plus"></i> Nuevo
+                </a>
+            </div>
+        </div>
+        <div class="card-body table-responsive p-0" style="min-height: 400px;">
+            <table class="table table-hover text-nowrap table-striped">
+                <thead class="bg-light">
+                    <tr class="text-center">
+                        <th>Código</th>
+                        <th>Socio/Cliente</th>
+                        <th>Documento</th>
+                        <th>Fecha Desemb.</th>
+                        <th>Saldo (EAD)</th>
+                        <th>Mora (Días)</th>
+                        <th>Clasif. SBS</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for op in page_obj %}
+                    <tr class="text-center align-middle">
+                        <td class="text-muted font-weight-bold">{{ op.operation_code }}</td>
+                        <td class="text-left">{{ op.customer.name }}</td>
+                        <td>{{ op.customer.document_id }}</td>
+                        <td>{{ op.disbursement_date|date:"d/m/Y"|default:"-" }}</td>
+                        <td class="font-weight-bold">S/ {{ op.balance|floatformat:2 }}</td>
+                        <td>
+                            {% if op.days_past_due > 0 %}
+                                <span class="text-danger font-weight-bold">{{ op.days_past_due }} d</span>
+                            {% else %}
+                                <span class="text-success">0 d</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if op.sbs_classification == 'Normal' %}badge-success{% elif op.sbs_classification == 'Pérdida' %}badge-danger{% else %}badge-warning{% endif %}">
+                                {{ op.sbs_classification|default:"Normal" }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/admin/credit_risk/creditoperation/{{ op.id }}/change/" class="btn btn-xs btn-outline-secondary"><i class="fas fa-edit"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center py-5 text-muted">No existen operaciones crediticias registradas.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination Footer -->
+        <div class="card-footer clearfix bg-white border-top">
+            <div class="float-left text-muted small mt-2">
+                Mostrando {{ page_obj.start_index }} a {{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros
+            </div>
+            <ul class="pagination pagination-sm m-0 float-right">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-item link-secondary" href="?page=1">&laquo; primero</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">anterior</a></li>
+                {% endif %}
+    
+                <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }}</a></li>
+    
+                {% if page_obj.has_next %}
+                    <li class="page-link"><a class="page-link" href="?page={{ page_obj.next_page_number }}">siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">último &raquo;</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

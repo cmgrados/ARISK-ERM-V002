@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 9pt;
+            color: #222;
+        }
+        .header {
+            border-bottom: 3px solid #161065;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #161065;
+        }
+        .section-title {
+            background-color: #f2f2f2;
+            padding: 5px;
+            font-weight: bold;
+            border-left: 5px solid #161065;
+            margin: 15px 0 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th {
+            background-color: #161065;
+            color: white;
+            padding: 6px;
+            text-align: left;
+        }
+        td {
+            border: 1px solid #eee;
+            padding: 6px;
+        }
+        .num { text-align: right; }
+        .stat-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            display: inline-block;
+            width: 30%;
+            margin-right: 2%;
+            text-align: center;
+        }
+        .stat-val {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #161065;
+        }
+        .stat-label {
+            font-size: 8pt;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">REPORTE CONSOLIDADO DE RIESGO</div>
+        <div>Periodo de Corte: {{ selected_date }}</div>
+    </div>
+
+    <div class="section-title">1. RESUMEN EJECUTIVO</div>
+    <div style="width: 100%;">
+        <div class="stat-card">
+            <div class="stat-val">S/ {{ total_balance|floatformat:2 }}</div>
+            <div class="stat-label">CARTERA TOTAL</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">{{ par_30|floatformat:2 }}%</div>
+            <div class="stat-label">MORA PAR > 30</div>
+        </div>
+        <div class="stat-card" style="margin-right:0;">
+            <div class="stat-val">{{ expected_loss|floatformat:2 }}%</div>
+            <div class="stat-label">PÉRDIDA ESPERADA</div>
+        </div>
+    </div>
+
+    <div class="section-title">2. DISTRIBUCIÓN POR CATEGORÍA SBS</div>
+    <table>
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th class="num">Saldo (S/)</th>
+                <th class="num">% Part.</th>
+                <th class="num">Prov. Requerida</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in classification_data %}
+            <tr>
+                <td>{{ item.sbs_classification }}</td>
+                <td class="num">{{ item.balance|floatformat:2 }}</td>
+                <td class="num">{{ item.percent|floatformat:2 }}%</td>
+                <td class="num">{{ item.required_provision|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">3. CONCENTRACIÓN Y LÍMITES</div>
+    <p><strong>Índice Herfindahl-Hirschman (IHH):</strong> {{ ihh_index|floatformat:2 }} 
+       ({{ ihh_status }})</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Segmento</th>
+                <th class="num">Saldo (S/)</th>
+                <th class="num">% Part.</th>
+                <th class="num">IHH Contrib.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in ihh_data %}
+            <tr>
+                <td>{{ item.segment }}</td>
+                <td class="num">{{ item.balance|floatformat:2 }}</td>
+                <td class="num">{{ item.percent|floatformat:2 }}%</td>
+                <td class="num">{{ item.ihh_contribution|floatformat:4 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">4. INDICADORES DE GESTIÓN (KPI)</div>
+    <table>
+        <tr>
+            <td><strong>Cobertura de Cartera Atrasada:</strong></td>
+            <td class="num">{{ coverage_ratio|floatformat:2 }}%</td>
+        </tr>
+        <tr>
+            <td><strong>Grado de Concentración (Top 10):</strong></td>
+            <td class="num">{{ top_10_concentration|floatformat:2 }}%</td>
+        </tr>
+        <tr>
+            <td><strong>Provisiones s/ Patrimonio Efectivo:</strong></td>
+            <td class="num">{{ prov_vs_patrimony|floatformat:2 }}%</td>
+        </tr>
+    </table>
+
+    <div style="margin-top:30px; font-size: 8pt; border-top: 1px solid #ccc; padding-top: 10px;">
+        Este reporte es confidencial y para uso exclusivo del Comité de Riesgos. 
+        Calculado bajo metodologías estándar de Basilea III y SBS.
+    </div>
+
+</body>
+</html>
