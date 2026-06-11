@@ -1,35 +1,610 @@
 {% extends 'base.html' %}
-{% block title_header %}{{ page_title }}{% endblock %}
+{% block title_header %}Metodolog&iacute;as y Matrices Estrat&eacute;gicas{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-6">
-        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
-            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-frown-open text-primary mr-2"></i>Análisis FODA (SWOT)</h3></div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-6 mb-2"><div class="p-2 bg-success-light border rounded text-success"><strong>Fortalezas:</strong> Solidez financiera, base de socios leal.</div></div>
-                    <div class="col-6 mb-2"><div class="p-2 bg-info-light border rounded text-info"><strong>Oportunidades:</strong> Nuevos sectores fintech, expansión rural.</div></div>
-                    <div class="col-6"><div class="p-2 bg-warning-light border rounded text-warning"><strong>Debilidades:</strong> Dependencia de sistemas legacy, rotación TI.</div></div>
-                    <div class="col-6"><div class="p-2 bg-danger-light border rounded text-danger"><strong>Amenazas:</strong> Inestabilidad política, nuevos competidores.</div></div>
-                </div>
-            </div>
+<div class="container-fluid">
+    <!-- Navegación Superior (Horizontal Tabs) -->
+    <div class="card shadow-sm border-0 mb-4" style="border-top: 5px solid #161065;">
+        <div class="card-header bg-white p-0 border-bottom-0">
+            <ul class="nav nav-tabs nav-justified" id="metodologiasTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold" id="tab-encuestas" data-toggle="tab" href="#content-encuestas" role="tab">
+                        <i class="fas fa-poll mr-2"></i>Encuestas
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="tab-foda" data-toggle="tab" href="#content-foda" role="tab">
+                        <i class="fas fa-chess-knight mr-2"></i>FODA Cruzado
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="tab-mefi" data-toggle="tab" href="#content-mefi" role="tab">
+                        <i class="fas fa-sign-in-alt mr-2"></i>MEFI
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="tab-mefe" data-toggle="tab" href="#content-mefe" role="tab">
+                        <i class="fas fa-sign-out-alt mr-2"></i>MEFE
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold" id="tab-mpc" data-toggle="tab" href="#content-mpc" role="tab">
+                        <i class="fas fa-trophy mr-2"></i>MPC
+                    </a>
+                </li>
+            </ul>
         </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
-            <div class="card-header bg-white"><h3 class="card-title font-weight-bold" style="color:#141313;"><i class="fas fa-chart-line mr-2"></i>Matriz de Posicionamiento (BCG)</h3></div>
-            <div class="card-body text-center p-4">
-                <p class="text-muted">Análisis de productos por cuota de mercado vs. crecimiento del sector.</p>
-                <div class="btn-group w-100">
-                    <button class="btn btn-outline-dark">Estrellas</button>
-                    <button class="btn btn-outline-dark">Interrogantes</button>
-                    <button class="btn btn-outline-dark">Vacas</button>
-                    <button class="btn btn-outline-dark">Perros</button>
+        <div class="card-body bg-light">
+            <div class="tab-content" id="metodologiasTabContent">
+                
+                <!-- SECCIÓN ENCUESTAS -->
+                <div class="tab-pane fade show active" id="content-encuestas" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-primary font-weight-bold"><i class="fas fa-poll text-primary mr-2"></i>Encuestas Institucionales</h4>
+                        <button class="btn btn-primary" onclick="saveSurveys()"><i class="fas fa-save mr-1"></i> Guardar Encuestas</button>
+                    </div>
+                    <p class="text-muted">Resultados y levantamiento de informaci&oacute;n previa a la planeaci&oacute;n estrat&eacute;gica.</p>
+                    
+                    <ul class="nav nav-pills mb-3" id="pills-encuestas-tab" role="tablist">
+                      <li class="nav-item">
+                        <a class="nav-link active" id="pills-clima-tab" data-toggle="pill" href="#pills-clima" role="tab">Clima Organizacional</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" id="pills-satisfaccion-tab" data-toggle="pill" href="#pills-satisfaccion" role="tab">Satisfacci&oacute;n al Socio</a>
+                      </li>
+                      <li class="nav-item">
+                        <a class="nav-link" id="pills-procesos-tab" data-toggle="pill" href="#pills-procesos" role="tab">Procesos Internos</a>
+                      </li>
+                    </ul>
+                    <div class="tab-content" id="pills-encuestas-tabContent">
+                      <div class="tab-pane fade show active" id="pills-clima" role="tabpanel">
+                          <div class="table-responsive">
+                              <table class="table table-bordered table-striped bg-white">
+                                  <thead class="bg-indigo text-white text-center">
+                                      <tr>
+                                          <th>Marca temporal</th>
+                                          <th>AGENCIA</th>
+                                          <th>G&eacute;nero</th>
+                                          <th>Rango de edad</th>
+                                          <th>Tiempo de trabajo en CAC</th>
+                                          <th>Nivel en la organizaci&oacute;n</th>
+                                          <th>¿Consideras que la cooperativa esta adecuadamente organizada?</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <tr><td colspan="7" class="text-center text-muted">A&uacute;n no hay respuestas cargadas para esta encuesta.</td></tr>
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                      <div class="tab-pane fade" id="pills-satisfaccion" role="tabpanel">
+                          <div class="table-responsive">
+                              <table class="table table-bordered table-striped bg-white">
+                                  <thead class="bg-indigo text-white text-center">
+                                      <tr>
+                                          <th>Marca temporal</th>
+                                          <th>AGENCIA</th>
+                                          <th>¿SU G&Eacute;NERO?</th>
+                                          <th>RANGO DE EDAD</th>
+                                          <th>ACTIVIDAD ACTUAL</th>
+                                          <th>TIEMPO DE SOCIO</th>
+                                          <th>¿QU&Eacute; SERVICIOS UTILIZA CON M&Aacute;S FRECUENCIA?</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <tr><td colspan="7" class="text-center text-muted">A&uacute;n no hay respuestas cargadas para esta encuesta.</td></tr>
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                      <div class="tab-pane fade" id="pills-procesos" role="tabpanel">
+                          <div class="table-responsive">
+                              <table class="table table-bordered table-striped bg-white">
+                                  <thead class="bg-indigo text-white text-center">
+                                      <tr>
+                                          <th>Marca temporal</th>
+                                          <th>AGENCIA</th>
+                                          <th>Nivel Jer&aacute;rquico</th>
+                                          <th>Responsables de cada proceso</th>
+                                          <th>Funciones descritas y actualizadas</th>
+                                          <th>Objetivos socializados</th>
+                                          <th>Interacciones entre procesos</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      <tr><td colspan="7" class="text-center text-muted">A&uacute;n no hay respuestas cargadas para esta encuesta.</td></tr>
+                                  </tbody>
+                              </table>
+                          </div>
+                      </div>
+                    </div>
                 </div>
-                <div class="mt-3"><small>Última revisión: Enero 2026</small></div>
+
+                <!-- SECCIÓN FODA -->
+                <div class="tab-pane fade" id="content-foda" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-primary font-weight-bold"><i class="fas fa-chess-knight text-primary mr-2"></i>Matriz FODA Cruzada</h4>
+                        <button class="btn btn-primary" onclick="saveFODA()"><i class="fas fa-save mr-1"></i> Guardar FODA</button>
+                    </div>
+                    
+                    <div class="table-responsive shadow-sm">
+                        <table class="table table-bordered mb-0 bg-white" style="table-layout: fixed;">
+                            <tbody>
+                                <!-- Fila 1 -->
+                                <tr>
+                                    <td class="bg-light align-middle text-center w-25">
+                                        <h5 class="text-indigo font-weight-bold mb-0">AN&Aacute;LISIS INTERNO <br><small>Y EXTERNO</small></h5>
+                                    </td>
+                                    <td class="w-25 border-success border-top-0 border-bottom-0" style="background-color: #f0fdf4;">
+                                        <h5 class="text-success font-weight-bold text-center"><i class="fas fa-arrow-up mr-1"></i> FORTALEZAS (F)</h5>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-f" rows="5" placeholder="Escriba las fortalezas aqu&iacute;..."></textarea>
+                                    </td>
+                                    <td class="w-25 border-danger border-top-0 border-bottom-0" style="background-color: #fef2f2;">
+                                        <h5 class="text-danger font-weight-bold text-center"><i class="fas fa-arrow-down mr-1"></i> DEBILIDADES (D)</h5>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-d" rows="5" placeholder="Escriba las debilidades aqu&iacute;..."></textarea>
+                                    </td>
+                                </tr>
+                                <!-- Fila 2 -->
+                                <tr>
+                                    <td class="border-info border-left-0 border-right-0" style="background-color: #eff6ff;">
+                                        <h5 class="text-info font-weight-bold text-center"><i class="fas fa-star mr-1"></i> OPORTUNIDADES (O)</h5>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-o" rows="5" placeholder="Escriba las oportunidades aqu&iacute;..."></textarea>
+                                    </td>
+                                    <td class="bg-light">
+                                        <h6 class="text-secondary font-weight-bold text-center">ESTRATEGIAS FO (MAX-MAX)</h6>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-fo" rows="5" placeholder="Escriba estrategias FO aqu&iacute;..."></textarea>
+                                    </td>
+                                    <td class="bg-light">
+                                        <h6 class="text-secondary font-weight-bold text-center">ESTRATEGIAS DO (MIN-MAX)</h6>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-do" rows="5" placeholder="Escriba estrategias DO aqu&iacute;..."></textarea>
+                                    </td>
+                                </tr>
+                                <!-- Fila 3 -->
+                                <tr>
+                                    <td class="border-warning border-left-0 border-right-0" style="background-color: #fffbeb;">
+                                        <h5 class="text-warning font-weight-bold text-center"><i class="fas fa-exclamation-triangle mr-1"></i> AMENAZAS (A)</h5>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-a" rows="5" placeholder="Escriba las amenazas aqu&iacute;..."></textarea>
+                                    </td>
+                                    <td class="bg-light">
+                                        <h6 class="text-secondary font-weight-bold text-center">ESTRATEGIAS FA (MAX-MIN)</h6>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-fa" rows="5" placeholder="Escriba estrategias FA aqu&iacute;..."></textarea>
+                                    </td>
+                                    <td class="bg-light">
+                                        <h6 class="text-secondary font-weight-bold text-center">ESTRATEGIAS DA (MIN-MIN)</h6>
+                                        <textarea class="form-control border-0 bg-transparent" id="foda-da" rows="5" placeholder="Escriba estrategias DA aqu&iacute;..."></textarea>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN MEFI -->
+                <div class="tab-pane fade" id="content-mefi" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-primary font-weight-bold"><i class="fas fa-sign-in-alt text-primary mr-2"></i>Matriz de Evaluaci&oacute;n de Factores Internos (MEFI)</h4>
+                        <button class="btn btn-primary" onclick="saveMEFI()"><i class="fas fa-save mr-1"></i> Guardar MEFI</button>
+                    </div>
+                    
+                    <!-- Análisis MEFI Automático -->
+                    <div class="alert alert-info border-0 shadow-sm mb-3">
+                        <h5 class="font-weight-bold"><i class="fas fa-lightbulb mr-2"></i>An&aacute;lisis Estrat&eacute;gico MEFI</h5>
+                        <div id="mefi-analysis-text">Complete la matriz para generar el an&aacute;lisis autom&aacute;tico.</div>
+                    </div>
+
+                    <div class="table-responsive shadow-sm">
+                        <table class="table table-bordered table-striped mb-0 text-center bg-white" id="mefi-table">
+                            <thead class="bg-indigo text-white">
+                                <tr>
+                                    <th style="width: 50%">Factor Interno</th>
+                                    <th style="width: 15%">Peso (0-100%)</th>
+                                    <th style="width: 15%">Calificaci&oacute;n (1-4)</th>
+                                    <th style="width: 15%">Valor Ponderado</th>
+                                    <th style="width: 5%">Acci&oacute;n</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS llenará esto -->
+                            </tbody>
+                            <tfoot class="bg-light font-weight-bold">
+                                <tr>
+                                    <td class="text-right">TOTALES</td>
+                                    <td id="mefi-total-peso">0%</td>
+                                    <td>-</td>
+                                    <td id="mefi-total-valor">0.00</td>
+                                    <td><button class="btn btn-sm btn-outline-success" onclick="addMefiRow()"><i class="fas fa-plus"></i></button></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN MEFE -->
+                <div class="tab-pane fade" id="content-mefe" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-primary font-weight-bold"><i class="fas fa-sign-out-alt text-primary mr-2"></i>Matriz de Evaluaci&oacute;n de Factores Externos (MEFE)</h4>
+                        <button class="btn btn-primary" onclick="saveMEFE()"><i class="fas fa-save mr-1"></i> Guardar MEFE</button>
+                    </div>
+                    
+                    <!-- Análisis MEFE Automático -->
+                    <div class="alert alert-info border-0 shadow-sm mb-3">
+                        <h5 class="font-weight-bold"><i class="fas fa-lightbulb mr-2"></i>An&aacute;lisis Estrat&eacute;gico MEFE</h5>
+                        <div id="mefe-analysis-text">Complete la matriz para generar el an&aacute;lisis autom&aacute;tico.</div>
+                    </div>
+
+                    <div class="table-responsive shadow-sm">
+                        <table class="table table-bordered table-striped mb-0 text-center bg-white" id="mefe-table">
+                            <thead class="bg-indigo text-white">
+                                <tr>
+                                    <th style="width: 50%">Factor Externo</th>
+                                    <th style="width: 15%">Peso (0-100%)</th>
+                                    <th style="width: 15%">Calificaci&oacute;n (1-4)</th>
+                                    <th style="width: 15%">Valor Ponderado</th>
+                                    <th style="width: 5%">Acci&oacute;n</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- JS llenará esto -->
+                            </tbody>
+                            <tfoot class="bg-light font-weight-bold">
+                                <tr>
+                                    <td class="text-right">TOTALES</td>
+                                    <td id="mefe-total-peso">0%</td>
+                                    <td>-</td>
+                                    <td id="mefe-total-valor">0.00</td>
+                                    <td><button class="btn btn-sm btn-outline-success" onclick="addMefeRow()"><i class="fas fa-plus"></i></button></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN MPC -->
+                <div class="tab-pane fade" id="content-mpc" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-primary font-weight-bold"><i class="fas fa-trophy text-primary mr-2"></i>Matriz de Perfil Competitivo (MPC)</h4>
+                        <div>
+                            <button class="btn btn-success mr-2" onclick="addMpcCompetitor()"><i class="fas fa-plus mr-1"></i> Agregar Competidor</button>
+                            <button class="btn btn-primary" onclick="saveMPC()"><i class="fas fa-save mr-1"></i> Guardar MPC</button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive shadow-sm">
+                        <table class="table table-bordered mb-0 bg-white text-center align-middle" id="mpc-table">
+                            <thead class="bg-indigo text-white">
+                                <tr>
+                                    <th rowspan="2" class="align-middle" style="width: 30%">Factores y ponderaci&oacute;n</th>
+                                    <th colspan="10" class="border-bottom-0">COMPETIDORES</th>
+                                </tr>
+                                <tr id="mpc-competitors-row">
+                                    <!-- Aquí irán los competidores (Nuestra Entidad + dinámicos) -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Factores se llenarán con JS -->
+                            </tbody>
+                            <tfoot class="bg-light font-weight-bold" id="mpc-tfoot">
+                                <!-- Totales se llenarán con JS -->
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="mt-2 text-right">
+                        <button class="btn btn-sm btn-outline-primary" onclick="addMpcFactor()"><i class="fas fa-plus"></i> Agregar Factor</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Variables de inicialización (Datos desde el Backend)
+    const fodaData = JSON.parse('{{ foda_data|escapejs }}' || '{}');
+    const efiData = JSON.parse('{{ efi_data|escapejs }}' || '[]');
+    const efeData = JSON.parse('{{ efe_data|escapejs }}' || '[]');
+    let mpcData = JSON.parse('{{ mpc_data|escapejs }}' || '{}');
+
+    // Muestra alertas dinámicas
+    function showSuccess(msg) {
+        Swal.fire({icon: 'success', title: '¡Guardado!', text: msg, confirmButtonColor: '#10b981'});
+    }
+    function showError(msg) {
+        Swal.fire({icon: 'error', title: 'Error', text: msg, confirmButtonColor: '#ef4444'});
+    }
+
+    // CARGAR DATOS FODA
+    if (fodaData.F) $('#foda-f').val(fodaData.F);
+    if (fodaData.D) $('#foda-d').val(fodaData.D);
+    if (fodaData.O) $('#foda-o').val(fodaData.O);
+    if (fodaData.A) $('#foda-a').val(fodaData.A);
+    if (fodaData.FO) $('#foda-fo').val(fodaData.FO);
+    if (fodaData.DO) $('#foda-do').val(fodaData.DO);
+    if (fodaData.FA) $('#foda-fa').val(fodaData.FA);
+    if (fodaData.DA) $('#foda-da').val(fodaData.DA);
+
+    function saveFODA() {
+        const data = {
+            matrix_type: 'FODA',
+            data: {
+                F: $('#foda-f').val(),
+                D: $('#foda-d').val(),
+                O: $('#foda-o').val(),
+                A: $('#foda-a').val(),
+                FO: $('#foda-fo').val(),
+                DO: $('#foda-do').val(),
+                FA: $('#foda-fa').val(),
+                DA: $('#foda-da').val()
+            }
+        };
+        postData(data, 'Matriz FODA Cruzada guardada con éxito.');
+    }
+
+    function saveSurveys() {
+        showSuccess('Configuración de encuestas guardada con éxito.');
+    }
+
+    // --- LÓGICA MEFI Y MEFE ---
+    function renderMefiEfeTable(tableId, dataArray, addFunc) {
+        const tbody = $(`#${tableId} tbody`);
+        tbody.empty();
+        if (dataArray.length === 0) {
+            // Fila por defecto
+            dataArray.push({factor: '', peso: 0, calificacion: 1});
+        }
+        dataArray.forEach((row, i) => {
+            const tr = `
+            <tr>
+                <td><input type="text" class="form-control form-control-sm i-factor" value="${row.factor}"></td>
+                <td><input type="number" class="form-control form-control-sm i-peso text-center" min="0" max="100" value="${row.peso}" onchange="calcTotal('${tableId}')"></td>
+                <td><input type="number" class="form-control form-control-sm i-calificacion text-center" min="1" max="4" value="${row.calificacion}" onchange="calcTotal('${tableId}')"></td>
+                <td class="align-middle i-valor font-weight-bold text-primary">0.00</td>
+                <td class="align-middle"><button class="btn btn-sm btn-outline-danger" onclick="removeRow(this, '${tableId}')"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+            tbody.append(tr);
+        });
+        calcTotal(tableId);
+    }
+
+    function addMefiRow() {
+        efiData.push({factor: '', peso: 0, calificacion: 1});
+        renderMefiEfeTable('mefi-table', efiData, 'addMefiRow');
+    }
+    function addMefeRow() {
+        efeData.push({factor: '', peso: 0, calificacion: 1});
+        renderMefiEfeTable('mefe-table', efeData, 'addMefeRow');
+    }
+
+    function removeRow(btn, tableId) {
+        $(btn).closest('tr').remove();
+        calcTotal(tableId);
+    }
+
+    function calcTotal(tableId) {
+        let totalPeso = 0;
+        let totalValor = 0;
+        $(`#${tableId} tbody tr`).each(function() {
+            let p = parseFloat($(this).find('.i-peso').val()) || 0;
+            let c = parseFloat($(this).find('.i-calificacion').val()) || 0;
+            let v = (p / 100) * c;
+            totalPeso += p;
+            totalValor += v;
+            $(this).find('.i-valor').text(v.toFixed(2));
+        });
+        
+        let targetPeso = tableId === 'mefi-table' ? '#mefi-total-peso' : '#mefe-total-peso';
+        let targetValor = tableId === 'mefi-table' ? '#mefi-total-valor' : '#mefe-total-valor';
+        
+        $(targetPeso).text(totalPeso + '%');
+        $(targetValor).text(totalValor.toFixed(2));
+        
+        if (totalPeso !== 100) {
+            $(targetPeso).removeClass('text-success').addClass('text-danger');
+        } else {
+            $(targetPeso).removeClass('text-danger').addClass('text-success');
+        }
+
+        // Generate Automated Analysis
+        let score = totalValor.toFixed(2);
+        let analysisDiv = tableId === 'mefi-table' ? '#mefi-analysis-text' : '#mefe-analysis-text';
+        let tipo = tableId === 'mefi-table' ? 'interno' : 'externo';
+        
+        let text = "";
+        if (score >= 2.5) {
+            text = `La posici&oacute;n es <strong>FUERTE</strong> (Puntuaci&oacute;n: ${score}). La entidad est&aacute; respondiendo excelentemente a su entorno ${tipo}.`;
+        } else {
+            text = `La posici&oacute;n es <strong>D&Eacute;BIL</strong> (Puntuaci&oacute;n: ${score}). La entidad tiene deficiencias significativas en su entorno ${tipo} y necesita implementar estrategias urgentes.`;
+        }
+        $(analysisDiv).html(text);
+    }
+
+    renderMefiEfeTable('mefi-table', efiData, 'addMefiRow');
+    renderMefiEfeTable('mefe-table', efeData, 'addMefeRow');
+
+    function saveMEFI() {
+        const data = { matrix_type: 'EFI', data: [] };
+        $('#mefi-table tbody tr').each(function() {
+            data.data.push({
+                factor: $(this).find('.i-factor').val(),
+                peso: parseFloat($(this).find('.i-peso').val()) || 0,
+                calificacion: parseFloat($(this).find('.i-calificacion').val()) || 1
+            });
+        });
+        postData(data, 'Matriz MEFI guardada con éxito.');
+    }
+
+    function saveMEFE() {
+        const data = { matrix_type: 'EFE', data: [] };
+        $('#mefe-table tbody tr').each(function() {
+            data.data.push({
+                factor: $(this).find('.i-factor').val(),
+                peso: parseFloat($(this).find('.i-peso').val()) || 0,
+                calificacion: parseFloat($(this).find('.i-calificacion').val()) || 1
+            });
+        });
+        postData(data, 'Matriz MEFE guardada con éxito.');
+    }
+
+    // --- LÓGICA MPC ---
+    if (!mpcData.competitors || mpcData.competitors.length === 0) {
+        mpcData = {
+            competitors: ['Nuestra Entidad', 'Competidor A'],
+            factors: [
+                {name: 'Participación en el mercado', peso: 20, scores: [3, 2]},
+                {name: 'Competitividad de precios', peso: 20, scores: [4, 3]}
+            ]
+        };
+    }
+
+    function renderMPC() {
+        const trComps = $('#mpc-competitors-row');
+        trComps.empty();
+        
+        // Render Competitors Headers
+        mpcData.competitors.forEach((c, idx) => {
+            trComps.append(`
+                <th class="bg-indigo-light" style="min-width: 120px;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <input type="text" class="form-control form-control-sm mpc-comp-name bg-transparent text-white border-0 font-weight-bold" value="${c}" onchange="updateMpcCompName(${idx}, this.value)">
+                        ${idx > 0 ? `<button class="btn btn-sm text-white border-0" onclick="removeMpcCompetitor(${idx})"><i class="fas fa-times"></i></button>` : ''}
+                    </div>
+                    <div class="row mt-2 px-2 text-white-50" style="font-size: 0.8rem;">
+                        <div class="col-6 p-0 border-right">Valor</div>
+                        <div class="col-6 p-0">Puntaje</div>
+                    </div>
+                </th>
+            `);
+        });
+
+        // Render Factors Body
+        const tbody = $('#mpc-table tbody');
+        tbody.empty();
+        mpcData.factors.forEach((f, fIdx) => {
+            let tr = `<tr>
+                <td>
+                    <div class="d-flex">
+                        <input type="text" class="form-control form-control-sm mr-2" value="${f.name}" onchange="updateMpcFactorName(${fIdx}, this.value)" placeholder="Factor Clave">
+                        <div class="input-group input-group-sm" style="width: 100px;">
+                            <input type="number" class="form-control text-center" value="${f.peso}" min="0" max="100" onchange="updateMpcFactorPeso(${fIdx}, this.value)">
+                            <div class="input-group-append"><span class="input-group-text">%</span></div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger ml-2" onclick="removeMpcFactor(${fIdx})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            `;
+            
+            mpcData.competitors.forEach((c, cIdx) => {
+                let score = f.scores[cIdx] || 1;
+                let puntaje = ((f.peso / 100) * score).toFixed(2);
+                tr += `
+                <td class="p-1">
+                    <div class="row m-0 h-100 align-items-center">
+                        <div class="col-6 p-0 px-1 border-right">
+                            <input type="number" class="form-control form-control-sm text-center" min="1" max="5" value="${score}" onchange="updateMpcScore(${fIdx}, ${cIdx}, this.value)">
+                        </div>
+                        <div class="col-6 p-0 px-1 font-weight-bold text-primary mpc-puntaje-${cIdx}">${puntaje}</div>
+                    </div>
+                </td>`;
+            });
+            tr += `</tr>`;
+            tbody.append(tr);
+        });
+
+        calcMpcTotals();
+    }
+
+    function updateMpcCompName(idx, val) { mpcData.competitors[idx] = val; }
+    function updateMpcFactorName(fIdx, val) { mpcData.factors[fIdx].name = val; }
+    function updateMpcFactorPeso(fIdx, val) { mpcData.factors[fIdx].peso = parseFloat(val) || 0; renderMPC(); }
+    function updateMpcScore(fIdx, cIdx, val) { mpcData.factors[fIdx].scores[cIdx] = parseFloat(val) || 1; renderMPC(); }
+
+    function addMpcCompetitor() {
+        mpcData.competitors.push(`Competidor ${mpcData.competitors.length}`);
+        mpcData.factors.forEach(f => f.scores.push(1));
+        renderMPC();
+    }
+    
+    function removeMpcCompetitor(idx) {
+        if(idx === 0) return; // No remover "Nuestra Entidad"
+        mpcData.competitors.splice(idx, 1);
+        mpcData.factors.forEach(f => f.scores.splice(idx, 1));
+        renderMPC();
+    }
+
+    function addMpcFactor() {
+        let scores = Array(mpcData.competitors.length).fill(1);
+        mpcData.factors.push({name: '', peso: 0, scores: scores});
+        renderMPC();
+    }
+    
+    function removeMpcFactor(fIdx) {
+        mpcData.factors.splice(fIdx, 1);
+        renderMPC();
+    }
+
+    function calcMpcTotals() {
+        let totalPeso = 0;
+        let totals = Array(mpcData.competitors.length).fill(0);
+        
+        mpcData.factors.forEach(f => {
+            totalPeso += f.peso;
+            mpcData.competitors.forEach((c, cIdx) => {
+                let s = f.scores[cIdx] || 1;
+                totals[cIdx] += (f.peso / 100) * s;
+            });
+        });
+
+        const tfoot = $('#mpc-tfoot');
+        tfoot.empty();
+        let tr = `<tr><td class="text-right">TOTALES (Peso: <span class="${totalPeso === 100 ? 'text-success' : 'text-danger'}">${totalPeso}%</span>)</td>`;
+        
+        totals.forEach((tot, cIdx) => {
+            let isWinner = Math.max(...totals) === tot && totals.length > 0;
+            tr += `<td class="text-center font-weight-bold ${isWinner ? 'text-success' : 'text-secondary'}">${tot.toFixed(2)} ${isWinner ? '<i class="fas fa-crown text-warning"></i>' : ''}</td>`;
+        });
+        tr += `</tr>`;
+        tfoot.append(tr);
+    }
+
+    renderMPC();
+
+    function saveMPC() {
+        const data = { matrix_type: 'MPC', data: mpcData };
+        postData(data, 'Matriz de Perfil Competitivo guardada con éxito.');
+    }
+
+    // --- FUNCIÓN AJAX GLOBAL ---
+    function postData(payload, successMsg) {
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Procesando información.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        fetch("{% url 'save_matrix' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                showSuccess(successMsg);
+            } else {
+                showError(data.message);
+            }
+        }).catch(err => {
+            console.error(err);
+            showError('Error de red al guardar.');
+        });
+    }
+
+</script>
 {% endblock %}
