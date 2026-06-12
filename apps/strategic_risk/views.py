@@ -974,7 +974,11 @@ def get_kpi_metas(request, pk):
         
         # Verify permissions
         org = getattr(request.user, 'organization', None)
-        if ind.organization != org:
+        if not org:
+            from users.models import Organization
+            org = Organization.objects.first()
+            
+        if ind.organization != org and not request.user.is_superuser:
             return JsonResponse({'status': 'error', 'message': 'No tiene permisos para acceder a este indicador.'}, status=403)
             
         metas = MetaPeriodo.objects.filter(indicador=ind).order_by('periodo')
@@ -1017,7 +1021,11 @@ def save_kpi_metas(request, pk):
         
         # Verify permissions
         org = getattr(request.user, 'organization', None)
-        if ind.organization != org:
+        if not org:
+            from users.models import Organization
+            org = Organization.objects.first()
+            
+        if ind.organization != org and not request.user.is_superuser:
             return JsonResponse({'status': 'error', 'message': 'No tiene permisos para modificar este indicador.'}, status=403)
             
         data = json.loads(request.body)
