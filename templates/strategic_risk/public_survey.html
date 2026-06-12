@@ -185,15 +185,238 @@
             
             qContainer.innerHTML = html;
         } else {
-            // Si no hay datos (ej. primera vez), mostrar un mensaje vacío o el dummy
-            qContainer.innerHTML = `
-                <div class="alert alert-info text-center">
-                    <i class="fas fa-info-circle mb-2" style="font-size: 2rem;"></i><br>
-                    Esta encuesta aún no tiene preguntas publicadas.
-                </div>
-            `;
-            document.getElementById('submit-card').classList.add('d-none');
-            return;
+            // Fallback for demonstration if the user hasn't published the survey yet
+            if (surveyId === 'C7L8M9') {
+                const defaultQuestions = [
+                    {type: 'radio', title: 'AGENCIA', options: ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], required: true},
+                    {type: 'radio', title: 'Género al que pertenece', options: ['Masculino', 'Femenino', 'Otro'], required: true},
+                    {type: 'radio', title: 'Rango de edad en el que se encuentra', options: ['18 a 25', '26 a 35', '36 a 45', '46 a 55', 'Más de 55'], required: true},
+                    {type: 'radio', title: 'Tiempo de trabajo en CAC', options: ['Menos de 1 año', '1 a 3 años', '4 a 6 años', 'Más de 6 años'], required: true},
+                    {type: 'radio', title: 'Nivel dentro de la organización', options: ['Directivo', 'Gerencial', 'Jefatura', 'Operativo', 'Asesoría'], required: true},
+                    {type: 'radio', title: '¿Consideras que la cooperativa esta adecuadamente organizada?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Cuál es su opinión respecto a las políticas o lineamientos internos que maneja la cooperativa?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Qué opina respecto a los trámites operativos que realiza el colaborador al interior de la cooperativa? Ejemplo: Permisos, Adelantos, etc.', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cuál es su nivel de autonomía para la toma de decisiones en su puesto de trabajo? Ejemplo: Si a su criterio una operación de crédito no debe aprobarse esta es respetada?', options: ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], required: true},
+                    {type: 'radio', title: '¿Cree que los directivos intervienen en actividades que no les corresponden?', options: ['Sí', 'No', 'A veces'], required: true},
+                    {type: 'radio', title: '¿Cómo considera el nivel de liderazgo ejercido por la gerencia general?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cree que sus jefes confían en ud, su responsabilidad y sus decisiones?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Se manejan en la cooperativa políticas de estímulo y recompensa?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿Se siente ud, justamente recompensado por los resultados en su puesto de trabajo? Ejemplo: Sueldos+Incentivos+Otros', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Se ha visto inclinado a buscar otra oportunidad de trabajo?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿En la cooperativa se aplican sanciones a los colaboradores?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿Considera que en su cargo existen desafíos y metas profesionales?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Interviene ud, en la fijación de objetivos y metas para su puesto de trabajo?', options: ['Sí', 'No', 'A veces'], required: true},
+                    {type: 'radio', title: 'En su puesto de trabajo ¿se mide el cumplimiento de objetivos?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿Cree que tiene oportunidades de desarrollo profesional y personal en la cooperativa? Ejemplo: Ascender a nuevos cargos, capacitaciones, etc', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Cómo considera el ambiente de trabajo en la cooperativa?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cómo considera la relación entre compañeros de trabajo?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cómo considera la relación con sus jefes inmediatos?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cómo considera la relación con los socios de la cooperativa?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cómo considera su relación con los directivos?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Cree que existe un sentimiento de ayuda mutua al interior de la cooperativa?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Cree que existe en sus jefes inmediatos interés por ayudarlo y apoyarlo?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Cree que existe en los directivos interés por ayudarlo y apoyarlo?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Se aplican normas de rendimiento para evaluar al personal de la cooperativa?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿Cómo considera el espacio físico en el que hace su trabajo?', options: ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], required: true},
+                    {type: 'radio', title: '¿Se considera apropiadamente evaluado en su puesto de trabajo?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Se considera que cuenta con las herramientas necesarias para desempeñar sus funciones?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Sus compañeros de trabajo aceptan sus discrepancias y le ayudan a buscar soluciones?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Su jefe inmediato aceptan sus discrepancias y le ayudan a buscar a soluciones?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Los directivos aceptan sus discrepancias y le ayudan a buscar a soluciones?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Sus compañeros de trabajo tienden a ser conflictivos con usted?', options: ['Sí', 'No', 'A veces'], required: true},
+                    {type: 'radio', title: '¿Su jefe inmediato tienden a ser conflictivos con usted?', options: ['Sí', 'No', 'A veces'], required: true},
+                    {type: 'radio', title: '¿Los directivos de la cooperativa tienden a ser conflictivos con usted?', options: ['Sí', 'No', 'A veces'], required: true},
+                    {type: 'radio', title: '¿Ha experimentado alguna forma de acoso (Sexual / Hostigamiento) en la cooperativa?', options: ['Sí', 'No'], required: true},
+                    {type: 'radio', title: '¿Cómo califica su sentimiento de pertenencia a la cooperativa? Ejemplo: Que tan camiseta eres con la organización', options: ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], required: true},
+                    {type: 'textarea', title: '¿Que crees que te motivaría a tener mayor compromiso con la Cooperativa?', options: null, required: false},
+                    {type: 'radio', title: '¿Cómo estima su nivel de motivación trabajando la esta cooperativa?', options: ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], required: true},
+                    {type: 'radio', title: '¿Sus objetivos personales son compatibles con los objetivos de la cooperativa?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Se cumplen sus expectativas profesionales y personales en la cooperativa?', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true}
+                ];
+                
+                let html = '';
+                defaultQuestions.forEach((q, index) => {
+                    const isRequired = q.required ? '<span class="text-danger">*</span>' : '';
+                    let specificHtml = '';
+                    
+                    if (q.type === 'text') {
+                        specificHtml = `<input type="text" class="form-control mt-3" placeholder="Tu respuesta corta..." ${q.required ? 'required' : ''}>`;
+                    } else if (q.type === 'textarea') {
+                        specificHtml = `<textarea class="form-control mt-3" rows="4" placeholder="Escribe tu respuesta aquí..." ${q.required ? 'required' : ''}></textarea>`;
+                    } else if (q.type === 'radio' || q.type === 'checkbox') {
+                        q.options.forEach((opt, i) => {
+                            specificHtml += `
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="${q.type}" name="q_${index}" value="${opt}" id="q_${index}_opt_${i}" ${q.required && q.type==='radio' ? 'required' : ''}>
+                                    <label class="form-check-label" for="q_${index}_opt_${i}">${opt}</label>
+                                </div>
+                            `;
+                        });
+                    } else if (q.type === 'rating') {
+                        specificHtml = `
+                            <div class="rating-stars mt-3">
+                                <i class="fas fa-star star-item" data-val="1"></i>
+                                <i class="fas fa-star star-item" data-val="2"></i>
+                                <i class="fas fa-star star-item" data-val="3"></i>
+                                <i class="fas fa-star star-item" data-val="4"></i>
+                                <i class="fas fa-star star-item" data-val="5"></i>
+                                <input type="hidden" name="q_${index}" value="" ${q.required ? 'required' : ''}>
+                            </div>
+                        `;
+                    }
+
+                    html += `
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${index + 1}. ${q.title || 'Pregunta sin título'} ${isRequired}</h5>
+                                ${specificHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                qContainer.innerHTML = html;
+            } else if (surveyId === 'P2R0C1') {
+                const defaultQuestions = [
+                    {type: 'radio', title: 'AGENCIA', options: ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], required: true},
+                    {type: 'radio', title: 'Nivel Jerárquico', options: ['Directivo', 'Gerencial', 'Jefatura', 'Operativo', 'Asesoría'], required: true},
+                    {type: 'radio', title: 'Se definen personas responsables de cada proceso', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Las funciones y responsabilidades se encuentran descritas y son actualizadas', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Los procesos de la entidad cuentan con objetivos y estos son socializados con los empleados', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se identifica las interacciones entre los procesos de la entidad (el cómo los procesos se relacionan entre ellos Ejemplo: Actividades de Créditos y Operaciones)', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Los procesos cuentan con la documentación soporte de los mismos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Los procesos son documentados de acuerdo a estándares', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se identifican los riesgos en los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se identifican los controles y monitoreos a los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Los procesos se definen de tal manera que aporten al cumplimiento de los objetivos estratégicos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se definen indicadores de gestión de tipo estratégico, táctico y operativo', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'La tecnología se adapta para la ejecución de los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Los cambios de los procesos son informados a través de medios de comunicación formales', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'La documentación de los procesos y procedimientos se encuentran disponibles para los ejecutores', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'La aplicación de los procesos se hacen de acuerdo con sus descripciones', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se conoce el manejo de las herramientas tecnológicas para la ejecución de los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se realizan mediciones sobre la ejecución y resultado de los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se deja evidencia de los controles y monitoreos a los procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se hace seguimiento al desempeño individual de los colaboradores de acuerdo con la ejecución de los procesos y sus resultados', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se cuantifica el impacto de optimización de los procesos y se socializa en la organización', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Identifica las causas de las inconsistencias o reprocesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se hace seguimiento a los planes de mejora', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Identifica fácilmente la satisfacción que su proceso genera en clientes internos y externos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Considera que los dueños de los procesos realizan el suficiente acompañamiento para la adopción de procesos nuevos o cambio en los mismos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Las mejoras en los procesos se realizan como respuestas a situaciones particulares', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Las mejoras corresponden a acciones innovadoras', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se formulan acciones correctivas, frente a las causas de las inconsistencias presentadas', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: 'Se generan acciones preventivas y de mejora en sus procesos', options: ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], required: true},
+                    {type: 'radio', title: '¿Usted sabe calcular si las mejoras en su proceso “valen la pena”, es decir, si el beneficio que generan es mayor que el costo, y también cómo podrían generar nuevos ingresos a través de nuevos productos, servicios o canales de atención?', options: ['Sí', 'No', 'Parcialmente'], required: true}
+                ];
+                
+                let html = '';
+                defaultQuestions.forEach((q, index) => {
+                    const isRequired = q.required ? '<span class="text-danger">*</span>' : '';
+                    let specificHtml = '';
+                    
+                    if (q.type === 'text') {
+                        specificHtml = `<input type="text" class="form-control mt-3" placeholder="Tu respuesta corta..." ${q.required ? 'required' : ''}>`;
+                    } else if (q.type === 'textarea') {
+                        specificHtml = `<textarea class="form-control mt-3" rows="4" placeholder="Escribe tu respuesta aquí..." ${q.required ? 'required' : ''}></textarea>`;
+                    } else if (q.type === 'radio' || q.type === 'checkbox') {
+                        q.options.forEach((opt, i) => {
+                            specificHtml += `
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="${q.type}" name="q_${index}" value="${opt}" id="q_${index}_opt_${i}" ${q.required && q.type==='radio' ? 'required' : ''}>
+                                    <label class="form-check-label" for="q_${index}_opt_${i}">${opt}</label>
+                                </div>
+                            `;
+                        });
+                    }
+                    html += `
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${index + 1}. ${q.title} ${isRequired}</h5>
+                                ${specificHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+                qContainer.innerHTML = html;
+            } else if (surveyId === 'S4T5I6') {
+                const defaultQuestions = [
+                    {type: 'radio', title: 'AGENCIA', options: ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], required: true},
+                    {type: 'radio', title: '¿SU GÉNERO?', options: ['Masculino', 'Femenino', 'Otro'], required: true},
+                    {type: 'radio', title: 'SU EDAD SE UBICA EN EL RANGO DE: (Años)', options: ['18 a 25', '26 a 35', '36 a 45', '46 a 55', 'Más de 55'], required: true},
+                    {type: 'text', title: '¿CUÁL ES SU ACTIVIDAD ACTUAL?', options: null, required: true},
+                    {type: 'radio', title: '¿DESDE HACE CUÁNTO TIEMPO ES ASOCIADO A LA COOPERATIVA?', options: ['Menos de 1 año', '1 a 3 años', '4 a 6 años', 'Más de 6 años'], required: true},
+                    {type: 'checkbox', title: '¿QUÉ SERVICIOS DE LA COOPERATIVA UTILIZA USTED CON MÁS FRECUENCIA? (seleccione una o varias respuestas)', options: ['Ahorros', 'Crédito', 'Inversiones a plazo', 'Banca Virtual / App', 'Tarjetas'], required: true},
+                    {type: 'rating', title: '¿CÓMO CALIFICARÍA EL SERVICIO EN VENTANILLA QUE RECIBE EN LA COOPERATIVA?', options: null, required: true},
+                    {type: 'rating', title: '¿CÓMO CALIFICARÍA LA ATENCIÓN EN LA GESTIÓN DE CRÉDITO QUE RECIBE EN LA COOPERATIVA?', options: null, required: true},
+                    {type: 'rating', title: '¿CÓMO CALIFICARÍA LA INFORMACIÓN Y ASESORÍA QUE RECIBE DENTRO DE LA OFICINA?', options: null, required: true},
+                    {type: 'rating', title: 'TRATO DEL FUNCIONARIO', options: null, required: true},
+                    {type: 'rating', title: 'RAPIDEZ EN LA ATENCIÓN', options: null, required: true},
+                    {type: 'rating', title: 'PRESENTACIÓN PERSONAL', options: null, required: true},
+                    {type: 'rating', title: 'INFORMACIÓN BRINDADA', options: null, required: true},
+                    {type: 'rating', title: 'HORARIO DE ATENCIÓN', options: null, required: true},
+                    {type: 'rating', title: 'ASEO DE LA OFICINA', options: null, required: true},
+                    {type: 'rating', title: 'UBICACIÓN LA OFICINA', options: null, required: true},
+                    {type: 'rating', title: 'VENTILACIÓN E ILUMINACIÓN', options: null, required: true},
+                    {type: 'rating', title: 'EXTERIORES DE LA OFICINA', options: null, required: true},
+                    {type: 'rating', title: 'SILLAS EN ÁREA DE ESPERA', options: null, required: true},
+                    {type: 'rating', title: 'SEÑALIZACIÓN INTERNA', options: null, required: true},
+                    {type: 'checkbox', title: '¿QUÉ ASPECTOS HAN GENERADO SU CONFIANZA EN LA COOPERATIVA? (seleccione una o varias respuestas)', options: ['Trayectoria de la Cooperativa', 'Recomendación de familiares/amigos', 'Solidez financiera', 'Tasas de interés competitivas', 'Calidad en la atención'], required: true},
+                    {type: 'radio', title: '¿SE SIENTE UD. IDENTIFICADO CON SU COOPERATIVA?', options: ['Sí', 'No', 'Parcialmente'], required: true},
+                    {type: 'radio', title: '¿HA SENTIDO ALGÚN TIPO DE MALTRATO EN SU COOPERATIVA?', options: ['Sí', 'No'], required: true},
+                    {type: 'textarea', title: 'QUE LE GUSTARÍA MEJORAR DE SU COOPERATIVA ANDRELI?', options: null, required: false}
+                ];
+                
+                let html = '';
+                defaultQuestions.forEach((q, index) => {
+                    const isRequired = q.required ? '<span class="text-danger">*</span>' : '';
+                    let specificHtml = '';
+                    
+                    if (q.type === 'text') {
+                        specificHtml = `<input type="text" class="form-control mt-3" placeholder="Tu respuesta corta..." ${q.required ? 'required' : ''}>`;
+                    } else if (q.type === 'textarea') {
+                        specificHtml = `<textarea class="form-control mt-3" rows="4" placeholder="Escribe tu respuesta aquí..." ${q.required ? 'required' : ''}></textarea>`;
+                    } else if (q.type === 'radio' || q.type === 'checkbox') {
+                        q.options.forEach((opt, i) => {
+                            specificHtml += `
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="${q.type}" name="q_${index}" value="${opt}" id="q_${index}_opt_${i}" ${q.required && q.type==='radio' ? 'required' : ''}>
+                                    <label class="form-check-label" for="q_${index}_opt_${i}">${opt}</label>
+                                </div>
+                            `;
+                        });
+                    } else if (q.type === 'rating') {
+                        specificHtml = `
+                            <div class="rating-stars mt-3">
+                                <i class="fas fa-star star-item" data-val="1"></i>
+                                <i class="fas fa-star star-item" data-val="2"></i>
+                                <i class="fas fa-star star-item" data-val="3"></i>
+                                <i class="fas fa-star star-item" data-val="4"></i>
+                                <i class="fas fa-star star-item" data-val="5"></i>
+                                <input type="hidden" name="q_${index}" value="" ${q.required ? 'required' : ''}>
+                            </div>
+                        `;
+                    }
+                    html += `
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${index + 1}. ${q.title} ${isRequired}</h5>
+                                ${specificHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+                qContainer.innerHTML = html;
+            } else {
+                qContainer.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle mb-2" style="font-size: 2rem;"></i><br>
+                        Esta encuesta aún no tiene preguntas publicadas.
+                    </div>
+                `;
+                document.getElementById('submit-card').classList.add('d-none');
+                return;
+            }
         }
 
         // Mostrar botón

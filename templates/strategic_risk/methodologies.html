@@ -159,7 +159,7 @@
                                         <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('s1')"><i class="fas fa-tasks"></i></button>
                                         <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('s1')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('s1')"><i class="fas fa-clone"></i></button>
-                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados"><i class="fas fa-chart-pie"></i></button>
+                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados" onclick="showSurveyResults('s1')"><i class="fas fa-chart-pie"></i></button>
                                         <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" title="Eliminar" onclick="deleteSurvey('s1')"><i class="fas fa-trash-alt"></i></button>
                                     </td>
                                 </tr>
@@ -177,11 +177,11 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="text-right">
                                         <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('s2')"><i class="fas fa-tasks"></i></button>
                                         <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('s2')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('s2')"><i class="fas fa-clone"></i></button>
-                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados"><i class="fas fa-chart-pie"></i></button>
+                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados" onclick="showSurveyResults('s2')"><i class="fas fa-chart-pie"></i></button>
                                         <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" title="Eliminar" onclick="deleteSurvey('s2')"><i class="fas fa-trash-alt"></i></button>
                                     </td>
                                 </tr>
@@ -199,11 +199,11 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="text-right">
                                         <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('s3')"><i class="fas fa-tasks"></i></button>
                                         <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('s3')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('s3')"><i class="fas fa-clone"></i></button>
-                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados"><i class="fas fa-chart-pie"></i></button>
+                                        <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados" onclick="showSurveyResults('s3')"><i class="fas fa-chart-pie"></i></button>
                                         <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" title="Eliminar" onclick="deleteSurvey('s3')"><i class="fas fa-trash-alt"></i></button>
                                     </td>
                                 </tr>
@@ -258,6 +258,55 @@
                                     <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cerrar</button>
                                     <button type="button" class="btn btn-primary rounded-pill px-4" onclick="saveSurveyDesign()"><i class="fas fa-bullhorn mr-1"></i> Publicar Encuesta</button>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MODAL: SURVEY RESULTS -->
+                <div class="modal fade" id="surveyResultsModal" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-xl" role="document">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-primary text-white border-0">
+                                <h5 class="modal-title font-weight-bold"><i class="fas fa-chart-pie mr-2"></i> Resultados de Encuesta: <span id="surveyResultsName" class="font-italic"></span></h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body bg-light" style="max-height: 75vh; overflow-y: auto; overflow-x: hidden;">
+                                <div class="row mb-4">
+                                    <div class="col-md-4">
+                                        <div class="info-box shadow-sm border-0 rounded-lg">
+                                            <span class="info-box-icon bg-info rounded-circle ml-3 mt-3 mb-3" style="width: 60px; height: 60px;"><i class="fas fa-users"></i></span>
+                                            <div class="info-box-content mt-2">
+                                                <span class="info-box-text text-muted font-weight-bold">Total Respuestas</span>
+                                                <span class="info-box-number" style="font-size: 1.5rem;" id="resTotalResponses">0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="info-box shadow-sm border-0 rounded-lg">
+                                            <span class="info-box-icon bg-success rounded-circle ml-3 mt-3 mb-3" style="width: 60px; height: 60px;"><i class="fas fa-check-circle"></i></span>
+                                            <div class="info-box-content mt-2">
+                                                <span class="info-box-text text-muted font-weight-bold">Tasa de Completitud</span>
+                                                <span class="info-box-number" style="font-size: 1.5rem;">100%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-success btn-lg btn-block shadow-sm h-100 rounded-lg font-weight-bold d-flex flex-column justify-content-center align-items-center" onclick="downloadReport()">
+                                            <i class="fas fa-file-excel fa-2x mb-2"></i> Exportar a Excel
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="text-secondary font-weight-bold mb-3 border-bottom pb-2">Distribución de Respuestas</h5>
+                                <div id="chartsContainer" class="row">
+                                    <!-- Charts will be injected here dynamically -->
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 bg-light">
+                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cerrar</button>
                             </div>
                         </div>
                     </div>
@@ -660,6 +709,7 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Variables de inicialización (Datos desde el Backend)
     const fodaData = JSON.parse('{{ foda_data|escapejs }}' || '{}');
@@ -1197,7 +1247,7 @@
         });
     }
 
-    function createSurvey(defaultTitle = '') {
+    function createSurvey(defaultTitle = '', sourcePublicId = null) {
         const today = new Date().toISOString().split('T')[0];
         Swal.fire({
             title: defaultTitle ? 'Duplicar Encuesta' : 'Crear Nueva Encuesta',
@@ -1240,6 +1290,18 @@
                 const dateParts = result.value.date.split('-');
                 const displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
 
+                if (sourcePublicId) {
+                    const existingData = localStorage.getItem('survey_' + sourcePublicId);
+                    if (existingData) {
+                        let parsedData = JSON.parse(existingData);
+                        parsedData.title = result.value.title;
+                        localStorage.setItem('survey_' + randomId, JSON.stringify(parsedData));
+                    }
+                } else {
+                    // Inicializar encuesta vacía para evitar errores
+                    localStorage.setItem('survey_' + randomId, JSON.stringify({ title: result.value.title, questions: [] }));
+                }
+
                 const tbody = document.getElementById('encuestas-tbody');
                 const newRow = `
                     <tr class="align-middle" id="row-${rowId}">
@@ -1252,19 +1314,31 @@
                                 <input type="text" class="form-control bg-light" value="${newLink}" readonly id="link-${rowId}">
                                 <div class="input-group-append">
                                     <button class="btn btn-outline-primary" type="button" onclick="copyLink('link-${rowId}')" title="Copiar enlace"><i class="fas fa-copy"></i></button>
+                                    <button class="btn btn-outline-info" type="button" onclick="window.open(document.getElementById('link-${rowId}').value, '_blank')" title="Ver Encuesta"><i class="fas fa-eye"></i> Ver</button>
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td class="text-right">
                             <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('${rowId}')"><i class="fas fa-tasks"></i></button>
                             <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('${rowId}')"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('${rowId}')"><i class="fas fa-clone"></i></button>
-                            <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados"><i class="fas fa-chart-pie"></i></button>
+                            <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados" onclick="showSurveyResults('${rowId}')"><i class="fas fa-chart-pie"></i></button>
                             <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" title="Eliminar" onclick="deleteSurvey('${rowId}')"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('afterbegin', newRow);
+
+                // Guardar la fila en localStorage
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                customSurveys.push({
+                    id: rowId,
+                    title: result.value.title,
+                    date: displayDate,
+                    link: newLink,
+                    publicId: randomId
+                });
+                localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
 
                 Swal.fire('¡Guardado!', 'La encuesta ha sido registrada correctamente.', 'success');
             }
@@ -1306,15 +1380,39 @@
             if (result.isConfirmed) {
                 document.getElementById('title-' + id).innerText = result.value.title;
                 const parts = result.value.date.split('-');
-                document.getElementById('date-' + id).innerText = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                const displayDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                document.getElementById('date-' + id).innerText = displayDate;
+                
+                // Actualizar en localStorage si es una encuesta custom
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                let index = customSurveys.findIndex(s => s.id === id);
+                if(index > -1) {
+                    customSurveys[index].title = result.value.title;
+                    customSurveys[index].date = displayDate;
+                    localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
+                }
+
                 Swal.fire('¡Actualizado!', 'Los datos de la encuesta se han modificado.', 'success');
             }
         });
     }
 
     function duplicateSurvey(id) {
+        const sourceLink = document.getElementById('link-' + id).value;
+        const sourcePublicId = sourceLink.split('/').pop();
+        const existingData = localStorage.getItem('survey_' + sourcePublicId);
+
+        if (!existingData && ['s1', 's2', 's3'].includes(id)) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Inicialización Requerida',
+                text: 'Para duplicar esta plantilla base, primero ábrala con "Diseñar Encuesta" y presione "Guardar" para inicializar su estructura interna en el navegador.'
+            });
+            return;
+        }
+
         const currentTitle = document.getElementById('title-' + id).innerText;
-        createSurvey('Copia de ' + currentTitle);
+        createSurvey('Copia de ' + currentTitle, sourcePublicId);
     }
 
     function deleteSurvey(id) {
@@ -1330,6 +1428,12 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('row-' + id).remove();
+                
+                // Eliminar de localStorage si es custom
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                customSurveys = customSurveys.filter(s => s.id !== id);
+                localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
+                
                 Swal.fire('¡Eliminado!', 'La encuesta ha sido eliminada.', 'success');
             }
         });
@@ -1462,47 +1566,76 @@
                 addQuestion('radio', 'Rango de edad en el que se encuentra', ['18 a 25', '26 a 35', '36 a 45', '46 a 55', 'Más de 55'], true);
                 addQuestion('radio', 'Tiempo de trabajo en CAC', ['Menos de 1 año', '1 a 3 años', '4 a 6 años', 'Más de 6 años'], true);
                 addQuestion('radio', 'Nivel dentro de la organización', ['Directivo', 'Gerencial', 'Jefatura', 'Operativo', 'Asesoría'], true);
-                addQuestion('radio', '¿Consideras que la cooperativa esta adecuadamente organizada?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Consideras que la cooperativa esta adecuadamente organizada?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Cuál es su opinión respecto a las políticas o lineamientos internos que maneja la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
                 addQuestion('radio', '¿Qué opina respecto a los trámites operativos que realiza el colaborador al interior de la cooperativa? Ejemplo: Permisos, Adelantos, etc.', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Cuál es su nivel de autonomía para la toma de decisiones en su puesto de trabajo? Ejemplo: Si a su criterio una operación de crédito no debe aprobarse esta es respetada?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cuál es su nivel de autonomía para la toma de decisiones en su puesto de trabajo? Ejemplo: Si a su criterio una operación de crédito no debe aprobarse esta es respetada?', ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], true);
                 addQuestion('radio', '¿Cree que los directivos intervienen en actividades que no les corresponden?', ['Sí', 'No', 'A veces'], true);
                 addQuestion('radio', '¿Cómo considera el nivel de liderazgo ejercido por la gerencia general?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Cree que sus jefes confían en ud, su responsabilidad y sus decisiones?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cree que sus jefes confían en ud, su responsabilidad y sus decisiones?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Se manejan en la cooperativa políticas de estímulo y recompensa?', ['Sí', 'No'], true);
-                addQuestion('radio', '¿Se siente ud, justamente recompensado por los resultados en su puesto de trabajo? Ejemplo: Sueldos+Incentivos+Otros', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Se siente ud, justamente recompensado por los resultados en su puesto de trabajo? Ejemplo: Sueldos+Incentivos+Otros', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Se ha visto inclinado a buscar otra oportunidad de trabajo?', ['Sí', 'No'], true);
                 addQuestion('radio', '¿En la cooperativa se aplican sanciones a los colaboradores?', ['Sí', 'No'], true);
-                addQuestion('radio', '¿Considera que en su cargo existen desafíos y metas profesionales?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Considera que en su cargo existen desafíos y metas profesionales?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Interviene ud, en la fijación de objetivos y metas para su puesto de trabajo?', ['Sí', 'No', 'A veces'], true);
                 addQuestion('radio', 'En su puesto de trabajo ¿se mide el cumplimiento de objetivos?', ['Sí', 'No'], true);
-                addQuestion('radio', '¿Cree que tiene oportunidades de desarrollo profesional y personal en la cooperativa? Ejemplo: Ascender a nuevos cargos, capacitaciones, etc', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cree que tiene oportunidades de desarrollo profesional y personal en la cooperativa? Ejemplo: Ascender a nuevos cargos, capacitaciones, etc', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Cómo considera el ambiente de trabajo en la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
                 addQuestion('radio', '¿Cómo considera la relación entre compañeros de trabajo?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
                 addQuestion('radio', '¿Cómo considera la relación con sus jefes inmediatos?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
                 addQuestion('radio', '¿Cómo considera la relación con los socios de la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
                 addQuestion('radio', '¿Cómo considera su relación con los directivos?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Cree que existe un sentimiento de ayuda mutua al interior de la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Cree que existe en sus jefes inmediatos interés por ayudarlo y apoyarlo?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Cree que existe en los directivos interés por ayudarlo y apoyarlo?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cree que existe un sentimiento de ayuda mutua al interior de la cooperativa?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Cree que existe en sus jefes inmediatos interés por ayudarlo y apoyarlo?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Cree que existe en los directivos interés por ayudarlo y apoyarlo?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Se aplican normas de rendimiento para evaluar al personal de la cooperativa?', ['Sí', 'No'], true);
                 addQuestion('radio', '¿Cómo considera el espacio físico en el que hace su trabajo?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Se considera apropiadamente evaluado en su puesto de trabajo?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Se considera que cuenta con las herramientas necesarias para desempeñar sus funciones?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Sus compañeros de trabajo aceptan sus discrepancias y le ayudan a buscar soluciones?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Su jefe inmediato aceptan sus discrepancias y le ayudan a buscar a soluciones?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Los directivos aceptan sus discrepancias y le ayudan a buscar a soluciones?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Se considera apropiadamente evaluado en su puesto de trabajo?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Se considera que cuenta con las herramientas necesarias para desempeñar sus funciones?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Sus compañeros de trabajo aceptan sus discrepancias y le ayudan a buscar soluciones?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Su jefe inmediato aceptan sus discrepancias y le ayudan a buscar a soluciones?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Los directivos aceptan sus discrepancias y le ayudan a buscar a soluciones?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
                 addQuestion('radio', '¿Sus compañeros de trabajo tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
                 addQuestion('radio', '¿Su jefe inmediato tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
                 addQuestion('radio', '¿Los directivos de la cooperativa tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
                 addQuestion('radio', '¿Ha experimentado alguna forma de acoso (Sexual / Hostigamiento) en la cooperativa?', ['Sí', 'No'], true);
-                addQuestion('radio', '¿Cómo califica su sentimiento de pertenencia a la cooperativa? Ejemplo: Que tan camiseta eres con la organización', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cómo califica su sentimiento de pertenencia a la cooperativa? Ejemplo: Que tan camiseta eres con la organización', ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], true);
                 addQuestion('textarea', '¿Que crees que te motivaría a tener mayor compromiso con la Cooperativa?', null, false);
-                addQuestion('radio', '¿Cómo estima su nivel de motivación trabajando la esta cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Sus objetivos personales son compatibles con los objetivos de la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
-                addQuestion('radio', '¿Se cumplen sus expectativas profesionales y personales en la cooperativa?', ['Deficiente', 'Malo', 'Regular', 'Bueno', 'Muy Bueno'], true);
+                addQuestion('radio', '¿Cómo estima su nivel de motivación trabajando la esta cooperativa?', ['Nulo', 'Bajo', 'Medio', 'Alto', 'Muy Alto'], true);
+                addQuestion('radio', '¿Sus objetivos personales son compatibles con los objetivos de la cooperativa?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Se cumplen sus expectativas profesionales y personales en la cooperativa?', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
             } else if (id === 's2') {
-                addQuestion('radio', '¿Considera que los procesos actuales son eficientes?', ['Sí, muy eficientes', 'Podrían mejorar', 'No son eficientes'], true);
+                addQuestion('radio', 'AGENCIA', ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], true);
+                addQuestion('radio', 'Nivel Jerárquico', ['Directivo', 'Gerencial', 'Jefatura', 'Operativo', 'Asesoría'], true);
+                addQuestion('radio', 'Se definen personas responsables de cada proceso', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Las funciones y responsabilidades se encuentran descritas y son actualizadas', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Los procesos de la entidad cuentan con objetivos y estos son socializados con los empleados', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se identifica las interacciones entre los procesos de la entidad (el cómo los procesos se relacionan entre ellos Ejemplo: Actividades de Créditos y Operaciones)', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Los procesos cuentan con la documentación soporte de los mismos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Los procesos son documentados de acuerdo a estándares', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se identifican los riesgos en los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se identifican los controles y monitoreos a los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Los procesos se definen de tal manera que aporten al cumplimiento de los objetivos estratégicos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se definen indicadores de gestión de tipo estratégico, táctico y operativo', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'La tecnología se adapta para la ejecución de los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Los cambios de los procesos son informados a través de medios de comunicación formales', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'La documentación de los procesos y procedimientos se encuentran disponibles para los ejecutores', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'La aplicación de los procesos se hacen de acuerdo con sus descripciones', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se conoce el manejo de las herramientas tecnológicas para la ejecución de los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se realizan mediciones sobre la ejecución y resultado de los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se deja evidencia de los controles y monitoreos a los procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se hace seguimiento al desempeño individual de los colaboradores de acuerdo con la ejecución de los procesos y sus resultados', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se cuantifica el impacto de optimización de los procesos y se socializa en la organización', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Identifica las causas de las inconsistencias o reprocesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se hace seguimiento a los planes de mejora', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Identifica fácilmente la satisfacción que su proceso genera en clientes internos y externos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Considera que los dueños de los procesos realizan el suficiente acompañamiento para la adopción de procesos nuevos o cambio en los mismos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Las mejoras en los procesos se realizan como respuestas a situaciones particulares', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Las mejoras corresponden a acciones innovadoras', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se formulan acciones correctivas, frente a las causas de las inconsistencias presentadas', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', 'Se generan acciones preventivas y de mejora en sus procesos', ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'], true);
+                addQuestion('radio', '¿Usted sabe calcular si las mejoras en su proceso “valen la pena”, es decir, si el beneficio que generan es mayor que el costo, y también cómo podrían generar nuevos ingresos a través de nuevos productos, servicios o canales de atención?', ['Sí', 'No', 'Parcialmente'], true);
             } else if (id === 's3') {
                 addQuestion('radio', 'AGENCIA', ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], true);
                 addQuestion('radio', '¿SU GÉNERO?', ['Masculino', 'Femenino', 'Otro'], true);
@@ -1678,7 +1811,7 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem('survey_data_' + currentSurveyId);
+                localStorage.removeItem('survey_' + currentSurveyId);
                 // Determinar el ID interno (s1, s2, s3)
                 let internalId = 's1';
                 ['s1', 's2', 's3'].forEach(id => {
@@ -1693,5 +1826,289 @@
         });
     }
 
+    // --- LÓGICA DE SURVEY RESULTS ---
+    let currentChartInstances = [];
+
+    function showSurveyResults(internalId) {
+        const title = document.getElementById('title-' + internalId).innerText;
+        const linkInput = document.getElementById('link-' + internalId).value;
+        const publicId = linkInput.split('/').pop();
+
+        // Intentar obtener diseño de la encuesta para saber qué graficar
+        let surveyData = JSON.parse(localStorage.getItem('survey_' + publicId));
+        
+        if (!surveyData || !surveyData.questions || surveyData.questions.length === 0) {
+            Swal.fire('Atención', 'No hay datos de estructura para generar gráficos. Por favor diseñe y publique la encuesta primero.', 'info');
+            return;
+        }
+
+        // --- INYECCIÓN PROGRAMÁTICA DE 78 ENCUESTAS MOCK ---
+        let responses = JSON.parse(localStorage.getItem('survey_responses_' + publicId) || 'null');
+        
+        if (!responses || responses.length === 0) {
+            responses = [];
+            for (let i = 0; i < 78; i++) {
+                let ans = {};
+                surveyData.questions.forEach((q, idx) => {
+                    if (q.type === 'radio') {
+                        let opts = q.options && q.options.length > 0 ? q.options : ['Opción 1', 'Opción 2'];
+                        ans['q_'+idx] = opts[Math.floor(Math.random() * opts.length)];
+                    } else if (q.type === 'rating') {
+                        let opts = ['1 Estrella', '2 Estrellas', '3 Estrellas', '4 Estrellas', '5 Estrellas'];
+                        ans['q_'+idx] = opts[Math.floor(Math.random() * opts.length)];
+                    } else if (q.type === 'checkbox') {
+                        let opts = q.options && q.options.length > 0 ? q.options : ['Opción 1', 'Opción 2'];
+                        let selected = [];
+                        opts.forEach(o => { if (Math.random() > 0.5) selected.push(o); });
+                        if (selected.length === 0) selected.push(opts[0]); // asegurar al menos 1
+                        ans['q_'+idx] = selected; // array of values
+                    }
+                });
+                responses.push(ans);
+            }
+            localStorage.setItem('survey_responses_' + publicId, JSON.stringify(responses));
+            
+            // Actualizar UI
+            const spanCounter = document.getElementById('row-' + internalId).querySelector('td:nth-child(4) span');
+            if (spanCounter) spanCounter.innerText = '78';
+        }
+
+        let totalRes = responses.length;
+
+        document.getElementById('surveyResultsName').innerText = title;
+        document.getElementById('resTotalResponses').innerText = totalRes;
+
+        // Limpiar gráficos anteriores
+        currentChartInstances.forEach(chart => chart.destroy());
+        currentChartInstances = [];
+        const container = document.getElementById('chartsContainer');
+        container.innerHTML = '';
+
+        const colors = [
+            '#4e73df', // primary blue
+            '#1cc88a', // success green
+            '#36b9cc', // info cyan
+            '#f6c23e', // warning yellow
+            '#e74a3b', // danger red
+            '#858796', // secondary gray
+            '#5a5c69', // dark gray
+            '#2e59d9'  // dark blue
+        ];
+
+        let index = 0;
+        surveyData.questions.forEach((q, i) => {
+            if (q.type === 'radio' || q.type === 'checkbox' || q.type === 'rating') {
+                index++;
+                const chartId = 'chart_' + i;
+                const html = `
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-header bg-white border-bottom-0 pt-3">
+                                <h6 class="font-weight-bold text-dark mb-0">${index}. ${q.title}</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="${chartId}" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+
+                let labels = q.options && q.options.length > 0 ? q.options : ['Opción 1', 'Opción 2'];
+                if (q.type === 'rating') labels = ['1 Estrella', '2 Estrellas', '3 Estrellas', '4 Estrellas', '5 Estrellas'];
+                
+                let dataCount = {};
+                labels.forEach(l => dataCount[l] = 0);
+
+                // Agregar datos reales agregados
+                responses.forEach(res => {
+                    let ans = res['q_'+i];
+                    if (Array.isArray(ans)) {
+                        ans.forEach(a => { if(dataCount[a] !== undefined) dataCount[a]++; });
+                    } else {
+                        if(dataCount[ans] !== undefined) dataCount[ans]++;
+                    }
+                });
+
+                let data = labels.map(l => dataCount[l]);
+                // Manejar si hay más labels que colores
+                let bgColors = labels.map((_, idx) => colors[idx % colors.length]);
+
+                setTimeout(() => {
+                    const ctx = document.getElementById(chartId).getContext('2d');
+                    const chart = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                data: data,
+                                backgroundColor: bgColors,
+                                borderWidth: 1,
+                                borderColor: '#ffffff',
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                    labels: { boxWidth: 12, font: {size: 11} }
+                                }
+                            }
+                        }
+                    });
+                    chart.questionTitle = `${index}. ${q.title}`;
+                    currentChartInstances.push(chart);
+                }, 100);
+            }
+        });
+
+        if (index === 0) {
+            container.innerHTML = '<div class="col-12 text-center text-muted py-4"><i class="fas fa-chart-bar fa-3x mb-2"></i><p>No hay preguntas cerradas para graficar.</p></div>';
+        }
+
+        $('#surveyResultsModal').modal('show');
+    }
+
+    async function downloadReport() {
+        Swal.fire({
+            title: 'Generando Reporte',
+            text: 'Preparando el archivo Excel con los resultados y gráficos...',
+            icon: 'info',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const surveyName = document.getElementById('surveyResultsName').innerText;
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('Resultados');
+
+            sheet.columns = [
+                { header: 'Opción', key: 'opcion', width: 40 },
+                { header: 'Respuestas', key: 'respuestas', width: 15 },
+                { header: 'Porcentaje', key: 'porcentaje', width: 15 }
+            ];
+
+            sheet.getRow(1).font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+            sheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF161065' } };
+
+            let currentRow = 3;
+
+            for (let i = 0; i < currentChartInstances.length; i++) {
+                const chart = currentChartInstances[i];
+                const labels = chart.data.labels;
+                const data = chart.data.datasets[0].data;
+                const total = data.reduce((a, b) => a + b, 0);
+
+                // Add Question Title
+                sheet.getCell(`A${currentRow}`).value = chart.questionTitle;
+                sheet.getCell(`A${currentRow}`).font = { bold: true, size: 12 };
+                sheet.mergeCells(`A${currentRow}:C${currentRow}`);
+                currentRow++;
+
+                // Add Table Headers
+                sheet.getCell(`A${currentRow}`).value = 'Opción';
+                sheet.getCell(`B${currentRow}`).value = 'Respuestas';
+                sheet.getCell(`C${currentRow}`).value = 'Porcentaje';
+                sheet.getRow(currentRow).font = { bold: true };
+                sheet.getRow(currentRow).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+                currentRow++;
+                
+                let imageTopRow = currentRow; // Here is where image starts!
+
+                // Add Data
+                for (let j = 0; j < labels.length; j++) {
+                    const perc = total > 0 ? ((data[j] / total) * 100).toFixed(1) + '%' : '0%';
+                    sheet.getCell(`A${currentRow}`).value = labels[j];
+                    sheet.getCell(`B${currentRow}`).value = data[j];
+                    sheet.getCell(`C${currentRow}`).value = perc;
+                    currentRow++;
+                }
+
+                // Add Chart Image
+                const base64Image = chart.toBase64Image('image/png', 1.0);
+
+                const imageId = workbook.addImage({
+                    base64: base64Image,
+                    extension: 'png',
+                });
+
+                sheet.addImage(imageId, {
+                    tl: { col: 4, row: imageTopRow - 1 }, // Column E, top of data row
+                    ext: { width: 400, height: 200 }
+                });
+
+                // Spacing between questions
+                currentRow = Math.max(currentRow, imageTopRow + 14) + 2; 
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            saveAs(new Blob([buffer]), `Reporte_Encuesta_${surveyName.replace(/[^a-z0-9]/gi, '_')}.xlsx`);
+
+            Swal.fire('¡Éxito!', 'El reporte ha sido descargado en Excel.', 'success');
+        } catch (error) {
+            console.error(error);
+            Swal.fire('Error', 'No se pudo generar el reporte en Excel. Asegúrate de que los gráficos se hayan cargado correctamente.', 'error');
+        }
+    }
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+    // Recuperar y mostrar encuestas personalizadas guardadas
+    document.addEventListener('DOMContentLoaded', () => {
+        let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+        const tbody = document.getElementById('encuestas-tbody');
+        if (tbody && customSurveys.length > 0) {
+            // Se insertan al final de las encuestas por defecto (o al principio si prefieres)
+            customSurveys.forEach(survey => {
+                const newRow = `
+                    <tr class="align-middle" id="row-${survey.id}">
+                        <td class="text-left font-weight-bold" id="title-${survey.id}">${survey.title}</td>
+                        <td id="date-${survey.id}">${survey.date}</td>
+                        <td><span class="badge badge-success px-2 py-1">Activa</span></td>
+                        <td><span class="font-weight-bold text-dark">0</span></td>
+                        <td>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control bg-light" value="${survey.link}" readonly id="link-${survey.id}">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-primary" type="button" onclick="copyLink('link-${survey.id}')" title="Copiar enlace"><i class="fas fa-copy"></i></button>
+                                    <button class="btn btn-outline-info" type="button" onclick="window.open(document.getElementById('link-${survey.id}').value, '_blank')" title="Ver Encuesta"><i class="fas fa-eye"></i> Ver</button>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('${survey.id}')"><i class="fas fa-tasks"></i></button>
+                            <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('${survey.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('${survey.id}')"><i class="fas fa-clone"></i></button>
+                            <button class="btn btn-sm btn-light text-primary shadow-sm rounded-circle mr-1" title="Ver Resultados" onclick="showSurveyResults('${survey.id}')"><i class="fas fa-chart-pie"></i></button>
+                            <button class="btn btn-sm btn-light text-danger shadow-sm rounded-circle" title="Eliminar" onclick="deleteSurvey('${survey.id}')"><i class="fas fa-trash-alt"></i></button>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', newRow);
+            });
+        }
+        
+        // Actualizar conteo de respuestas en la tabla
+        setTimeout(() => {
+            document.querySelectorAll('tr[id^="row-"]').forEach(row => {
+                const id = row.id.replace('row-', '');
+                const linkInput = document.getElementById('link-' + id);
+                if (linkInput) {
+                    const publicId = linkInput.value.split('/').pop();
+                    const responses = JSON.parse(localStorage.getItem('survey_responses_' + publicId) || '[]');
+                    if (responses.length > 0) {
+                        const span = row.querySelector('td:nth-child(4) span');
+                        if (span) span.innerText = responses.length;
+                    }
+                }
+            });
+        }, 200);
+    });
 </script>
 {% endblock %}
