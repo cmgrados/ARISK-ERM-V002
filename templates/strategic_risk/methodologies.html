@@ -154,6 +154,7 @@
                                             </div>
                                         </div>
                                     </td>
+                                    <td class="text-right">
                                         <button class="btn btn-sm btn-light text-info shadow-sm rounded-circle mr-1" title="Diseñar Encuesta" onclick="openSurveyBuilder('s1')"><i class="fas fa-tasks"></i></button>
                                         <button class="btn btn-sm btn-light text-warning shadow-sm rounded-circle mr-1" title="Editar Propiedades" onclick="editSurvey('s1')"><i class="fas fa-edit"></i></button>
                                         <button class="btn btn-sm btn-light text-secondary shadow-sm rounded-circle mr-1" title="Duplicar" onclick="duplicateSurvey('s1')"><i class="fas fa-clone"></i></button>
@@ -218,7 +219,7 @@
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
-                            <div class="modal-body bg-light">
+                            <div class="modal-body bg-light" style="max-height: 75vh; overflow-y: auto; overflow-x: hidden;">
                                 <div class="row">
                                     <div class="col-md-3">
                                         <div class="card shadow-sm mb-3 border-0 rounded-lg">
@@ -246,9 +247,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer border-top-0 bg-light">
-                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cerrar</button>
-                                <button type="button" class="btn btn-success rounded-pill px-4" onclick="saveSurveyDesign()"><i class="fas fa-save mr-1"></i> Guardar Diseño</button>
+                            <div class="modal-footer border-top-0 bg-light justify-content-between">
+                                <div>
+                                    <button type="button" class="btn btn-outline-danger rounded-pill px-3" onclick="resetSurveyDesign()" title="Restaurar a la plantilla original"><i class="fas fa-undo mr-1"></i> Restablecer Plantilla</button>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-success rounded-pill px-4" onclick="saveSurveyDesign()"><i class="fas fa-save mr-1"></i> Guardar Diseño</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1420,8 +1426,11 @@
     let questionCount = 0;
 
     function openSurveyBuilder(id) {
-        currentSurveyId = id;
         const title = document.getElementById('title-' + id).innerText;
+        const linkInput = document.getElementById('link-' + id).value;
+        const publicId = linkInput.split('/').pop();
+        
+        currentSurveyId = publicId; // Usa el ID público (ej. C7L8M9) para vincular con la vista pública
         document.getElementById('surveyBuilderName').innerText = title;
         
         // Clear previous questions
@@ -1429,21 +1438,76 @@
         document.getElementById('emptySurveyMsg').style.display = 'block';
         questionCount = 0;
 
-        // Pre-fill some dummy questions if it's the default ones to show it works
-        if (id === 's1') {
-            addQuestion('rating', '¿Cómo calificaría el ambiente de trabajo en su área?');
-            addQuestion('textarea', '¿Qué aspectos considera que deberíamos mejorar en la empresa?');
-        } else if (id === 's2') {
-            addQuestion('radio', '¿Considera que los procesos actuales son eficientes?');
-        } else if (id === 's3') {
-            addQuestion('rating', '¿Qué tan satisfecho está con nuestro servicio?');
-            addQuestion('checkbox', '¿Qué canales de atención ha utilizado en el último mes?');
+        // Pre-fill from localStorage if exists
+        const savedData = localStorage.getItem('survey_data_' + publicId);
+        if (savedData && savedData !== '[]') {
+            const questions = JSON.parse(savedData);
+            document.getElementById('emptySurveyMsg').style.display = 'none';
+            questions.forEach(q => {
+                addQuestion(q.type, q.title, q.options, q.required);
+            });
+        } else {
+            // Pre-fill some dummy questions if it's the default ones to show it works
+            if (id === 's1') {
+                addQuestion('radio', '¿Cómo calificaría su satisfacción general con su rol actual?', ['Muy satisfecho', 'Satisfecho', 'Neutral', 'Insatisfecho', 'Muy insatisfecho'], true);
+                addQuestion('radio', '¿Siente que sus contribuciones son valoradas por la organización?', ['Siempre', 'A menudo', 'A veces', 'Rara vez', 'Nunca'], true);
+                addQuestion('radio', '¿Qué tan bien siente que comprende los objetivos de la organización y cómo su trabajo contribuye a ellos?', ['Completamente', 'Mayormente', 'Algo', 'Poco', 'Nada'], true);
+                addQuestion('radio', '¿Qué tan satisfecho está con las oportunidades de crecimiento y desarrollo profesional dentro de la empresa?', ['Muy satisfecho', 'Satisfecho', 'Neutral', 'Insatisfecho', 'Muy insatisfecho'], true);
+                addQuestion('radio', '¿Cómo calificaría el nivel de comunicación entre usted y su jefe directo?', ['Excelente', 'Bueno', 'Aceptable', 'Malo', 'Muy malo'], true);
+                addQuestion('radio', '¿Siente que tiene las herramientas y recursos necesarios para realizar su trabajo de manera efectiva?', ['Totalmente de acuerdo', 'De acuerdo', 'Neutral', 'En desacuerdo', 'Totalmente en desacuerdo'], true);
+                addQuestion('radio', '¿Cómo describiría el equilibrio entre su vida laboral y personal en su puesto actual?', ['Muy bueno', 'Bueno', 'Aceptable', 'Malo', 'Muy malo'], true);
+                addQuestion('textarea', '¿Qué podemos hacer para mejorar su satisfacción y compromiso general en el trabajo?', null, false);
+            } else if (id === 's2') {
+                addQuestion('radio', '¿Considera que los procesos actuales son eficientes?', ['Sí, muy eficientes', 'Podrían mejorar', 'No son eficientes'], true);
+            } else if (id === 's3') {
+                addQuestion('radio', 'AGENCIA', ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], true);
+                addQuestion('radio', '¿SU GÉNERO?', ['Masculino', 'Femenino', 'Otro'], true);
+                addQuestion('radio', 'SU EDAD SE UBICA EN EL RANGO DE: (Años)', ['18 a 25', '26 a 35', '36 a 45', '46 a 55', 'Más de 55'], true);
+                addQuestion('text', '¿CUÁL ES SU ACTIVIDAD ACTUAL?', null, true);
+                addQuestion('radio', '¿DESDE HACE CUÁNTO TIEMPO ES ASOCIADO A LA COOPERATIVA?', ['Menos de 1 año', '1 a 3 años', '4 a 6 años', 'Más de 6 años'], true);
+                addQuestion('checkbox', '¿QUÉ SERVICIOS DE LA COOPERATIVA UTILIZA USTED CON MÁS FRECUENCIA? (seleccione una o varias respuestas)', ['Ahorros', 'Crédito', 'Inversiones a plazo', 'Banca Virtual / App', 'Tarjetas'], true);
+                addQuestion('rating', '¿CÓMO CALIFICARÍA EL SERVICIO EN VENTANILLA QUE RECIBE EN LA COOPERATIVA?', null, true);
+                addQuestion('rating', '¿CÓMO CALIFICARÍA LA ATENCIÓN EN LA GESTIÓN DE CRÉDITO QUE RECIBE EN LA COOPERATIVA?', null, true);
+                addQuestion('rating', '¿CÓMO CALIFICARÍA LA INFORMACIÓN Y ASESORÍA QUE RECIBE DENTRO DE LA OFICINA?', null, true);
+                addQuestion('rating', 'TRATO DEL FUNCIONARIO', null, true);
+                addQuestion('rating', 'RAPIDEZ EN LA ATENCIÓN', null, true);
+                addQuestion('rating', 'PRESENTACIÓN PERSONAL', null, true);
+                addQuestion('rating', 'INFORMACIÓN BRINDADA', null, true);
+                addQuestion('rating', 'HORARIO DE ATENCIÓN', null, true);
+                addQuestion('rating', 'ASEO DE LA OFICINA', null, true);
+                addQuestion('rating', 'UBICACIÓN LA OFICINA', null, true);
+                addQuestion('rating', 'VENTILACIÓN E ILUMINACIÓN', null, true);
+                addQuestion('rating', 'EXTERIORES DE LA OFICINA', null, true);
+                addQuestion('rating', 'SILLAS EN ÁREA DE ESPERA', null, true);
+                addQuestion('rating', 'SEÑALIZACIÓN INTERNA', null, true);
+                addQuestion('checkbox', '¿QUÉ ASPECTOS HAN GENERADO SU CONFIANZA EN LA COOPERATIVA? (seleccione una o varias respuestas)', ['Trayectoria de la Cooperativa', 'Recomendación de familiares/amigos', 'Solidez financiera', 'Tasas de interés competitivas', 'Calidad en la atención'], true);
+                addQuestion('radio', '¿SE SIENTE UD. IDENTIFICADO CON SU COOPERATIVA?', ['Sí', 'No', 'Parcialmente'], true);
+                addQuestion('radio', '¿HA SENTIDO ALGÚN TIPO DE MALTRATO EN SU COOPERATIVA?', ['Sí', 'No'], true);
+                addQuestion('textarea', 'QUE LE GUSTARÍA MEJORAR DE SU COOPERATIVA ANDRELI?', null, false);
+            }
         }
         
         $('#surveyBuilderModal').modal('show');
     }
 
-    function addQuestion(type, defaultText = '') {
+    function addOptionToQuestion(btn) {
+        const container = btn.previousElementSibling.parentElement;
+        const type = container.closest('.card').getAttribute('data-type');
+        const inputType = type === 'radio' ? 'radio' : 'checkbox';
+        
+        const div = document.createElement('div');
+        div.className = `custom-control custom-${inputType} mb-2`;
+        div.innerHTML = `
+            <input type="${inputType}" class="custom-control-input" disabled>
+            <label class="custom-control-label w-100">
+                <input type="text" class="form-control form-control-sm d-inline-block w-75 option-input" value="Nueva opción">
+                <button class="btn btn-sm text-danger border-0 ml-1" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+            </label>
+        `;
+        btn.insertAdjacentElement('beforebegin', div);
+    }
+
+    function addQuestion(type, defaultText = '', options = null, required = false) {
         document.getElementById('emptySurveyMsg').style.display = 'none';
         questionCount++;
         const qId = 'q_' + new Date().getTime() + '_' + questionCount;
@@ -1453,25 +1517,23 @@
             specificHtml = `<input type="text" class="form-control" placeholder="Texto de respuesta corta" disabled>`;
         } else if (type === 'textarea') {
             specificHtml = `<textarea class="form-control" rows="2" placeholder="Texto de respuesta larga" disabled></textarea>`;
-        } else if (type === 'radio') {
+        } else if (type === 'radio' || type === 'checkbox') {
+            let optsHtml = '';
+            let optArray = options && options.length > 0 ? options : ['Opción 1', 'Opción 2'];
+            optArray.forEach(o => {
+                optsHtml += `
+                <div class="custom-control custom-${type} mb-2">
+                    <input type="${type}" class="custom-control-input" disabled>
+                    <label class="custom-control-label w-100">
+                        <input type="text" class="form-control form-control-sm d-inline-block w-75 option-input" value="${o}">
+                        <button class="btn btn-sm text-danger border-0 ml-1" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button>
+                    </label>
+                </div>`;
+            });
+            
             specificHtml = `
-                <div class="custom-control custom-radio mb-2">
-                    <input type="radio" class="custom-control-input" disabled>
-                    <label class="custom-control-label w-100"><input type="text" class="form-control form-control-sm d-inline-block w-75" value="Opción 1"></label>
-                </div>
-                <div class="custom-control custom-radio mb-2">
-                    <input type="radio" class="custom-control-input" disabled>
-                    <label class="custom-control-label w-100"><input type="text" class="form-control form-control-sm d-inline-block w-75" value="Opción 2"></label>
-                </div>
-                <button class="btn btn-sm btn-link text-primary mt-1 p-0 font-weight-bold" onclick="alert('Funcionalidad para añadir nueva opción.')"><i class="fas fa-plus"></i> Agregar opción</button>
-            `;
-        } else if (type === 'checkbox') {
-            specificHtml = `
-                <div class="custom-control custom-checkbox mb-2">
-                    <input type="checkbox" class="custom-control-input" disabled>
-                    <label class="custom-control-label w-100"><input type="text" class="form-control form-control-sm d-inline-block w-75" value="Opción A"></label>
-                </div>
-                <button class="btn btn-sm btn-link text-primary mt-1 p-0 font-weight-bold" onclick="alert('Funcionalidad para añadir nueva opción.')"><i class="fas fa-plus"></i> Agregar opción</button>
+                ${optsHtml}
+                <button class="btn btn-sm btn-link text-primary mt-1 p-0 font-weight-bold" onclick="addOptionToQuestion(this)"><i class="fas fa-plus"></i> Agregar opción</button>
             `;
         } else if (type === 'rating') {
             specificHtml = `
@@ -1485,11 +1547,12 @@
             `;
         }
 
+        const isChecked = required ? 'checked' : '';
         const html = `
-            <div class="card mb-3 border-left-primary shadow-sm" id="${qId}">
+            <div class="card mb-3 border-left-primary shadow-sm" id="${qId}" data-type="${type}">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start mb-3">
-                        <input type="text" class="form-control font-weight-bold border-0 bg-light py-2" style="font-size: 1.1rem; border-radius: 8px;" placeholder="Escriba la pregunta aquí..." value="${defaultText}">
+                        <input type="text" class="form-control font-weight-bold border-0 bg-light py-2 question-title" style="font-size: 1.1rem; border-radius: 8px;" placeholder="Escriba la pregunta aquí..." value="${defaultText}">
                         <button class="btn btn-sm btn-outline-danger ml-2 border-0 mt-1" onclick="document.getElementById('${qId}').remove(); checkEmptySurvey();" title="Eliminar Pregunta"><i class="fas fa-trash"></i></button>
                     </div>
                     <div class="pl-2">
@@ -1498,7 +1561,7 @@
                 </div>
                 <div class="card-footer bg-white border-top-0 d-flex justify-content-end py-2">
                     <div class="custom-control custom-switch">
-                        <input type="checkbox" class="custom-control-input" id="req_${qId}">
+                        <input type="checkbox" class="custom-control-input req-checkbox" id="req_${qId}" ${isChecked}>
                         <label class="custom-control-label" for="req_${qId}">Obligatoria</label>
                     </div>
                 </div>
@@ -1515,6 +1578,32 @@
     }
 
     function saveSurveyDesign() {
+        const container = document.getElementById('surveyQuestionsContainer');
+        const questions = [];
+        
+        Array.from(container.children).forEach(card => {
+            if(!card.classList.contains('card')) return;
+            const type = card.getAttribute('data-type');
+            const titleInput = card.querySelector('.question-title');
+            const requiredCheck = card.querySelector('.req-checkbox');
+            
+            let options = [];
+            if (type === 'radio' || type === 'checkbox') {
+                card.querySelectorAll('.option-input').forEach(opt => {
+                    options.push(opt.value);
+                });
+            }
+
+            questions.push({
+                type: type,
+                title: titleInput ? titleInput.value : '',
+                required: requiredCheck ? requiredCheck.checked : false,
+                options: options
+            });
+        });
+
+        localStorage.setItem('survey_data_' + currentSurveyId, JSON.stringify(questions));
+
         $('#surveyBuilderModal').modal('hide');
         Swal.fire({
             toast: true,
@@ -1523,6 +1612,34 @@
             title: 'Diseño de encuesta guardado exitosamente',
             showConfirmButton: false,
             timer: 3000
+        });
+    }
+
+    function resetSurveyDesign() {
+        if (!currentSurveyId) return;
+        Swal.fire({
+            title: '¿Restablecer plantilla?',
+            text: "Se perderán los cambios actuales y se cargarán las preguntas predeterminadas. ¿Desea continuar?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, restablecer',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('survey_data_' + currentSurveyId);
+                // Determinar el ID interno (s1, s2, s3)
+                let internalId = 's1';
+                ['s1', 's2', 's3'].forEach(id => {
+                    const linkInput = document.getElementById('link-' + id);
+                    if (linkInput && linkInput.value.endsWith(currentSurveyId)) {
+                        internalId = id;
+                    }
+                });
+                $('#surveyBuilderModal').modal('hide');
+                setTimeout(() => openSurveyBuilder(internalId), 400);
+            }
         });
     }
 

@@ -712,3 +712,16 @@ def export_bsc_excel(request):
     response['Content-Disposition'] = 'attachment; filename="Balanced_Scorecard.xlsx"'
     wb.save(response)
     return response
+
+# --- VISTA PÚBLICA PARA ENCUESTAS ---
+def public_survey(request, survey_id):
+    """
+    Vista pública para que cualquier persona con el enlace pueda responder una encuesta.
+    No requiere autenticación.
+    """
+    context = {
+        'survey_id': survey_id,
+        # Si hubiera un modelo de encuesta, se buscaría aquí y se pasaría al contexto
+    }
+    return render(request, 'strategic_risk/public_survey.html', context)
+

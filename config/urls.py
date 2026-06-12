@@ -21,6 +21,8 @@ from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
+from apps.strategic_risk import views as strategic_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('dashboards.urls')),
@@ -44,6 +46,7 @@ urlpatterns = [
     path('apetito/', include('risk_appetite.urls')),
     path('planificacion-financiera/', include('financial_planning.urls')),
     path('usuarios/', include('users.urls')),
+    path('encuesta/<str:survey_id>/', strategic_views.public_survey, name='public_survey'),
 ]
 
 if settings.DEBUG:
