@@ -16,29 +16,21 @@ org = Organization.objects.first()
 objetivos = ObjetivoEstrategico.objects.filter(organization=org)
 
 kpi_templates = {
-    'Financiera': [
-        {'nombre': 'Ind. 1: Crecimiento', 'formula': '((Ing. N - Ing. N-1)/Ing. N-1)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'ANUAL', 'medio': 'EEFF'},
-        {'nombre': 'Ind. 2: Margen', 'formula': '(Utilidad / Ingresos)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'EEFF'},
-        {'nombre': 'Ind. 3: Reducción Costos', 'formula': '((Costos N-1 - Costos N)/Costos N-1)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'TRIMESTRAL', 'medio': 'Reportes'},
-        {'nombre': 'Ind. 4: ROI', 'formula': '((Beneficio-Inv)/Inv)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'ANUAL', 'medio': 'Reportes'}
+    'FINANCIERA': [
+        {'nombre': 'Crecimiento de Cartera de Crédito', 'formula': '((Cartera N - Cartera N-1)/Cartera N-1)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'Reporte de Cartera'},
+        {'nombre': 'Índice de Morosidad', 'formula': '(Cartera Atrasada / Cartera Total)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'EEFF'}
     ],
-    'Clientes': [
-        {'nombre': 'Ind. 1: CSAT', 'formula': '(Satisfechos / Total)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'TRIMESTRAL', 'medio': 'Encuestas'},
-        {'nombre': 'Ind. 2: Retención', 'formula': '((Final - Nuevos)/Inicio)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'CRM'},
-        {'nombre': 'Ind. 3: NPS', 'formula': '% Prom. - % Detract.', 'peso': 25, 'unidad': 'Puntos', 'freq': 'SEMESTRAL', 'medio': 'NPS'},
-        {'nombre': 'Ind. 4: SLA Quejas', 'formula': '(SLA / Total)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'Tickets'}
+    'SOCIO/CLIENTE': [
+        {'nombre': 'Crecimiento de Base Social', 'formula': '((Socios N - Socios N-1)/Socios N-1)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'TRIMESTRAL', 'medio': 'Reporte de Socios'},
+        {'nombre': 'Índice de Satisfacción del Socio (CSAT)', 'formula': '(Socios Satisfechos / Total Encuestados)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'SEMESTRAL', 'medio': 'Encuestas'}
     ],
-    'Procesos Internos': [
-        {'nombre': 'Ind. 1: T. Ciclo', 'formula': 'T. total / Procesos', 'peso': 25, 'unidad': 'Días', 'freq': 'MENSUAL', 'medio': 'Ops'},
-        {'nombre': 'Ind. 2: Defectos', 'formula': '(Defectos / Total)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'SEMESTRAL', 'medio': 'Calidad'},
-        {'nombre': 'Ind. 3: Auditoría', 'formula': '(Hallazgos / Total)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'ANUAL', 'medio': 'Auditoría'},
-        {'nombre': 'Ind. 4: Eficiencia', 'formula': '(Real / Esperado)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'Dashboard'}
+    'PROCESOS INTERNOS': [
+        {'nombre': 'Tiempo de Otorgamiento de Crédito', 'formula': 'Tiempo Total / Créditos Desembolsados', 'peso': 50, 'unidad': 'Días', 'freq': 'MENSUAL', 'medio': 'Sistema Core'},
+        {'nombre': 'Digitalización de Transacciones', 'formula': '(Tx Digitales / Tx Totales)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'MENSUAL', 'medio': 'Reporte Canales'}
     ],
-    'Aprendizaje y Crecimiento': [
-        {'nombre': 'Ind. 1: Capacitación', 'formula': 'Horas / Emp', 'peso': 25, 'unidad': 'Horas', 'freq': 'ANUAL', 'medio': 'RRHH'},
-        {'nombre': 'Ind. 2: Retención Talento', 'formula': '(Retenidos / Total)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'TRIMESTRAL', 'medio': 'RRHH'},
-        {'nombre': 'Ind. 3: Clima', 'formula': 'Puntuación', 'peso': 25, 'unidad': 'Puntos', 'freq': 'ANUAL', 'medio': 'Encuestas'},
-        {'nombre': 'Ind. 4: Tecnología', 'formula': '(Completados / Planeados)*100', 'peso': 25, 'unidad': 'Porcentaje', 'freq': 'SEMESTRAL', 'medio': 'IT'}
+    'APRENDIZAJE Y CRECIMIENTO': [
+        {'nombre': 'Cumplimiento Plan de Capacitación', 'formula': '(Horas Ejecutadas / Horas Programadas)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'SEMESTRAL', 'medio': 'RRHH'},
+        {'nombre': 'Retención de Talento Clave', 'formula': '((Total Claves - Bajas Claves) / Total Claves)*100', 'peso': 50, 'unidad': 'Porcentaje', 'freq': 'ANUAL', 'medio': 'RRHH'}
     ]
 }
 
@@ -47,12 +39,15 @@ Indicador.objects.filter(organization=org).delete()
 
 created_count = 0
 for obj in objetivos:
-    perspectiva = obj.perspectiva.nombre
-    templates = kpi_templates.get(perspectiva, kpi_templates['Financiera'])
+    perspectiva = obj.perspectiva.nombre.upper()
+    templates = kpi_templates.get(perspectiva, kpi_templates['FINANCIERA'])
     
-    for t in templates:
-        # Create a unique name to verify filtering works!
-        unique_name = f"{t['nombre']} - {obj.nombre[:20]}..."
+    # Try to set a logical tipo_objetivo
+    tipo = obj.tipo_objetivo if obj.tipo_objetivo else 'Estratégico'
+    
+    for i, t in enumerate(templates):
+        # Create a specific name based on the template and the objective
+        unique_name = f"Ind {i+1}: {t['nombre']} - {obj.nombre[:30]}"
         Indicador.objects.create(
             organization=org,
             objetivo=obj,
@@ -61,9 +56,10 @@ for obj in objetivos:
             peso=t['peso'],
             unidad_medida=t['unidad'],
             frecuencia_medicion=t['freq'],
-            responsable='Gerente de ' + perspectiva,
-            medio_verificacion=t['medio']
+            responsable='Gerencia de ' + perspectiva.capitalize(),
+            medio_verificacion=t['medio'],
+            tipo_objetivo=tipo
         )
         created_count += 1
 
-print(f"Successfully created {created_count} unique indicators.")
+print(f"Successfully created {created_count} unique indicators (2 per objective).")

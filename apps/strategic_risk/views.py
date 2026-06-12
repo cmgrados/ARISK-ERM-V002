@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_http_methods
 import json
 from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy, TipoObjetivo, AreaResponsable, ResponsablePlan
 from .forms import StrategicPlanForm, ExternalEnvironmentForm, FinancialEnvironmentForm, InternalDiagnosisForm
@@ -579,10 +580,32 @@ def controls(request):
     objetivos_ingresados = ObjetivoEstrategico.objects.filter(perspectiva__plan=plan) if plan else []
     indicadores_ingresados = Indicador.objects.filter(objetivo__perspectiva__plan=plan) if plan else []
     
+    # Build metas_data dynamically from DB to sync with Metas Planeadas grid
+    dynamic_metas_data = []
+    if plan:
+        for ind in indicadores_ingresados:
+            meta1 = ind.metas_periodo.filter(periodo='Meta 1').first() or ind.metas_periodo.filter(periodo=str(plan.start_year)).first()
+            meta2 = ind.metas_periodo.filter(periodo='Meta 2').first() or ind.metas_periodo.filter(periodo=str(plan.start_year+1)).first()
+            meta3 = ind.metas_periodo.filter(periodo='Meta 3').first() or ind.metas_periodo.filter(periodo=str(plan.start_year+2)).first()
+            
+            dynamic_metas_data.append({
+                'id': ind.id,
+                'perspectiva': ind.objetivo.perspectiva.nombre if ind.objetivo and ind.objetivo.perspectiva else '',
+                'objetivo': ind.objetivo.nombre if ind.objetivo else '',
+                'tipo': ind.objetivo.tipo_objetivo if ind.objetivo else '',
+                'area': ind.objetivo.area_responsable if ind.objetivo else '',
+                'responsable': ind.objetivo.responsable if ind.objetivo else '',
+                'indicador': ind.nombre,
+                'base': str(ind.linea_base),
+                'meta1': str(meta1.meta_programada) if meta1 else '',
+                'meta2': str(meta2.meta_programada) if meta2 else '',
+                'meta3': str(meta3.meta_programada) if meta3 else '',
+            })
+
     context = {
         'page_title': 'Planificación Estratégica - FASE ESTRATEGICA',
         'plan': plan,
-        'metas_data': metas_matrix.data if metas_matrix and metas_matrix.data else [],
+        'metas_data': dynamic_metas_data,
         'perspectivas': plan.perspectivas.all() if plan else [],
         'tipos_objetivo': plan.tipos_objetivo.all() if plan else [],
         'areas_responsables': plan.areas_responsables.all() if plan else [],
@@ -964,3 +987,95 @@ def public_survey(request, survey_id):
     }
     return render(request, 'strategic_risk/public_survey.html', context)
 
+
+@login_required
+@require_http_methods(["GET"])
+def get_kpi_metas(request, pk):
+    try:
+        from .models import MetaPeriodo
+        ind = get_object_or_404(Indicador, pk=pk)
+        
+        # Verify permissions
+        org = getattr(request.user, 'organization', None)
+        if ind.organization != org:
+            return JsonResponse({'status': 'error', 'message': 'No tiene permisos para acceder a este indicador.'}, status=403)
+            
+        metas = MetaPeriodo.objects.filter(indicador=ind).order_by('periodo')
+        metas_list = [{
+            'id': m.id,
+            'periodo': m.periodo,
+            'meta_programada': float(m.meta_programada) if m.meta_programada is not None else 0.0,
+            'resultado_real': float(m.resultado_real) if m.resultado_real is not None else None,
+            'porcentaje_cumplimiento': float(m.porcentaje_cumplimiento) if m.porcentaje_cumplimiento is not None else None,
+        } for m in metas]
+        
+        return JsonResponse({
+            'status': 'success',
+            'indicador': {
+                'id': ind.id,
+                'perspectiva': ind.objetivo.perspectiva.nombre if ind.objetivo and ind.objetivo.perspectiva else '',
+                'tipo_objetivo': ind.tipo_objetivo or (ind.objetivo.tipo_objetivo if ind.objetivo else ''),
+                'objetivo': ind.objetivo.nombre if ind.objetivo else '',
+                'nombre': ind.nombre,
+                'formula': ind.formula,
+                'unidad_medida': ind.unidad_medida,
+                'linea_base': str(ind.linea_base) if ind.linea_base else '0.00',
+                'fecha_inicio': ind.fecha_inicio.strftime('%Y-%m-%d') if ind.fecha_inicio else '',
+                'fecha_fin': ind.fecha_fin.strftime('%Y-%m-%d') if ind.fecha_fin else '',
+                'frecuencia': ind.get_frecuencia_medicion_display(),
+                'responsable': ind.responsable,
+            },
+            'metas': metas_list
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def save_kpi_metas(request, pk):
+    try:
+        import json
+        from .models import MetaPeriodo
+        ind = get_object_or_404(Indicador, pk=pk)
+        
+        # Verify permissions
+        org = getattr(request.user, 'organization', None)
+        if ind.organization != org:
+            return JsonResponse({'status': 'error', 'message': 'No tiene permisos para modificar este indicador.'}, status=403)
+            
+        data = json.loads(request.body)
+        metas_data = data.get('metas', [])
+        
+        # Delete existing metas for this indicator to replace with new ones (or update them)
+        # We can update if ID is provided, else create. Or just clear and recreate?
+        # Actually, simpler to just clear and recreate if they are sending all metas.
+        # But wait, 'resultado_real' etc might be lost if we just delete!
+        # Let's update or create by periodo
+        
+        existing_metas = MetaPeriodo.objects.filter(indicador=ind)
+        existing_periodos = [m.periodo for m in existing_metas]
+        
+        new_periodos = []
+        for m_data in metas_data:
+            periodo = m_data.get('periodo')
+            if not periodo: continue
+            new_periodos.append(periodo)
+            meta_val = m_data.get('meta_programada', 0)
+            
+            # Update or create
+            meta_obj, created = MetaPeriodo.objects.update_or_create(
+                indicador=ind,
+                periodo=periodo,
+                defaults={
+                    'meta_programada': meta_val,
+                    'organization': org
+                }
+            )
+            
+        # Optional: remove metas that are no longer in the payload?
+        # Let's just keep them or delete ones not in payload
+        # MetaPeriodo.objects.filter(indicador=ind).exclude(periodo__in=new_periodos).delete()
+        
+        return JsonResponse({'status': 'success', 'message': 'Metas guardadas correctamente.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

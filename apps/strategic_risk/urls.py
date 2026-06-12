@@ -35,6 +35,8 @@ urlpatterns = [
     path('ajax/delete-kpi/<int:pk>/', views.delete_kpi, name='delete_kpi'),
     path('ajax/delete-multiple-kpis/', views.delete_multiple_kpis, name='delete_multiple_kpis'),
     path('ajax/save-metas-planeadas/', views.save_metas_planeadas, name='save_metas_planeadas'),
+    path('ajax/get-kpi-metas/<int:pk>/', views.get_kpi_metas, name='get_kpi_metas'),
+    path('ajax/save-kpi-metas/<int:pk>/', views.save_kpi_metas, name='save_kpi_metas'),
 ]
 
 # API Router Setup

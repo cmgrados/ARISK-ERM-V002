@@ -18,9 +18,7 @@
                 <li class="nav-item">
                     <a class="nav-link font-weight-bold text-primary" id="tab-indicadores" data-toggle="tab" href="#content-indicadores" role="tab">Indicadores de Gestión</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link font-weight-bold text-primary" id="tab-indicadores-ing" data-toggle="tab" href="#content-indicadores-ing" role="tab">Indicadores Ingresados</a>
-                </li>
+                <!-- Indicadores Ingresados tab removed -->
                 <li class="nav-item">
                     <a class="nav-link font-weight-bold text-primary" id="tab-metas" data-toggle="tab" href="#content-metas" role="tab">Metas</a>
                 </li>
@@ -92,131 +90,70 @@
                         </div>
                     </div>
 
-                    <!-- Metas Planeadas Section -->
+                    <!-- Metas Planeadas Section (Relación de Indicadores) -->
                     <div class="card shadow-sm border-0" style="border-top: 5px solid #10b981;">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h3 class="card-title font-weight-bold text-success"><i class="fas fa-bullseye mr-2"></i>Metas Planeadas</h3>
-            <button class="btn btn-sm btn-outline-success" onclick="addMetaRow()">
-                <i class="fas fa-plus mr-1"></i> Nueva Meta
-            </button>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 text-center align-middle" id="metas-table">
-                    <thead class="bg-light text-secondary">
-                        <tr>
-                            <th style="width: 3%">#</th>
-                            <th style="width: 10%">Perspectiva</th>
-                            <th style="width: 15%">Objetivo Estrat&eacute;gico</th>
-                            <th style="width: 10%">Tipo de Obj.</th>
-                            <th style="width: 10%">&Aacute;rea Resp.</th>
-                            <th style="width: 10%">Responsable</th>
-                            <th style="width: 10%">Indicador (KPI)</th>
-                            <th style="width: 7%">L. Base</th>
-                            <th style="width: 7%">Meta 1</th>
-                            <th style="width: 7%">Meta 2</th>
-                            <th style="width: 7%">Meta 3</th>
-                            <th style="width: 4%">Acci&oacute;n</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if metas_data %}
-                            {% for row in metas_data %}
-                            <tr>
-                                <td class="align-middle index-cell">{{ forloop.counter }}</td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-perspectiva">
-                                        {% for p in perspectivas %}
-                                        <option value="{{ p.nombre }}" {% if row.perspectiva == p.nombre %}selected{% endif %}>{{ p.nombre }}</option>
+                            <h3 class="card-title font-weight-bold text-success"><i class="fas fa-bullseye mr-2"></i>Metas Planeadas</h3>
+                            <button class="btn btn-sm btn-danger" id="btn-delete-selected-kpis" style="display: none;" onclick="deleteSelectedKpis()">
+                                <i class="fas fa-trash-alt mr-1"></i>Eliminar Seleccionados
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;" id="table-all-indicadores">
+                                    <thead style="background-color: #f1f5f9; color: #161065;">
+                                        <tr>
+                                            <th class="align-middle text-center" style="width: 40px;">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="check-all-kpis">
+                                                    <label class="custom-control-label" for="check-all-kpis"></label>
+                                                </div>
+                                            </th>
+                                            <th class="align-middle">Perspectiva</th>
+                                            <th class="align-middle">Tipo de Objetivo</th>
+                                            <th class="align-middle">Objetivo Estratégico</th>
+                                            <th class="align-middle">Nombre del Indicador</th>
+                                            <th class="align-middle text-center">Fórmula</th>
+                                            <th class="align-middle text-center">Peso (%)</th>
+                                            <th class="align-middle text-center">Frecuencia</th>
+                                            <th class="align-middle">Responsable</th>
+                                            <th class="align-middle text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ind in indicadores_ingresados %}
+                                        <tr id="row-kpi-all-{{ ind.id }}">
+                                            <td class="align-middle text-center">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input kpi-checkbox" id="check-kpi-{{ ind.id }}" value="{{ ind.id }}">
+                                                    <label class="custom-control-label" for="check-kpi-{{ ind.id }}"></label>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle font-weight-bold text-secondary">{{ ind.objetivo.perspectiva.nombre }}</td>
+                                            <td class="align-middle text-muted">{{ ind.tipo_objetivo|default:ind.objetivo.tipo_objetivo }}</td>
+                                            <td class="align-middle" style="color: #005b9f;">{{ ind.objetivo.nombre }}</td>
+                                            <td class="align-middle font-weight-bold">{{ ind.nombre }}</td>
+                                            <td class="align-middle text-center">{{ ind.formula }}</td>
+                                            <td class="align-middle text-center">{{ ind.peso|floatformat:2 }}</td>
+                                            <td class="align-middle text-center">{{ ind.get_frecuencia_medicion_display }}</td>
+                                            <td class="align-middle">{{ ind.responsable }}</td>
+                                            <td class="align-middle text-center">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="openMetasModal({{ ind.id }})" title="Configurar Metas">
+                                                    <i class="fas fa-bullseye"></i> Definir Meta
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted py-4">No hay indicadores ingresados en el sistema.</td>
+                                        </tr>
                                         {% endfor %}
-                                    </select>
-                                </td>
-                                <td><input type="text" class="form-control form-control-sm meta-objetivo" value="{{ row.objetivo }}"></td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-tipo">
-                                        {% for t in tipos_objetivo %}
-                                        <option value="{{ t.nombre }}" {% if row.tipo == t.nombre %}selected{% endif %}>{{ t.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-area">
-                                        {% for a in areas_responsables %}
-                                        <option value="{{ a.nombre }}" {% if row.area == a.nombre %}selected{% endif %}>{{ a.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-responsable">
-                                        {% for r in responsables %}
-                                        <option value="{{ r.nombre }}" {% if row.responsable == r.nombre %}selected{% endif %}>{{ r.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td><input type="text" class="form-control form-control-sm meta-indicador" value="{{ row.indicador }}"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-base" value="{{ row.base }}"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-1" value="{{ row.meta1 }}"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-2" value="{{ row.meta2 }}"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-3" value="{{ row.meta3 }}"></td>
-                                <td class="align-middle">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <!-- Fila por defecto para Cliente/Socio -->
-                            <tr>
-                                <td class="align-middle index-cell">1</td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-perspectiva">
-                                        {% for p in perspectivas %}
-                                        <option value="{{ p.nombre }}">{{ p.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td><input type="text" class="form-control form-control-sm meta-objetivo" value="Incrementar la satisfacci&oacute;n general" placeholder="Ej. Aumentar SOCIOS..."></td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-tipo">
-                                        {% for t in tipos_objetivo %}
-                                        <option value="{{ t.nombre }}">{{ t.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-area">
-                                        {% for a in areas_responsables %}
-                                        <option value="{{ a.nombre }}">{{ a.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="form-control form-control-sm meta-responsable">
-                                        {% for r in responsables %}
-                                        <option value="{{ r.nombre }}">{{ r.nombre }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td><input type="text" class="form-control form-control-sm meta-indicador" value="NPS" placeholder="KPI"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-base" value="50%" placeholder="Base"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-1" value="60%" placeholder="Meta 1"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-2" value="70%" placeholder="Meta 2"></td>
-                                <td><input type="text" class="form-control form-control-sm meta-3" value="85%" placeholder="Meta 3"></td>
-                                <td class="align-middle">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="removeRow(this)"><i class="fas fa-trash"></i></button>
-                                </td>
-                            </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card-footer bg-white text-right">
-            <button class="btn btn-success" onclick="saveBscSection()">
-                <i class="fas fa-save mr-1"></i> Guardar Metas Planeadas
-            </button>
-        </div>
-    </div>
-</div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
 <!-- Desarrollo de Objetivos Content -->
 <div class="tab-pane fade show active" id="content-desarrollo" role="tabpanel">
@@ -508,64 +445,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="content-indicadores-ing" role="tabpanel">
-                    <div class="card border-0 shadow-sm mb-4">
-                        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0 text-primary"><i class="fas fa-list-ul mr-2"></i>Relación de Indicadores Ingresados</h5>
-                            <button class="btn btn-sm btn-danger" id="btn-delete-selected-kpis" style="display: none;" onclick="deleteSelectedKpis()">
-                                <i class="fas fa-trash-alt mr-1"></i>Eliminar Seleccionados
-                            </button>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;" id="table-all-indicadores">
-                                    <thead style="background-color: #f1f5f9; color: #161065;">
-                                        <tr>
-                                            <th class="align-middle text-center" style="width: 40px;">
-                                                <div class="custom-control custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input" id="check-all-kpis">
-                                                    <label class="custom-control-label" for="check-all-kpis"></label>
-                                                </div>
-                                            </th>
-                                            <th class="align-middle">Perspectiva</th>
-                                            <th class="align-middle">Tipo de Objetivo</th>
-                                            <th class="align-middle">Objetivo Estratégico</th>
-                                            <th class="align-middle">Nombre del Indicador</th>
-                                            <th class="align-middle text-center">Fórmula</th>
-                                            <th class="align-middle text-center">Peso (%)</th>
-                                            <th class="align-middle text-center">Frecuencia</th>
-                                            <th class="align-middle">Responsable</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for ind in indicadores_ingresados %}
-                                        <tr id="row-kpi-all-{{ ind.id }}">
-                                            <td class="align-middle text-center">
-                                                <div class="custom-control custom-checkbox">
-                                                    <input type="checkbox" class="custom-control-input kpi-checkbox" id="check-kpi-{{ ind.id }}" value="{{ ind.id }}">
-                                                    <label class="custom-control-label" for="check-kpi-{{ ind.id }}"></label>
-                                                </div>
-                                            </td>
-                                            <td class="align-middle font-weight-bold text-secondary">{{ ind.objetivo.perspectiva.nombre }}</td>
-                                            <td class="align-middle text-muted">{{ ind.tipo_objetivo|default:ind.objetivo.tipo_objetivo }}</td>
-                                            <td class="align-middle" style="color: #005b9f;">{{ ind.objetivo.nombre }}</td>
-                                            <td class="align-middle font-weight-bold">{{ ind.nombre }}</td>
-                                            <td class="align-middle text-center">{{ ind.formula }}</td>
-                                            <td class="align-middle text-center">{{ ind.peso|floatformat:2 }}</td>
-                                            <td class="align-middle text-center">{{ ind.get_frecuencia_medicion_display }}</td>
-                                            <td class="align-middle">{{ ind.responsable }}</td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="9" class="text-center text-muted py-4">No hay indicadores ingresados en el sistema.</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Indicadores Ingresados Content Removed -->
                 <div class="tab-pane fade" id="content-consulta" role="tabpanel">
                     <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Consulta Metas.</div>
                 </div>
@@ -579,6 +459,124 @@
             </div> <!-- End tab-content -->
         </div> <!-- End card-body -->
     </div> <!-- End card tabs -->
+
+<!-- Modal Metas -->
+<div class="modal fade" id="modalConfigurarMetas" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-white align-items-center" style="border-bottom: 2px solid #e2e8f0;">
+                <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-primary shadow-sm" onclick="saveKpiMetas()" title="Guardar Metas">
+                        <i class="fas fa-save fa-lg"></i>
+                    </button>
+                    <h5 class="modal-title ml-3 font-weight-bold text-indigo" id="modalMetasTitle">Configuración de Metas</h5>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <!-- Metadata Section -->
+                <div class="card mb-3 border-0 shadow-sm">
+                    <div class="card-body p-3" style="font-size: 0.85rem;">
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Perspectiva</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-perspectiva" disabled></div>
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Tipo Objetivo</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-tipo" disabled></div>
+                        </div>
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Nombre del Objetivo</div>
+                            <div class="col-md-10"><input type="text" class="form-control form-control-sm" id="meta-info-objetivo" disabled></div>
+                        </div>
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Nombre del Indicador</div>
+                            <div class="col-md-10"><input type="text" class="form-control form-control-sm" id="meta-info-nombre" disabled></div>
+                        </div>
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Forma Cálculo</div>
+                            <div class="col-md-10"><input type="text" class="form-control form-control-sm" id="meta-info-formula" disabled></div>
+                        </div>
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Unidad de medida</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-unidad" disabled></div>
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Línea Base</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-base" value="0.00" disabled></div>
+                        </div>
+                        <div class="row form-group mb-2">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Fecha Inicio</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-inicio" disabled></div>
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Fecha Fin</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-fin" disabled></div>
+                        </div>
+                        <div class="row form-group mb-0">
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Periodicidad</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-frecuencia" disabled></div>
+                            <div class="col-md-2 text-right text-muted font-weight-bold">Área Responsable</div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-responsable" disabled></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metas Grids -->
+                <div class="row">
+                    <!-- Metas Anuales -->
+                    <div class="col-md-5">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white text-center font-weight-bold" style="color: #005b9f;">Metas Anuales</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0" style="font-size: 0.85rem;" id="table-metas-anuales">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Año</th>
+                                                <th>Meta</th>
+                                                <th>Fecha Meta</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Metas Parciales -->
+                    <div class="col-md-7">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white text-center font-weight-bold d-flex justify-content-between align-items-center" style="color: #005b9f;">
+                                <span>Metas Parciales</span>
+                                <div class="d-flex align-items-center">
+                                    <span class="mr-2 text-muted" style="font-size: 0.8rem;">Valor a ingresar</span>
+                                    <input type="number" step="0.01" class="form-control form-control-sm border-primary" id="bulk-meta-val" style="width: 80px;">
+                                    <button class="btn btn-sm btn-outline-secondary ml-1" onclick="applyBulkMeta()"><i class="fas fa-copy"></i></button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                    <table class="table table-bordered mb-0" style="font-size: 0.85rem;" id="table-metas-parciales">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Fecha Meta</th>
+                                                <th>Meta/Planeado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td colspan="2" class="text-center text-muted">Seleccione un año para ver el detalle</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Indicador -->
 <div class="modal fade" id="modalIndicador" tabindex="-1" role="dialog" aria-hidden="true">
@@ -1266,6 +1264,152 @@
                     Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
                 });
             }
+        });
+    }
+
+    // METAS CONFIGURATION LOGIC
+    let currentMetas = [];
+    let currentKpiId = null;
+    let currentSelectedYear = null;
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+    function openMetasModal(kpiId) {
+        currentKpiId = kpiId;
+        currentMetas = [];
+        currentSelectedYear = null;
+        
+        fetch(`/estrategico/ajax/get-kpi-metas/${kpiId}/`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const ind = data.indicador;
+                $('#meta-info-perspectiva').val(ind.perspectiva);
+                $('#meta-info-tipo').val(ind.tipo_objetivo);
+                $('#meta-info-objetivo').val(ind.objetivo);
+                $('#meta-info-nombre').val(ind.nombre);
+                $('#meta-info-formula').val(ind.formula);
+                $('#meta-info-unidad').val(ind.unidad_medida);
+                $('#meta-info-base').val(ind.linea_base);
+                $('#meta-info-inicio').val(ind.fecha_inicio);
+                $('#meta-info-fin').val(ind.fecha_fin);
+                $('#meta-info-frecuencia').val(ind.frecuencia);
+                $('#meta-info-responsable').val(ind.responsable);
+                
+                currentMetas = data.metas;
+                renderMetasAnuales(ind.fecha_inicio, ind.fecha_fin);
+                $('#table-metas-parciales tbody').html('<tr><td colspan="2" class="text-center text-muted py-4">Seleccione un año con el botón de "play" para ver el detalle.</td></tr>');
+                
+                $('#modalConfigurarMetas').modal('show');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        });
+    }
+
+    function renderMetasAnuales(startStr, endStr) {
+        let startYear = startStr ? parseInt(startStr.split('-')[0]) : new Date().getFullYear();
+        let endYear = endStr ? parseInt(endStr.split('-')[0]) : startYear + 2;
+        
+        let html = '';
+        for(let y = startYear; y <= endYear; y++) {
+            let metaVal = currentMetas.find(m => m.periodo === String(y))?.meta_programada || '';
+            html += `
+                <tr>
+                    <td class="align-middle">${y}</td>
+                    <td class="align-middle"><input type="number" step="0.01" class="form-control form-control-sm meta-anual-input" data-year="${y}" value="${metaVal}"></td>
+                    <td class="align-middle">Diciembre ${y}</td>
+                    <td class="align-middle text-center">
+                        <button class="btn btn-sm btn-link p-0" onclick="loadMetasParciales(${y})">
+                            <i class="fas fa-play text-primary fa-lg"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+        $('#table-metas-anuales tbody').html(html);
+    }
+
+    function loadMetasParciales(year) {
+        currentSelectedYear = year;
+        
+        // Highlight selected row
+        $('#table-metas-anuales tbody tr').removeClass('bg-primary text-white');
+        $(`button[onclick="loadMetasParciales(${year})"]`).closest('tr').addClass('bg-primary text-white');
+        $(`button[onclick="loadMetasParciales(${year})"] i`).removeClass('text-primary').addClass('text-white');
+        
+        let html = '';
+        for(let i=0; i<12; i++) {
+            let perName = `${monthNames[i]} ${year}`;
+            let metaVal = currentMetas.find(m => m.periodo === perName)?.meta_programada || '';
+            html += `
+                <tr>
+                    <td class="align-middle">${perName}</td>
+                    <td class="align-middle">
+                        <input type="number" step="0.01" class="form-control form-control-sm meta-parcial-input" data-periodo="${perName}" value="${metaVal}" onchange="updateCurrentMeta('${perName}', this.value)">
+                    </td>
+                </tr>
+            `;
+        }
+        $('#table-metas-parciales tbody').html(html);
+    }
+
+    function updateCurrentMeta(periodo, val) {
+        let exist = currentMetas.find(m => m.periodo === periodo);
+        let parsedVal = parseFloat(val);
+        if(isNaN(parsedVal)) {
+            // Remove if empty
+            currentMetas = currentMetas.filter(m => m.periodo !== periodo);
+            return;
+        }
+        
+        if(exist) {
+            exist.meta_programada = parsedVal;
+        } else {
+            currentMetas.push({periodo: periodo, meta_programada: parsedVal});
+        }
+    }
+
+    $(document).on('change', '.meta-anual-input', function() {
+        let year = $(this).data('year');
+        updateCurrentMeta(String(year), $(this).val());
+    });
+
+    function applyBulkMeta() {
+        if(!currentSelectedYear) {
+            Swal.fire('Atención', 'Seleccione primero un año en las metas anuales', 'warning');
+            return;
+        }
+        let val = $('#bulk-meta-val').val();
+        if(val === '') return;
+        
+        $('.meta-parcial-input').each(function() {
+            $(this).val(val).trigger('change');
+        });
+    }
+
+    function saveKpiMetas() {
+        // Filter out empty ones just in case
+        let payload = currentMetas.filter(m => m.meta_programada !== null && m.meta_programada !== '');
+        
+        fetch(`/estrategico/ajax/save-kpi-metas/${currentKpiId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ metas: payload })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                Swal.fire('Guardado', data.message, 'success');
+                $('#modalConfigurarMetas').modal('hide');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(err => {
+            Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
         });
     }
 
