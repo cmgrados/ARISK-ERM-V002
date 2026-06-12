@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from users.models import TenantAwareModel
 
 class StrategicPlan(models.Model):
     STATUS_CHOICES = [
@@ -101,60 +102,193 @@ class BusinessModelCanvas(models.Model):
 
 # --- BALANCED SCORECARD ---
 
-class StrategicPerspective(models.Model):
-    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='perspectives')
-    name = models.CharField('Nombre de Perspectiva', max_length=100)
-    description = models.TextField('Descripción', blank=True, null=True)
-    order = models.IntegerField('Orden', default=0)
+class Perspectiva(TenantAwareModel):
+    TIPO_CHOICES = (
+        ('FINANCIERA', 'Financiera'),
+        ('SOCIOS_CLIENTES', 'Socios/Clientes'),
+        ('PROCESOS', 'Procesos Internos'),
+        ('APRENDIZAJE', 'Aprendizaje y Crecimiento'),
+    )
+    nombre = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name="Perspectiva")
+    descripcion = models.TextField(blank=True, null=True)
+    peso_porcentual = models.DecimalField(max_digits=5, decimal_places=2, default=25.00)
+
+    class Meta:
+        verbose_name = "Perspectiva"
+        verbose_name_plural = "Perspectivas"
+        unique_together = ('organization', 'nombre')
 
     def __str__(self):
-        return self.name
+        return f"{self.get_nombre_display()}"
 
-class StrategicObjective(models.Model):
-    perspective = models.ForeignKey(StrategicPerspective, on_delete=models.CASCADE, related_name='objectives')
-    name = models.CharField('Objetivo Estratégico', max_length=255)
-    description = models.TextField('Descripción', blank=True, null=True)
+class ObjetivoEstrategico(TenantAwareModel):
+    perspectiva = models.ForeignKey(Perspectiva, on_delete=models.CASCADE, related_name='objetivos')
+    codigo = models.CharField(max_length=20, verbose_name="Código (Ej. OE-01)")
+    nombre = models.CharField(max_length=255, verbose_name="Objetivo Estratégico")
+    descripcion = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Objetivo Estratégico"
+        unique_together = ('organization', 'codigo')
 
     def __str__(self):
-        return self.name
+        return f"{self.codigo} - {self.nombre}"
 
-class KPI(models.Model):
-    objective = models.ForeignKey(StrategicObjective, on_delete=models.CASCADE, related_name='kpis')
-    name = models.CharField('Indicador (KPI)', max_length=255)
-    formula = models.TextField('Fórmula de Cálculo', blank=True, null=True)
-    baseline = models.DecimalField('Línea Base', max_digits=15, decimal_places=2, default=0)
-    target = models.DecimalField('Meta', max_digits=15, decimal_places=2, default=0)
-    frequency = models.CharField('Frecuencia de Medición', max_length=50, choices=[('Mensual', 'Mensual'), ('Trimestral', 'Trimestral'), ('Semestral', 'Semestral'), ('Anual', 'Anual')])
-    # Umbrales para semáforo (ej: si es mayor a green_threshold es verde, entre yellow y green es amarillo, menor a red es rojo)
-    green_threshold = models.DecimalField('Límite Verde (>=)', max_digits=15, decimal_places=2, default=0)
-    yellow_threshold = models.DecimalField('Límite Amarillo (>=)', max_digits=15, decimal_places=2, default=0)
+class Indicador(TenantAwareModel):
+    FRECUENCIA_CHOICES = [
+        ('MENSUAL', 'Mensual'),
+        ('TRIMESTRAL', 'Trimestral'),
+        ('SEMESTRAL', 'Semestral'),
+        ('ANUAL', 'Anual')
+    ]
     
-    def __str__(self):
-        return self.name
+    objetivo = models.ForeignKey(ObjetivoEstrategico, on_delete=models.CASCADE, related_name='indicadores')
+    nombre = models.CharField(max_length=255, verbose_name="Nombre del Indicador (KPI)")
+    formula = models.CharField(
+        max_length=255, 
+        help_text="Fórmula matemática usando variables. Ej: (resultado_real / meta_programada) * 100"
+    )
+    unidad_medida = models.CharField(max_length=50, verbose_name="Unidad (%, $, N°)")
+    frecuencia_medicion = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES)
+    
+    linea_base = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    meta_final = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
-class KPIMeasurement(models.Model):
-    kpi = models.ForeignKey(KPI, on_delete=models.CASCADE, related_name='measurements')
-    period_date = models.DateField('Fecha de Medición')
-    value = models.DecimalField('Valor Logrado', max_digits=15, decimal_places=2)
-    observations = models.TextField('Observaciones / Desviaciones', blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-# --- PROYECTOS ---
-
-class StrategicProject(models.Model):
-    objective = models.ForeignKey(StrategicObjective, on_delete=models.CASCADE, related_name='projects')
-    name = models.CharField('Nombre del Proyecto', max_length=255)
-    manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name='Responsable')
-    start_date = models.DateField('Fecha de Inicio')
-    end_date = models.DateField('Fecha de Fin')
-    budget = models.DecimalField('Presupuesto', max_digits=15, decimal_places=2, default=0)
-    status = models.CharField('Estado', max_length=50, choices=[('Planificado', 'Planificado'), ('En Curso', 'En Curso'), ('Retrasado', 'Retrasado'), ('Completado', 'Completado')])
-    physical_progress = models.DecimalField('Avance Físico (%)', max_digits=5, decimal_places=2, default=0)
-    financial_progress = models.DecimalField('Avance Financiero (%)', max_digits=5, decimal_places=2, default=0)
-    risks = models.TextField('Riesgos del Proyecto', blank=True, null=True)
+    class Meta:
+        verbose_name = "Indicador KPI"
 
     def __str__(self):
-        return self.name
+        return self.nombre
+
+class MetaPeriodo(TenantAwareModel):
+    indicador = models.ForeignKey(Indicador, on_delete=models.CASCADE, related_name='metas_periodo')
+    periodo = models.CharField(max_length=50, verbose_name="Periodo (Ej. Q1-2026, Enero-2026)")
+    
+    meta_programada = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Meta Programada")
+    resultado_real = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, verbose_name="Resultado Real logrado")
+    
+    porcentaje_cumplimiento = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    semaforo = models.CharField(max_length=20, null=True, blank=True, help_text="Rojo, Amarillo, Verde")
+
+    class Meta:
+        unique_together = ('indicador', 'periodo')
+
+    def __str__(self):
+        return f"{self.indicador.nombre} - {self.periodo}"
+
+# --- EJECUCIÓN OPERATIVA Y MONITOREO (PROYECTOS) ---
+
+from django.core.exceptions import ValidationError
+from decimal import Decimal
+
+class ProyectoIniciativa(TenantAwareModel):
+    ESTADO_CHOICES = [
+        ('PLANIFICADO', 'Planificado'),
+        ('EN_PROCESO', 'En Proceso'),
+        ('RETRASADO', 'Retrasado'),
+        ('COMPLETADO', 'Completado'),
+        ('SUSPENDIDO', 'Suspendido'),
+    ]
+    indicador = models.ForeignKey('Indicador', on_delete=models.CASCADE, related_name='proyectos')
+    codigo = models.CharField('Código del Proyecto', max_length=20)
+    nombre = models.CharField('Nombre del Proyecto', max_length=255)
+    fecha_inicio = models.DateField('Fecha de Inicio')
+    fecha_fin = models.DateField('Fecha de Fin')
+    presupuesto_total = models.DecimalField('Presupuesto Total ($)', max_digits=15, decimal_places=2, default=0)
+    estado = models.CharField('Estado', max_length=50, choices=ESTADO_CHOICES, default='PLANIFICADO')
+
+    # Estos campos se calculan dinámicamente mediante el servicio o properties
+    porcentaje_avance_fisico = models.DecimalField('Avance Físico (%)', max_digits=5, decimal_places=2, default=0)
+    porcentaje_avance_financiero = models.DecimalField('Avance Financiero (%)', max_digits=5, decimal_places=2, default=0)
+    semaforo_ejecucion = models.CharField('Semáforo de Ejecución', max_length=20, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Proyecto e Iniciativa"
+        verbose_name_plural = "Proyectos e Iniciativas"
+        unique_together = ('organization', 'codigo')
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
+
+    def actualizar_avances(self):
+        # El avance físico es el promedio de avance de sus hitos (o ponderado si existiera peso)
+        hitos = self.hitos.all()
+        if hitos.exists():
+            avance = sum(h.porcentaje_avance_real for h in hitos) / hitos.count()
+            self.porcentaje_avance_fisico = round(avance, 2)
+
+        # El avance financiero es (gasto real total / presupuesto total) * 100
+        ejecuciones = self.ejecuciones.all()
+        gasto_total = sum(e.gasto_real for e in ejecuciones)
+        if self.presupuesto_total > 0:
+            self.porcentaje_avance_financiero = round((gasto_total / self.presupuesto_total) * 100, 2)
+
+        # Semáforo de Ejecución: si el físico es mucho menor que el financiero, hay ineficiencia (Rojo)
+        brecha = self.porcentaje_avance_financiero - self.porcentaje_avance_fisico
+        if brecha > 15:
+            self.semaforo_ejecucion = 'Rojo'
+        elif brecha > 5:
+            self.semaforo_ejecucion = 'Amarillo'
+        else:
+            self.semaforo_ejecucion = 'Verde'
+
+        self.save()
+
+class EjecucionPresupuestaria(TenantAwareModel):
+    proyecto = models.ForeignKey(ProyectoIniciativa, on_delete=models.CASCADE, related_name='ejecuciones')
+    periodo = models.CharField('Periodo (Ej. Mes/Trimestre)', max_length=50)
+    gasto_programado = models.DecimalField('Gasto Programado ($)', max_digits=15, decimal_places=2, default=0)
+    gasto_real = models.DecimalField('Gasto Real ($)', max_digits=15, decimal_places=2, default=0)
+    justificacion = models.TextField('Justificación de Desviación', blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Ejecución Presupuestaria"
+        unique_together = ('proyecto', 'periodo')
+
+    def clean(self):
+        super().clean()
+        desviacion = self.gasto_programado - self.gasto_real
+        
+        # Validar que el gasto acumulado no supere el presupuesto del proyecto
+        gastos_existentes = EjecucionPresupuestaria.objects.filter(proyecto=self.proyecto).exclude(pk=self.pk)
+        total_acumulado = sum(e.gasto_real for e in gastos_existentes) + self.gasto_real
+        if total_acumulado > self.proyecto.presupuesto_total:
+            raise ValidationError({
+                'gasto_real': f'El gasto real acumulado ({total_acumulado}) no puede exceder el presupuesto total del proyecto ({self.proyecto.presupuesto_total}).'
+            })
+
+        # Regla crítica: si hay sobre-ejecución (gasto_real > gasto_programado) exige justificación
+        if desviacion < 0 and not self.justificacion:
+            raise ValidationError({
+                'justificacion': 'Se requiere una justificación porque el gasto real supera al gasto programado en este periodo.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+class HitoProyecto(TenantAwareModel):
+    proyecto = models.ForeignKey(ProyectoIniciativa, on_delete=models.CASCADE, related_name='hitos')
+    nombre = models.CharField('Nombre del Hito/Entregable', max_length=255)
+    fecha_entrega = models.DateField('Fecha Programada de Entrega')
+    porcentaje_avance_programado = models.DecimalField('Avance Programado (%)', max_digits=5, decimal_places=2, default=0)
+    porcentaje_avance_real = models.DecimalField('Avance Real (%)', max_digits=5, decimal_places=2, default=0)
+    justificacion = models.TextField('Justificación de Retraso', blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Hito del Proyecto"
+
+    def clean(self):
+        super().clean()
+        # Regla crítica: Si el avance real es inferior al programado, se exige justificación
+        if self.porcentaje_avance_real < self.porcentaje_avance_programado and not self.justificacion:
+            raise ValidationError({
+                'justificacion': 'Se requiere una justificación obligatoria porque el avance real es menor al programado.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
 # --- ENCUESTAS ---
 

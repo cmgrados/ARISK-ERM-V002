@@ -1,8 +1,8 @@
 from django.contrib import admin
 from .models import (
     StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis,
-    StrategicMatrix, BusinessModelCanvas, StrategicPerspective, StrategicObjective,
-    KPI, KPIMeasurement, StrategicProject, Survey, SurveyQuestion, SurveyResponse, SurveyAnswer
+    StrategicMatrix, BusinessModelCanvas, Perspectiva, ObjetivoEstrategico,
+    Indicador, MetaPeriodo, ProyectoIniciativa, EjecucionPresupuestaria, HitoProyecto, Survey, SurveyQuestion, SurveyResponse, SurveyAnswer
 )
 
 @admin.register(StrategicPlan)
@@ -32,30 +32,40 @@ class StrategicMatrixAdmin(admin.ModelAdmin):
 class BusinessModelCanvasAdmin(admin.ModelAdmin):
     list_display = ('plan', 'version', 'created_at')
 
-@admin.register(StrategicPerspective)
-class StrategicPerspectiveAdmin(admin.ModelAdmin):
-    list_display = ('name', 'plan', 'order')
-    list_filter = ('plan',)
+@admin.register(Perspectiva)
+class PerspectivaAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'organization', 'peso_porcentual')
+    list_filter = ('organization',)
 
-@admin.register(StrategicObjective)
-class StrategicObjectiveAdmin(admin.ModelAdmin):
-    list_display = ('name', 'perspective')
-    list_filter = ('perspective__plan', 'perspective')
+@admin.register(ObjetivoEstrategico)
+class ObjetivoEstrategicoAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'nombre', 'perspectiva', 'organization')
+    list_filter = ('perspectiva', 'organization')
 
-@admin.register(KPI)
-class KPIAdmin(admin.ModelAdmin):
-    list_display = ('name', 'objective', 'baseline', 'target', 'frequency')
-    list_filter = ('frequency', 'objective__perspective__plan')
+@admin.register(Indicador)
+class IndicadorAdmin(admin.ModelAdmin):
+    list_display = ('nombre', 'objetivo', 'frecuencia_medicion', 'organization')
+    list_filter = ('frecuencia_medicion', 'organization')
 
-@admin.register(KPIMeasurement)
-class KPIMeasurementAdmin(admin.ModelAdmin):
-    list_display = ('kpi', 'period_date', 'value')
-    list_filter = ('period_date', 'kpi')
+@admin.register(MetaPeriodo)
+class MetaPeriodoAdmin(admin.ModelAdmin):
+    list_display = ('indicador', 'periodo', 'meta_programada', 'resultado_real', 'semaforo')
+    list_filter = ('semaforo', 'periodo', 'indicador__organization')
 
-@admin.register(StrategicProject)
-class StrategicProjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'objective', 'manager', 'status', 'physical_progress', 'financial_progress')
-    list_filter = ('status',)
+@admin.register(ProyectoIniciativa)
+class ProyectoIniciativaAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'nombre', 'indicador', 'estado', 'porcentaje_avance_fisico', 'porcentaje_avance_financiero', 'semaforo_ejecucion')
+    list_filter = ('estado', 'semaforo_ejecucion', 'organization')
+
+@admin.register(EjecucionPresupuestaria)
+class EjecucionPresupuestariaAdmin(admin.ModelAdmin):
+    list_display = ('proyecto', 'periodo', 'gasto_programado', 'gasto_real')
+    list_filter = ('proyecto__organization',)
+
+@admin.register(HitoProyecto)
+class HitoProyectoAdmin(admin.ModelAdmin):
+    list_display = ('proyecto', 'nombre', 'fecha_entrega', 'porcentaje_avance_programado', 'porcentaje_avance_real')
+    list_filter = ('proyecto__organization',)
 
 admin.site.register(Survey)
 admin.site.register(SurveyQuestion)

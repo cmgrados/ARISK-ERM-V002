@@ -1,34 +1,161 @@
 {% extends 'base.html' %}
-{% block title_header %}{{ page_title }}{% endblock %}
+{% block title_header %}
+<h3 class="font-weight-bold text-uppercase mb-0" style="color: #161065;">
+    Diagnóstico Integral: {{ plan.name|default:"PLAN ESTRATÉGICO" }}
+</h3>
+{% endblock %}
 
 {% block content %}
-<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
-    <div class="card-header">
-        <h3 class="card-title font-weight-bold"><i class="fas fa-bullseye text-warning mr-2"></i>Objetivos Estratégicos y OKRs</h3>
-        <div class="card-tools">
-            <button class="btn btn-sm btn-primary" style="background-color: #161065;"><i class="fas fa-plus"></i> Nuevo Objetivo</button>
-        </div>
+<div class="card card-outline shadow-sm border-0 rounded-lg">
+    <div class="card-header bg-white border-bottom p-0">
+        <ul class="nav nav-tabs px-3 pt-3 font-weight-bold" id="diagnosticTabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'externo' %}active text-primary{% else %}text-muted{% endif %}" id="externo-tab" data-toggle="tab" href="#externo" role="tab"><i class="fas fa-globe-americas mr-2"></i>Entorno Externo</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'financiero' %}active text-primary{% else %}text-muted{% endif %}" id="financiero-tab" data-toggle="tab" href="#financiero" role="tab"><i class="fas fa-chart-line mr-2"></i>Entorno Financiero</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if active_tab == 'interno' %}active text-primary{% else %}text-muted{% endif %}" id="interno-tab" data-toggle="tab" href="#interno" role="tab"><i class="fas fa-building mr-2"></i>Diagnóstico Interno</a>
+            </li>
+        </ul>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover text-sm">
-            <thead class="bg-light">
-                <tr><th>ID</th><th>Objetivo Estratégico</th><th>Perspectiva</th><th>Meta 2026</th><th>Logro Actual</th><th>Estado</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>OE-01</td><td>Incrementar Cartera MYPE en 15%</td><td>Financiera</td><td>S/ 500M</td><td>
-                    <div class="progress progress-xs"><div class="progress-bar bg-success" style="width: 85%"></div></div>
-                    <small>85%</small>
-                </td><td><span class="badge badge-success">En Camino</span></td></tr>
-                <tr><td>OE-02</td><td>Digitalización del 100% de Trámites</td><td>Procesos</td><td>100%</td><td>
-                    <div class="progress progress-xs"><div class="progress-bar bg-warning" style="width: 60%"></div></div>
-                    <small>60%</small>
-                </td><td><span class="badge badge-warning">Riesgo Moderado</span></td></tr>
-                <tr><td>OE-03</td><td>Apertura de 3 Nuevas Agencias</td><td>Crecimiento</td><td>2 Agencias</td><td>
-                    <div class="progress progress-xs"><div class="progress-bar bg-danger" style="width: 33%"></div></div>
-                    <small>33%</small>
-                </td><td><span class="badge badge-danger">Retrasado</span></td></tr>
-            </tbody>
-        </table>
+    
+    <div class="card-body bg-light">
+        <div class="tab-content" id="diagnosticTabsContent">
+            
+            <!-- Entorno Externo -->
+            <div class="tab-pane fade {% if active_tab == 'externo' %}show active{% endif %}" id="externo" role="tabpanel">
+                <form method="post" action="{% url 'strategic_risk:strat_data' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="save_external" value="1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-globe mr-1"></i> An&aacute;lisis Internacional</label>
+                                {{ ext_form.international_analysis }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-coins mr-1"></i> Variables Econ&oacute;micas</label>
+                                {{ ext_form.economic_vars }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-users mr-1"></i> Variables Sociales</label>
+                                {{ ext_form.social_vars }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-chess mr-1"></i> Variables Competitivas</label>
+                                {{ ext_form.competitive_vars }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-flag mr-1"></i> An&aacute;lisis Nacional</label>
+                                {{ ext_form.national_analysis }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-balance-scale mr-1"></i> Variables Regulatorias</label>
+                                {{ ext_form.regulatory_vars }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-laptop-code mr-1"></i> Variables Tecnol&oacute;gicas</label>
+                                {{ ext_form.technological_vars }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-clipboard-check mr-1"></i> Conclusiones</label>
+                                {{ ext_form.conclusions }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button type="submit" class="btn btn-success font-weight-bold px-4"><i class="fas fa-save mr-2"></i>Guardar Entorno Externo</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Entorno Financiero -->
+            <div class="tab-pane fade {% if active_tab == 'financiero' %}show active{% endif %}" id="financiero" role="tabpanel">
+                <form method="post" action="{% url 'strategic_risk:strat_data' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="save_financial" value="1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-sitemap mr-1"></i> Estructura del Sistema</label>
+                                {{ fin_form.system_structure }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-hand-holding-usd mr-1"></i> An&aacute;lisis de Cr&eacute;ditos</label>
+                                {{ fin_form.credit_analysis }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-piggy-bank mr-1"></i> An&aacute;lisis de Dep&oacute;sitos</label>
+                                {{ fin_form.deposit_analysis }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-chart-bar mr-1"></i> Tendencias y Tasas</label>
+                                {{ fin_form.trends_rates }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-eye mr-1"></i> Observaciones Generales</label>
+                                {{ fin_form.observations }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button type="submit" class="btn btn-success font-weight-bold px-4"><i class="fas fa-save mr-2"></i>Guardar Entorno Financiero</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Diagnóstico Interno -->
+            <div class="tab-pane fade {% if active_tab == 'interno' %}show active{% endif %}" id="interno" role="tabpanel">
+                <form method="post" action="{% url 'strategic_risk:strat_data' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="save_internal" value="1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-cogs mr-1"></i> Alcance de Operaciones</label>
+                                {{ int_form.operations_scope }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-hand-holding-usd mr-1"></i> An&aacute;lisis de Cr&eacute;ditos</label>
+                                {{ int_form.credit_analysis }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-exclamation-triangle mr-1"></i> An&aacute;lisis de Morosidad</label>
+                                {{ int_form.delinquency_analysis }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-piggy-bank mr-1"></i> An&aacute;lisis de Dep&oacute;sitos</label>
+                                {{ int_form.deposit_analysis }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="text-secondary"><i class="fas fa-percent mr-1"></i> Tasas de Inter&eacute;s</label>
+                                {{ int_form.interest_rates }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-success"><i class="fas fa-arrow-up mr-1"></i> Fortalezas (Resumen)</label>
+                                {{ int_form.strengths }}
+                            </div>
+                            <div class="form-group">
+                                <label class="text-danger"><i class="fas fa-arrow-down mr-1"></i> Debilidades (Resumen)</label>
+                                {{ int_form.weaknesses }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button type="submit" class="btn btn-success font-weight-bold px-4"><i class="fas fa-save mr-2"></i>Guardar Diagn&oacute;stico Interno</button>
+                    </div>
+                </form>
+            </div>
+            
+        </div>
     </div>
 </div>
 {% endblock %}

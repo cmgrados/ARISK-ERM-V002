@@ -4,7 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.http import JsonResponse
 import json
-from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, StrategicPerspective, StrategicObjective, KPI, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy
+from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy
 from .forms import StrategicPlanForm, ExternalEnvironmentForm, FinancialEnvironmentForm, InternalDiagnosisForm
 
 def check_module_access(module_name):
@@ -151,9 +151,183 @@ def methodologies(request):
         return redirect('strategic_risk:dashboard')
 
     foda = StrategicMatrix.objects.filter(plan=plan, matrix_type='FODA').first()
+    if not foda or not foda.data:
+        default_foda = {
+            "F": [
+                "Tiene más de 50 años de trayectoria institucional, lo que le da legitimidad y confianza",
+                "Está registrada y supervisada por la SBS, lo que fortalece su formalidad",
+                "Cuenta con nivel de activos 2, lo que le permite operar con un marco institucional adecuado",
+                "Posee presencia territorial en Lima y provincias, con oficinas en puntos estratégicos",
+                "Atiende a un segmento claramente definido: personal militar del Ejército, Marina y FAP",
+                "Mantiene una oferta de servicios financieros y no financieros, ampliando el valor al socio",
+                "Tiene canales de contacto, atención presencial y mecanismos de afiliación y descuento",
+                "Presenta una imagen institucional asociada a disciplina, lealtad y servicio",
+                "Ha recibido reconocimientos por excelencia y buenas prácticas institucionales",
+                "Cuenta con Equipo de trabajo comprometido e identificado con la institución"
+            ],
+            "D": [
+                "Su dependencia de un segmento específico de socios limita la diversificación",
+                "La concentración geográfica en zonas ligadas a su base social puede restringir expansión",
+                "Puede presentar rigidez institucional propia de organizaciones con fuerte verticalidad",
+                "El uso de múltiples puntos de atención genera mayores costos operativos y logísticos",
+                "La transformación digital aún parece parcial si se compara con entidades financieras top",
+                "La dependencia del ahorro de socios puede volver sensible su liquidez ante crisis sistémicas",
+                "Su cartera podría estar expuesta a concentración por perfil ocupacional, afectando morosidad",
+                "Puede existir brecha entre crecimiento institucional y modernización de sistemas de TI",
+                "La adaptación a nuevas exigencias SBS y de riesgo cooperativo puede implicar altos costos",
+                "La estructura cooperativa puede ralentizar algunos procesos de decisión frente a la banca ágil"
+            ],
+            "O": [
+                "El entorno económico peruano 2026 muestra crecimiento proyectado cerca de 3%",
+                "La estabilidad de tasas y la inflación controlada permiten mejores condiciones de crédito",
+                "El crecimiento de crédito de consumo e hipotecario abre espacio para nuevos productos",
+                "La digitalización permite ampliar cobertura sin depender solo de oficinas físicas",
+                "Existe oportunidad para reforzar educación financiera y fidelización de socios actuales",
+                "La base militar y sus familias constituyen un mercado con potencial para productos cautivos",
+                "La demanda por depósitos competitivos permite captar ahorros con tasas atractivas",
+                "El marco de mayor inclusión financiera en Perú abre espacio para productos microfinancieros",
+                "El posicionamiento ético y social del cooperativismo puede atraer nuevos afiliados"
+            ],
+            "A": [
+                "La competencia de bancos, cajas y otras COOPACs por depósitos y créditos es agresiva",
+                "El riesgo de mora y deterioro crediticio sigue siendo una amenaza relevante post-pandemia",
+                "El entorno electoral y político de 2026 puede aumentar incertidumbre y postergar inversión",
+                "Las mayores exigencias regulatorias y de supervisión incrementan costos de cumplimiento",
+                "La rápida digitalización del mercado financiero puede dejar rezagadas a las cooperativas",
+                "La concentración en un solo nicho social puede aumentar vulnerabilidad ante shocks específicos",
+                "Los retiros de depósitos motivados por tasas más altas en el mercado pueden afectar liquidez",
+                "La percepción pública sobre riesgo cooperativo puede afectar la captación de nuevos socios",
+                "Eventuales shocks económicos o fiscales pueden reducir la demanda de crédito y capacidad de pago"
+            ],
+            "FO": "",
+            "DO": "",
+            "FA": "",
+            "DA": ""
+        }
+        if not foda:
+            foda = StrategicMatrix(plan=plan, matrix_type='FODA', data=default_foda)
+            foda.save()
+        elif not foda.data:
+            foda.data = default_foda
+            foda.save()
     efi = StrategicMatrix.objects.filter(plan=plan, matrix_type='EFI').first()
+    
+    # Determinar si la data está corrupta
+    is_corrupt_efi = False
+    if not efi or not efi.data or not isinstance(efi.data, list) or len(efi.data) < 20:
+        is_corrupt_efi = True
+    elif len(efi.data) > 0:
+        first_factor = efi.data[0].get('factor', '')
+        if first_factor == 'undefined' or first_factor == '':
+            is_corrupt_efi = True
+
+    if is_corrupt_efi:
+        default_efi = [
+            {"factor": "Tiene más de 50 años de trayectoria institucional, lo que le da legitimidad y confianza", "peso": 8, "calificacion": 4},
+            {"factor": "Está registrada y supervisada por la SBS, lo que fortalece su formalidad", "peso": 7, "calificacion": 4},
+            {"factor": "Cuenta con nivel de activos 2, lo que le permite operar con un marco institucional adecuado", "peso": 5, "calificacion": 3},
+            {"factor": "Posee presencia territorial en Lima y provincias, con oficinas en puntos estratégicos", "peso": 5, "calificacion": 4},
+            {"factor": "Atiende a un segmento claramente definido: personal militar del Ejército, Marina y FAP", "peso": 6, "calificacion": 4},
+            {"factor": "Mantiene una oferta de servicios financieros y no financieros, ampliando el valor al socio", "peso": 5, "calificacion": 3},
+            {"factor": "Tiene canales de contacto, atención presencial y mecanismos de afiliación y descuento", "peso": 4, "calificacion": 3},
+            {"factor": "Presenta una imagen institucional asociada a disciplina, lealtad y servicio", "peso": 4, "calificacion": 4},
+            {"factor": "Ha recibido reconocimientos por excelencia y buenas prácticas institucionales", "peso": 3, "calificacion": 3},
+            {"factor": "Cuenta con Equipo de trabajo comprometido e identificado con la institución", "peso": 3, "calificacion": 4},
+            {"factor": "Su dependencia de un segmento específico de socios limita la diversificación", "peso": 8, "calificacion": 2},
+            {"factor": "La concentración geográfica en zonas ligadas a su base social puede restringir expansión", "peso": 5, "calificacion": 2},
+            {"factor": "Puede presentar rigidez institucional propia de organizaciones con fuerte verticalidad", "peso": 4, "calificacion": 2},
+            {"factor": "El uso de múltiples puntos de atención genera mayores costos operativos y logísticos", "peso": 6, "calificacion": 1},
+            {"factor": "La transformación digital aún parece parcial si se compara con entidades financieras top", "peso": 7, "calificacion": 1},
+            {"factor": "La dependencia del ahorro de socios puede volver sensible su liquidez ante crisis sistémicas", "peso": 6, "calificacion": 2},
+            {"factor": "Su cartera podría estar expuesta a concentración por perfil ocupacional, afectando morosidad", "peso": 5, "calificacion": 1},
+            {"factor": "Puede existir brecha entre crecimiento institucional y modernización de sistemas de TI", "peso": 4, "calificacion": 2},
+            {"factor": "La adaptación a nuevas exigencias SBS y de riesgo cooperativo puede implicar altos costos", "peso": 3, "calificacion": 1},
+            {"factor": "La estructura cooperativa puede ralentizar algunos procesos de decisión frente a la banca ágil", "peso": 2, "calificacion": 2}
+        ]
+        if not efi:
+            efi = StrategicMatrix(plan=plan, matrix_type='EFI', data=default_efi)
+            efi.save()
+        else:
+            efi.data = default_efi
+            efi.save()
+            
     efe = StrategicMatrix.objects.filter(plan=plan, matrix_type='EFE').first()
+    
+    is_corrupt_efe = False
+    if not efe or not efe.data or not isinstance(efe.data, list) or len(efe.data) < 20:
+        is_corrupt_efe = True
+    elif len(efe.data) > 0:
+        first_factor_e = efe.data[0].get('factor', '')
+        if first_factor_e == 'undefined' or first_factor_e == '':
+            is_corrupt_efe = True
+
+    if is_corrupt_efe:
+        default_efe = [
+            {"factor": "El entorno económico peruano 2026 muestra crecimiento proyectado cerca de 3%", "peso": 6, "calificacion": 4},
+            {"factor": "La estabilidad de tasas y la inflación controlada permiten mejores condiciones de crédito", "peso": 5, "calificacion": 4},
+            {"factor": "El crecimiento de crédito de consumo e hipotecario abre espacio para nuevos productos", "peso": 6, "calificacion": 5},
+            {"factor": "La digitalización permite ampliar cobertura sin depender solo de oficinas físicas", "peso": 5, "calificacion": 4},
+            {"factor": "Existe oportunidad para reforzar educación financiera y fidelización de socios actuales", "peso": 4, "calificacion": 3},
+            {"factor": "La base militar y sus familias constituyen un mercado con potencial para productos cautivos", "peso": 7, "calificacion": 5},
+            {"factor": "La demanda por depósitos competitivos permite captar ahorros con tasas atractivas", "peso": 5, "calificacion": 4},
+            {"factor": "El marco de mayor inclusión financiera en Perú abre espacio para productos microfinancieros", "peso": 6, "calificacion": 4},
+            {"factor": "El posicionamiento ético y social del cooperativismo puede atraer nuevos afiliados", "peso": 4, "calificacion": 3},
+            {"factor": "Posibilidad de buscar financiamientos menos costosos a través de entidades de segundo piso", "peso": 2, "calificacion": 3},
+            {"factor": "La competencia de bancos, cajas y otras COOPACs por depósitos y créditos es agresiva", "peso": 8, "calificacion": 2},
+            {"factor": "El riesgo de mora y deterioro crediticio sigue siendo una amenaza relevante post-pandemia", "peso": 7, "calificacion": 1},
+            {"factor": "El entorno electoral y político de 2026 puede aumentar incertidumbre y postergar inversión", "peso": 6, "calificacion": 2},
+            {"factor": "Las mayores exigencias regulatorias y de supervisión incrementan costos de cumplimiento", "peso": 5, "calificacion": 1},
+            {"factor": "La rápida digitalización del mercado financiero puede dejar rezagadas a las cooperativas", "peso": 6, "calificacion": 2},
+            {"factor": "La concentración en un solo nicho social puede aumentar vulnerabilidad ante shocks específicos", "peso": 4, "calificacion": 2},
+            {"factor": "Los retiros de depósitos motivados por tasas más altas en el mercado pueden afectar liquidez", "peso": 6, "calificacion": 1},
+            {"factor": "La percepción pública sobre riesgo cooperativo puede afectar la captación de nuevos socios", "peso": 3, "calificacion": 2},
+            {"factor": "Eventuales shocks económicos o fiscales pueden reducir la demanda de crédito y capacidad de pago", "peso": 3, "calificacion": 2},
+            {"factor": "Incremento del sobreendeudamiento en los sectores que trabajan con microfinancieras", "peso": 2, "calificacion": 2}
+        ]
+        if not efe:
+            efe = StrategicMatrix(plan=plan, matrix_type='EFE', data=default_efe)
+            efe.save()
+        else:
+            efe.data = default_efe
+            efe.save()
     mpc = StrategicMatrix.objects.filter(plan=plan, matrix_type='MPC').first()
+    is_corrupt_mpc = False
+    if not mpc or not mpc.data or (isinstance(mpc.data, dict) and not mpc.data.get('factors')):
+        is_corrupt_mpc = True
+    elif isinstance(mpc.data, list):
+        is_corrupt_mpc = True
+    elif isinstance(mpc.data, dict) and len(mpc.data.get('factors', [])) <= 2:
+        is_corrupt_mpc = True
+
+    if is_corrupt_mpc:
+        default_mpc = {
+            "competitors": [
+                "Nuestra Entidad", 
+                "COOPAC SANTA ROSA", 
+                "COOPAC LA REHAB.", 
+                "BANCO INTERBANK", 
+                "BANCO BBVA", 
+                "CAJA HUANCAYO"
+            ],
+            "factors": [
+                {"name": "Cuota mercado", "peso": 10.00, "scores": [4, 3, 2, 3, 2, 5]},
+                {"name": "Rápidez", "peso": 9.00, "scores": [5, 5, 5, 5, 3, 2]},
+                {"name": "Tasas de Interés", "peso": 5.00, "scores": [3, 3, 3, 3, 4, 5]},
+                {"name": "Atención Cliente", "peso": 8.00, "scores": [3, 3, 3, 3, 2, 4]},
+                {"name": "Ubicación (con respecto a pla)", "peso": 9.00, "scores": [4, 4, 3, 3, 2, 4]},
+                {"name": "Servicios no Financieros", "peso": 10.00, "scores": [4, 3, 3, 3, 4, 5]},
+                {"name": "Inversion publicitaria", "peso": 5.00, "scores": [2, 2, 2, 1, 3, 5]},
+                {"name": "Gama de Productos", "peso": 10.00, "scores": [4, 1, 2, 2, 4, 5]},
+                {"name": "Regulada y Supervisada", "peso": 24.00, "scores": [5, 1, 1, 1, 5, 5]},
+                {"name": "Imagen corporativa", "peso": 10.00, "scores": [3, 2, 2, 2, 3, 5]}
+            ]
+        }
+        if not mpc:
+            mpc = StrategicMatrix(plan=plan, matrix_type='MPC', data=default_mpc)
+            mpc.save()
+        else:
+            mpc.data = default_mpc
+            mpc.save()
     canvas_actual = BusinessModelCanvas.objects.filter(plan=plan, version__in=['1.0', 'Actual']).first()
     if canvas_actual and canvas_actual.version == '1.0':
         canvas_actual.version = 'Actual'
@@ -488,3 +662,53 @@ def reports(request):
         context['perspectives'] = plan.perspectives.prefetch_related('objectives__kpis').all()
 
     return render(request, 'strategic_risk/reports.html', context)
+
+import openpyxl
+from django.http import HttpResponse
+
+@login_required
+def export_bsc_excel(request):
+    organization = request.user.organization if hasattr(request.user, 'organization') else None
+    if not organization:
+        return HttpResponse("Organización no encontrada.", status=400)
+        
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Balanced Scorecard"
+    
+    # Header
+    headers = ["Perspectiva", "Objetivo", "Indicador", "Línea Base", "Periodo Meta", "Meta Programada", "Resultado Real", "% Cumplimiento", "Semáforo"]
+    ws.append(headers)
+    
+    # Formato Header
+    for cell in ws[1]:
+        cell.font = openpyxl.styles.Font(bold=True)
+        cell.fill = openpyxl.styles.PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+        
+    # Obtener Metas
+    from .models import MetaPeriodo
+    metas = MetaPeriodo.objects.filter(indicador__organization=organization).select_related(
+        'indicador', 'indicador__objetivo', 'indicador__objetivo__perspectiva'
+    ).order_by('indicador__objetivo__perspectiva__nombre', 'indicador__objetivo__codigo', 'periodo')
+    
+    for meta in metas:
+        indicador = meta.indicador
+        objetivo = indicador.objetivo
+        perspectiva = objetivo.perspectiva
+        
+        ws.append([
+            perspectiva.nombre,
+            f"{objetivo.codigo} - {objetivo.nombre}",
+            indicador.nombre,
+            float(indicador.linea_base) if indicador.linea_base else 0,
+            meta.periodo,
+            float(meta.meta_programada) if meta.meta_programada else 0,
+            float(meta.resultado_real) if meta.resultado_real else None,
+            float(meta.porcentaje_cumplimiento) if meta.porcentaje_cumplimiento else None,
+            meta.semaforo
+        ])
+        
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="Balanced_Scorecard.xlsx"'
+    wb.save(response)
+    return response

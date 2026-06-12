@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     
     # Third party dependencies
     'django.contrib.humanize',
+    'rest_framework',
     
     # Internal apps
     'core',
@@ -84,6 +85,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.TenantMiddleware', # Agregado para Multitenancy
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
