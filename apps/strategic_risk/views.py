@@ -418,8 +418,8 @@ def add_objective(request):
             name = data.get('name')
             description = data.get('description', '')
             
-            perspective = get_object_or_404(StrategicPerspective, id=perspective_id)
-            StrategicObjective.objects.create(perspective=perspective, name=name, description=description)
+            perspective = get_object_or_404(Perspectiva, id=perspective_id)
+            ObjetivoEstrategico.objects.create(perspective=perspective, name=name, description=description)
             
             return JsonResponse({'status': 'success', 'message': 'Objetivo añadido correctamente.'})
         except Exception as e:
@@ -436,8 +436,8 @@ def add_kpi(request):
             target = data.get('target', 0)
             frequency = data.get('frequency', 'Mensual')
             
-            objective = get_object_or_404(StrategicObjective, id=objective_id)
-            KPI.objects.create(
+            objective = get_object_or_404(ObjetivoEstrategico, id=objective_id)
+            Indicador.objects.create(
                 objective=objective, 
                 name=name, 
                 target=target, 

@@ -121,7 +121,10 @@
                 <div class="tab-pane fade" id="content-encuestas" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h4 class="text-primary font-weight-bold"><i class="fas fa-poll-h text-primary mr-2"></i>Gestión de Encuestas</h4>
-                        <button class="btn btn-success" onclick="createSurvey()"><i class="fas fa-plus mr-1"></i> Crear Nueva Encuesta</button>
+                        <div>
+                            <button class="btn btn-info font-weight-bold mr-2" data-toggle="modal" data-target="#sampleCalculatorModal"><i class="fas fa-calculator mr-1"></i> Calculadora de Muestra</button>
+                            <button class="btn btn-success font-weight-bold" onclick="createSurvey()"><i class="fas fa-plus mr-1"></i> Crear Nueva Encuesta</button>
+                        </div>
                     </div>
 
                     <div class="alert alert-info border-0 shadow-sm mb-4">
@@ -705,6 +708,73 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL: CALCULADORA DE MUESTRA -->
+<div class="modal fade" id="sampleCalculatorModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-info text-white border-0">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-calculator mr-2"></i> Calculadora de Muestra</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light p-4">
+                <div class="form-group">
+                    <label class="font-weight-bold text-dark">Tamaño de la Población (N)</label>
+                    <input type="number" id="calcPopulation" class="form-control" placeholder="Ej: 1000" min="1">
+                    <small class="text-muted">Si es desconocida, déjelo en blanco (usará población infinita).</small>
+                </div>
+                
+                <div class="form-group">
+                    <label class="font-weight-bold text-dark">Nivel de Confianza</label>
+                    <select id="calcConfidence" class="form-control" onchange="updateErrorFromConfidence(this.value)">
+                        <option value="1.645">90%</option>
+                        <option value="1.96" selected>95% (Recomendado)</option>
+                        <option value="2.576">99%</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="font-weight-bold text-dark">Margen de Error (%)</label>
+                    <div class="input-group">
+                        <input type="number" id="calcError" class="form-control" value="5" min="1" max="20" step="0.1" oninput="updateConfidenceFromError(this.value)">
+                        <div class="input-group-append">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold text-dark">Probabilidad de Éxito (p)</label>
+                    <div class="input-group">
+                        <input type="number" id="calcProb" class="form-control" value="50" readonly>
+                        <div class="input-group-append">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <small class="text-muted">Se usa 50% por defecto para maximizar el tamaño (escenario más conservador).</small>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm" onclick="calculateSampleSize()">
+                        <i class="fas fa-magic mr-2"></i> Calcular Muestra
+                    </button>
+                </div>
+
+                <div id="calcResultContainer" class="mt-4 text-center d-none">
+                    <h5 class="text-secondary font-weight-bold mb-2">Tamaño de Muestra Recomendado</h5>
+                    <div class="display-4 font-weight-bold text-success" id="calcResultNumber">--</div>
+                    <p class="text-muted mt-2">personas a encuestar</p>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -1062,7 +1132,7 @@
         mpcData.competitors.forEach((c, idx) => {
             trComps.append(`
                 <th colspan="2" class="align-middle text-center border text-primary p-1" style="font-size: 0.85rem; width: 140px; min-width: 140px;">
-                    <textarea class="form-control form-control-sm text-center border-0 bg-transparent font-weight-bold text-primary p-0 text-uppercase" rows="1" style="resize: none; overflow: hidden; line-height: 1.2; width: 100%;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; updateMpcCompName(${idx}, this.value)" onchange="updateMpcCompName(${idx}, this.value)" onfocus="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">${c}</textarea>
+                    <textarea class="form-control form-control-sm text-center border-0 bg-transparent font-weight-bold text-primary p-1 text-uppercase" rows="2" style="resize: none; overflow: hidden; line-height: 1.2; width: 100%; min-height: 40px;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; updateMpcCompName(${idx}, this.value)" onchange="updateMpcCompName(${idx}, this.value)" onfocus="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">${c}</textarea>
                 </th>
             `);
             trSubs.append(`<th class="text-center border font-weight-normal text-muted" style="min-width: 65px;">Puntos</th>`);
@@ -2116,5 +2186,49 @@
             });
         }, 200);
     });
+
+    // --- LÓGICA CALCULADORA DE MUESTRA ---
+    function calculateSampleSize() {
+        const N = parseInt(document.getElementById('calcPopulation').value) || null;
+        const Z = parseFloat(document.getElementById('calcConfidence').value);
+        const e = parseFloat(document.getElementById('calcError').value) / 100;
+        const p = parseFloat(document.getElementById('calcProb').value) / 100;
+        const q = 1 - p;
+
+        let n;
+        if (N) {
+            // Población finita
+            n = (N * Math.pow(Z, 2) * p * q) / (Math.pow(e, 2) * (N - 1) + Math.pow(Z, 2) * p * q);
+        } else {
+            // Población infinita
+            n = (Math.pow(Z, 2) * p * q) / Math.pow(e, 2);
+        }
+
+        n = Math.ceil(n);
+        
+        document.getElementById('calcResultNumber').innerText = n;
+        
+        const resultContainer = document.getElementById('calcResultContainer');
+        resultContainer.classList.remove('d-none');
+        resultContainer.classList.add('animate__animated', 'animate__fadeIn');
+    }
+
+    function updateConfidenceFromError(errorVal) {
+        const confSelect = document.getElementById('calcConfidence');
+        const err = parseFloat(errorVal);
+        if (err <= 3) confSelect.value = '2.576';
+        else if (err <= 5) confSelect.value = '1.96';
+        else confSelect.value = '1.645';
+        calculateSampleSize();
+    }
+
+    function updateErrorFromConfidence(confVal) {
+        const errInput = document.getElementById('calcError');
+        if (confVal === '2.576') errInput.value = 3;
+        else if (confVal === '1.96') errInput.value = 5;
+        else errInput.value = 10;
+        calculateSampleSize();
+    }
+
 </script>
 {% endblock %}
