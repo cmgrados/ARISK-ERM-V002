@@ -1449,14 +1449,50 @@
         } else {
             // Pre-fill some dummy questions if it's the default ones to show it works
             if (id === 's1') {
-                addQuestion('radio', '¿Cómo calificaría su satisfacción general con su rol actual?', ['Muy satisfecho', 'Satisfecho', 'Neutral', 'Insatisfecho', 'Muy insatisfecho'], true);
-                addQuestion('radio', '¿Siente que sus contribuciones son valoradas por la organización?', ['Siempre', 'A menudo', 'A veces', 'Rara vez', 'Nunca'], true);
-                addQuestion('radio', '¿Qué tan bien siente que comprende los objetivos de la organización y cómo su trabajo contribuye a ellos?', ['Completamente', 'Mayormente', 'Algo', 'Poco', 'Nada'], true);
-                addQuestion('radio', '¿Qué tan satisfecho está con las oportunidades de crecimiento y desarrollo profesional dentro de la empresa?', ['Muy satisfecho', 'Satisfecho', 'Neutral', 'Insatisfecho', 'Muy insatisfecho'], true);
-                addQuestion('radio', '¿Cómo calificaría el nivel de comunicación entre usted y su jefe directo?', ['Excelente', 'Bueno', 'Aceptable', 'Malo', 'Muy malo'], true);
-                addQuestion('radio', '¿Siente que tiene las herramientas y recursos necesarios para realizar su trabajo de manera efectiva?', ['Totalmente de acuerdo', 'De acuerdo', 'Neutral', 'En desacuerdo', 'Totalmente en desacuerdo'], true);
-                addQuestion('radio', '¿Cómo describiría el equilibrio entre su vida laboral y personal en su puesto actual?', ['Muy bueno', 'Bueno', 'Aceptable', 'Malo', 'Muy malo'], true);
-                addQuestion('textarea', '¿Qué podemos hacer para mejorar su satisfacción y compromiso general en el trabajo?', null, false);
+                addQuestion('radio', 'AGENCIA', ['Agencia Matriz', 'Agencia Norte', 'Agencia Sur'], true);
+                addQuestion('radio', 'Género al que pertenece', ['Masculino', 'Femenino', 'Otro'], true);
+                addQuestion('radio', 'Rango de edad en el que se encuentra', ['18 a 25', '26 a 35', '36 a 45', '46 a 55', 'Más de 55'], true);
+                addQuestion('radio', 'Tiempo de trabajo en CAC', ['Menos de 1 año', '1 a 3 años', '4 a 6 años', 'Más de 6 años'], true);
+                addQuestion('radio', 'Nivel dentro de la organización', ['Directivo', 'Gerencial', 'Jefatura', 'Operativo', 'Asesoría'], true);
+                addQuestion('rating', '¿Consideras que la cooperativa esta adecuadamente organizada?', null, true);
+                addQuestion('rating', '¿Cuál es su opinión respecto a las políticas o lineamientos internos que maneja la cooperativa?', null, true);
+                addQuestion('rating', '¿Qué opina respecto a los trámites operativos que realiza el colaborador al interior de la cooperativa? Ejemplo: Permisos, Adelantos, etc.', null, true);
+                addQuestion('rating', '¿Cuál es su nivel de autonomía para la toma de decisiones en su puesto de trabajo? Ejemplo: Si a su criterio una operación de crédito no debe aprobarse esta es respetada?', null, true);
+                addQuestion('radio', '¿Cree que los directivos intervienen en actividades que no les corresponden?', ['Sí', 'No', 'A veces'], true);
+                addQuestion('rating', '¿Cómo considera el nivel de liderazgo ejercido por la gerencia general?', null, true);
+                addQuestion('rating', '¿Cree que sus jefes confían en ud, su responsabilidad y sus decisiones?', null, true);
+                addQuestion('radio', '¿Se manejan en la cooperativa políticas de estímulo y recompensa?', ['Sí', 'No'], true);
+                addQuestion('rating', '¿Se siente ud, justamente recompensado por los resultados en su puesto de trabajo? Ejemplo: Sueldos+Incentivos+Otros', null, true);
+                addQuestion('radio', '¿Se ha visto inclinado a buscar otra oportunidad de trabajo?', ['Sí', 'No'], true);
+                addQuestion('radio', '¿En la cooperativa se aplican sanciones a los colaboradores?', ['Sí', 'No'], true);
+                addQuestion('rating', '¿Considera que en su cargo existen desafíos y metas profesionales?', null, true);
+                addQuestion('radio', '¿Interviene ud, en la fijación de objetivos y metas para su puesto de trabajo?', ['Sí', 'No', 'A veces'], true);
+                addQuestion('radio', 'En su puesto de trabajo ¿se mide el cumplimiento de objetivos?', ['Sí', 'No'], true);
+                addQuestion('rating', '¿Cree que tiene oportunidades de desarrollo profesional y personal en la cooperativa? Ejemplo: Ascender a nuevos cargos, capacitaciones, etc', null, true);
+                addQuestion('rating', '¿Cómo considera el ambiente de trabajo en la cooperativa?', null, true);
+                addQuestion('rating', '¿Cómo considera la relación entre compañeros de trabajo?', null, true);
+                addQuestion('rating', '¿Cómo considera la relación con sus jefes inmediatos?', null, true);
+                addQuestion('rating', '¿Cómo considera la relación con los socios de la cooperativa?', null, true);
+                addQuestion('rating', '¿Cómo considera su relación con los directivos?', null, true);
+                addQuestion('rating', '¿Cree que existe un sentimiento de ayuda mutua al interior de la cooperativa?', null, true);
+                addQuestion('rating', '¿Cree que existe en sus jefes inmediatos interés por ayudarlo y apoyarlo?', null, true);
+                addQuestion('rating', '¿Cree que existe en los directivos interés por ayudarlo y apoyarlo?', null, true);
+                addQuestion('radio', '¿Se aplican normas de rendimiento para evaluar al personal de la cooperativa?', ['Sí', 'No'], true);
+                addQuestion('rating', '¿Cómo considera el espacio físico en el que hace su trabajo?', null, true);
+                addQuestion('rating', '¿Se considera apropiadamente evaluado en su puesto de trabajo?', null, true);
+                addQuestion('rating', '¿Se considera que cuenta con las herramientas necesarias para desempeñar sus funciones?', null, true);
+                addQuestion('rating', '¿Sus compañeros de trabajo aceptan sus discrepancias y le ayudan a buscar soluciones?', null, true);
+                addQuestion('rating', '¿Su jefe inmediato aceptan sus discrepancias y le ayudan a buscar a soluciones?', null, true);
+                addQuestion('rating', '¿Los directivos aceptan sus discrepancias y le ayudan a buscar a soluciones?', null, true);
+                addQuestion('radio', '¿Sus compañeros de trabajo tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
+                addQuestion('radio', '¿Su jefe inmediato tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
+                addQuestion('radio', '¿Los directivos de la cooperativa tienden a ser conflictivos con usted?', ['Sí', 'No', 'A veces'], true);
+                addQuestion('radio', '¿Ha experimentado alguna forma de acoso (Sexual / Hostigamiento) en la cooperativa?', ['Sí', 'No'], true);
+                addQuestion('rating', '¿Cómo califica su sentimiento de pertenencia a la cooperativa? Ejemplo: Que tan camiseta eres con la organización', null, true);
+                addQuestion('textarea', '¿Que crees que te motivaría a tener mayor compromiso con la Cooperativa?', null, false);
+                addQuestion('rating', '¿Cómo estima su nivel de motivación trabajando la esta cooperativa?', null, true);
+                addQuestion('rating', '¿Sus objetivos personales son compatibles con los objetivos de la cooperativa?', null, true);
+                addQuestion('rating', '¿Se cumplen sus expectativas profesionales y personales en la cooperativa?', null, true);
             } else if (id === 's2') {
                 addQuestion('radio', '¿Considera que los procesos actuales son eficientes?', ['Sí, muy eficientes', 'Podrían mejorar', 'No son eficientes'], true);
             } else if (id === 's3') {

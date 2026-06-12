@@ -21,7 +21,7 @@ from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 
-from apps.strategic_risk import views as strategic_views
+from strategic_risk import views as strategic_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
