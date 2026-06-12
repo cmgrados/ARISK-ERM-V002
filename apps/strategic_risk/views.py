@@ -580,32 +580,9 @@ def controls(request):
     objetivos_ingresados = ObjetivoEstrategico.objects.filter(perspectiva__plan=plan) if plan else []
     indicadores_ingresados = Indicador.objects.filter(objetivo__perspectiva__plan=plan) if plan else []
     
-    # Build metas_data dynamically from DB to sync with Metas Planeadas grid
-    dynamic_metas_data = []
-    if plan:
-        for ind in indicadores_ingresados:
-            meta1 = ind.metas_periodo.filter(periodo='Meta 1').first() or ind.metas_periodo.filter(periodo=str(plan.start_year)).first()
-            meta2 = ind.metas_periodo.filter(periodo='Meta 2').first() or ind.metas_periodo.filter(periodo=str(plan.start_year+1)).first()
-            meta3 = ind.metas_periodo.filter(periodo='Meta 3').first() or ind.metas_periodo.filter(periodo=str(plan.start_year+2)).first()
-            
-            dynamic_metas_data.append({
-                'id': ind.id,
-                'perspectiva': ind.objetivo.perspectiva.nombre if ind.objetivo and ind.objetivo.perspectiva else '',
-                'objetivo': ind.objetivo.nombre if ind.objetivo else '',
-                'tipo': ind.objetivo.tipo_objetivo if ind.objetivo else '',
-                'area': ind.objetivo.area_responsable if ind.objetivo else '',
-                'responsable': ind.objetivo.responsable if ind.objetivo else '',
-                'indicador': ind.nombre,
-                'base': str(ind.linea_base),
-                'meta1': str(meta1.meta_programada) if meta1 else '',
-                'meta2': str(meta2.meta_programada) if meta2 else '',
-                'meta3': str(meta3.meta_programada) if meta3 else '',
-            })
-
     context = {
         'page_title': 'Planificación Estratégica - FASE ESTRATEGICA',
         'plan': plan,
-        'metas_data': dynamic_metas_data,
         'perspectivas': plan.perspectivas.all() if plan else [],
         'tipos_objetivo': plan.tipos_objetivo.all() if plan else [],
         'areas_responsables': plan.areas_responsables.all() if plan else [],
