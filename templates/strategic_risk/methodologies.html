@@ -1061,10 +1061,8 @@
 
         mpcData.competitors.forEach((c, idx) => {
             trComps.append(`
-                <th colspan="2" class="align-middle text-center border text-primary" style="font-size: 0.85rem;">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <input type="text" class="form-control form-control-sm text-center border-0 bg-transparent font-weight-bold text-primary p-0 text-uppercase" value="${c}" onchange="updateMpcCompName(${idx}, this.value)">
-                    </div>
+                <th colspan="2" class="align-middle text-center border text-primary p-1" style="font-size: 0.85rem; width: 140px; min-width: 140px;">
+                    <textarea class="form-control form-control-sm text-center border-0 bg-transparent font-weight-bold text-primary p-0 text-uppercase" rows="1" style="resize: none; overflow: hidden; line-height: 1.2; width: 100%;" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'; updateMpcCompName(${idx}, this.value)" onchange="updateMpcCompName(${idx}, this.value)" onfocus="this.style.height = ''; this.style.height = this.scrollHeight + 'px'">${c}</textarea>
                 </th>
             `);
             trSubs.append(`<th class="text-center border font-weight-normal text-muted" style="min-width: 65px;">Puntos</th>`);
@@ -1104,6 +1102,14 @@
         });
 
         calcMpcTotals();
+
+        // Ensure textareas adapt to their content height after being inserted into the DOM
+        setTimeout(() => {
+            $('#mpc-competitors-row textarea').each(function() {
+                this.style.height = 'auto';
+                this.style.height = this.scrollHeight + 'px';
+            });
+        }, 50);
     }
 
     function updateMpcCompName(idx, val) { mpcData.competitors[idx] = val; }
@@ -1330,7 +1336,7 @@
                 tbody.insertAdjacentHTML('afterbegin', newRow);
 
                 // Guardar la fila en localStorage
-                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list_{{ plan.id|default:"0" }}') || '[]');
                 customSurveys.push({
                     id: rowId,
                     title: result.value.title,
@@ -1338,7 +1344,7 @@
                     link: newLink,
                     publicId: randomId
                 });
-                localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
+                localStorage.setItem('custom_surveys_list_{{ plan.id|default:"0" }}', JSON.stringify(customSurveys));
 
                 Swal.fire('¡Guardado!', 'La encuesta ha sido registrada correctamente.', 'success');
             }
@@ -1384,12 +1390,12 @@
                 document.getElementById('date-' + id).innerText = displayDate;
                 
                 // Actualizar en localStorage si es una encuesta custom
-                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list_{{ plan.id|default:"0" }}') || '[]');
                 let index = customSurveys.findIndex(s => s.id === id);
                 if(index > -1) {
                     customSurveys[index].title = result.value.title;
                     customSurveys[index].date = displayDate;
-                    localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
+                    localStorage.setItem('custom_surveys_list_{{ plan.id|default:"0" }}', JSON.stringify(customSurveys));
                 }
 
                 Swal.fire('¡Actualizado!', 'Los datos de la encuesta se han modificado.', 'success');
@@ -1430,9 +1436,9 @@
                 document.getElementById('row-' + id).remove();
                 
                 // Eliminar de localStorage si es custom
-                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+                let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list_{{ plan.id|default:"0" }}') || '[]');
                 customSurveys = customSurveys.filter(s => s.id !== id);
-                localStorage.setItem('custom_surveys_list', JSON.stringify(customSurveys));
+                localStorage.setItem('custom_surveys_list_{{ plan.id|default:"0" }}', JSON.stringify(customSurveys));
                 
                 Swal.fire('¡Eliminado!', 'La encuesta ha sido eliminada.', 'success');
             }
@@ -2061,7 +2067,7 @@
 <script>
     // Recuperar y mostrar encuestas personalizadas guardadas
     document.addEventListener('DOMContentLoaded', () => {
-        let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list') || '[]');
+        let customSurveys = JSON.parse(localStorage.getItem('custom_surveys_list_{{ plan.id|default:"0" }}') || '[]');
         const tbody = document.getElementById('encuestas-tbody');
         if (tbody && customSurveys.length > 0) {
             // Se insertan al final de las encuestas por defecto (o al principio si prefieres)

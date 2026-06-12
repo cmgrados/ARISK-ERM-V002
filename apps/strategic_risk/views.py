@@ -48,9 +48,6 @@ def plan_create(request):
             StrategicMatrix.objects.create(plan=plan, matrix_type='MPC')
             BusinessModelCanvas.objects.create(plan=plan)
             CorporatePhilosophy.objects.create(plan=plan)
-            # Crear perspectivas por defecto
-            for i, name in enumerate(['Financiera', 'Clientes', 'Procesos Internos', 'Aprendizaje y Crecimiento']):
-                StrategicPerspective.objects.create(plan=plan, name=name, order=i)
             request.session['active_strategic_plan_id'] = plan.id
             messages.success(request, 'Plan Estratégico creado exitosamente.')
             return redirect('strategic_risk:dashboard')
@@ -78,6 +75,90 @@ def plan_update(request, pk):
     
     context = {'page_title': 'Editar Plan Estratégico', 'form': form, 'plan': plan}
     return render(request, 'strategic_risk/plan_form.html', context)
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def plan_copy(request, pk):
+    original_plan = get_object_or_404(StrategicPlan, pk=pk)
+    
+    # 1. Copiar Plan Estratégico
+    new_plan = StrategicPlan.objects.create(
+        name=f"{original_plan.name} (Copia)",
+        institution=original_plan.institution,
+        start_year=original_plan.start_year,
+        horizon_years=original_plan.horizon_years,
+        status='DRAFT',
+        version=original_plan.version,
+        created_by=request.user
+    )
+    
+    # 2. Copiar Entornos
+    ext_env = getattr(original_plan, 'external_environment', None)
+    if ext_env:
+        ext_env.pk = None
+        ext_env.plan = new_plan
+        ext_env.save()
+    else:
+        ExternalEnvironment.objects.create(plan=new_plan)
+        
+    fin_env = getattr(original_plan, 'financial_environment', None)
+    if fin_env:
+        fin_env.pk = None
+        fin_env.plan = new_plan
+        fin_env.save()
+    else:
+        FinancialEnvironment.objects.create(plan=new_plan)
+        
+    int_diag = getattr(original_plan, 'internal_diagnosis', None)
+    if int_diag:
+        int_diag.pk = None
+        int_diag.plan = new_plan
+        int_diag.save()
+    else:
+        InternalDiagnosis.objects.create(plan=new_plan)
+        
+    # 3. Copiar Filosofía
+    phil = getattr(original_plan, 'corporate_philosophy', None)
+    if phil:
+        phil.pk = None
+        phil.plan = new_plan
+        phil.save()
+    else:
+        CorporatePhilosophy.objects.create(plan=new_plan)
+        
+    # 4. Copiar Business Model Canvas
+    for canvas in original_plan.canvas.all():
+        canvas.pk = None
+        canvas.plan = new_plan
+        canvas.save()
+        
+    # 5. Copiar Matrices (FODA, EFI, EFE, MPC, etc)
+    for matrix in original_plan.matrices.all():
+        matrix.pk = None
+        matrix.plan = new_plan
+        matrix.save()
+        
+    messages.success(request, f'Plan "{original_plan.name}" clonado exitosamente.')
+    return redirect('strategic_risk:dashboard')
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def plan_delete(request, pk):
+    plan = get_object_or_404(StrategicPlan, pk=pk)
+    
+    if request.method == 'POST':
+        plan_name = plan.name
+        plan.delete()
+        
+        # If the deleted plan was the active one, clear the session
+        if request.session.get('active_strategic_plan_id') == pk:
+            del request.session['active_strategic_plan_id']
+            
+        messages.success(request, f'Plan "{plan_name}" eliminado correctamente.')
+        return redirect('strategic_risk:dashboard')
+        
+    # Fallback to redirect if accessed via GET accidentally
+    return redirect('strategic_risk:dashboard')
 
 @login_required
 def set_active_plan(request, pk):
@@ -151,202 +232,29 @@ def methodologies(request):
         return redirect('strategic_risk:dashboard')
 
     foda = StrategicMatrix.objects.filter(plan=plan, matrix_type='FODA').first()
-    if not foda or not foda.data:
-        default_foda = {
-            "F": [
-                "Tiene más de 50 años de trayectoria institucional, lo que le da legitimidad y confianza",
-                "Está registrada y supervisada por la SBS, lo que fortalece su formalidad",
-                "Cuenta con nivel de activos 2, lo que le permite operar con un marco institucional adecuado",
-                "Posee presencia territorial en Lima y provincias, con oficinas en puntos estratégicos",
-                "Atiende a un segmento claramente definido: personal militar del Ejército, Marina y FAP",
-                "Mantiene una oferta de servicios financieros y no financieros, ampliando el valor al socio",
-                "Tiene canales de contacto, atención presencial y mecanismos de afiliación y descuento",
-                "Presenta una imagen institucional asociada a disciplina, lealtad y servicio",
-                "Ha recibido reconocimientos por excelencia y buenas prácticas institucionales",
-                "Cuenta con Equipo de trabajo comprometido e identificado con la institución"
-            ],
-            "D": [
-                "Su dependencia de un segmento específico de socios limita la diversificación",
-                "La concentración geográfica en zonas ligadas a su base social puede restringir expansión",
-                "Puede presentar rigidez institucional propia de organizaciones con fuerte verticalidad",
-                "El uso de múltiples puntos de atención genera mayores costos operativos y logísticos",
-                "La transformación digital aún parece parcial si se compara con entidades financieras top",
-                "La dependencia del ahorro de socios puede volver sensible su liquidez ante crisis sistémicas",
-                "Su cartera podría estar expuesta a concentración por perfil ocupacional, afectando morosidad",
-                "Puede existir brecha entre crecimiento institucional y modernización de sistemas de TI",
-                "La adaptación a nuevas exigencias SBS y de riesgo cooperativo puede implicar altos costos",
-                "La estructura cooperativa puede ralentizar algunos procesos de decisión frente a la banca ágil"
-            ],
-            "O": [
-                "El entorno económico peruano 2026 muestra crecimiento proyectado cerca de 3%",
-                "La estabilidad de tasas y la inflación controlada permiten mejores condiciones de crédito",
-                "El crecimiento de crédito de consumo e hipotecario abre espacio para nuevos productos",
-                "La digitalización permite ampliar cobertura sin depender solo de oficinas físicas",
-                "Existe oportunidad para reforzar educación financiera y fidelización de socios actuales",
-                "La base militar y sus familias constituyen un mercado con potencial para productos cautivos",
-                "La demanda por depósitos competitivos permite captar ahorros con tasas atractivas",
-                "El marco de mayor inclusión financiera en Perú abre espacio para productos microfinancieros",
-                "El posicionamiento ético y social del cooperativismo puede atraer nuevos afiliados"
-            ],
-            "A": [
-                "La competencia de bancos, cajas y otras COOPACs por depósitos y créditos es agresiva",
-                "El riesgo de mora y deterioro crediticio sigue siendo una amenaza relevante post-pandemia",
-                "El entorno electoral y político de 2026 puede aumentar incertidumbre y postergar inversión",
-                "Las mayores exigencias regulatorias y de supervisión incrementan costos de cumplimiento",
-                "La rápida digitalización del mercado financiero puede dejar rezagadas a las cooperativas",
-                "La concentración en un solo nicho social puede aumentar vulnerabilidad ante shocks específicos",
-                "Los retiros de depósitos motivados por tasas más altas en el mercado pueden afectar liquidez",
-                "La percepción pública sobre riesgo cooperativo puede afectar la captación de nuevos socios",
-                "Eventuales shocks económicos o fiscales pueden reducir la demanda de crédito y capacidad de pago"
-            ],
-            "FO": "",
-            "DO": "",
-            "FA": "",
-            "DA": ""
-        }
-        if not foda:
-            foda = StrategicMatrix(plan=plan, matrix_type='FODA', data=default_foda)
-            foda.save()
-        elif not foda.data:
-            foda.data = default_foda
-            foda.save()
+    foda = StrategicMatrix.objects.filter(plan=plan, matrix_type='FODA').first()
+    foda_data = foda.data if foda and foda.data else {
+        "F": [], "D": [], "O": [], "A": [], "FO": "", "DO": "", "FA": "", "DA": ""
+    }
+
     efi = StrategicMatrix.objects.filter(plan=plan, matrix_type='EFI').first()
-    
-    # Determinar si la data está corrupta
-    is_corrupt_efi = False
-    if not efi or not efi.data or not isinstance(efi.data, list) or len(efi.data) < 20:
-        is_corrupt_efi = True
-    elif len(efi.data) > 0:
-        first_factor = efi.data[0].get('factor', '')
-        if first_factor == 'undefined' or first_factor == '':
-            is_corrupt_efi = True
+    efi_data = efi.data if efi and efi.data and isinstance(efi.data, list) else []
 
-    if is_corrupt_efi:
-        default_efi = [
-            {"factor": "Tiene más de 50 años de trayectoria institucional, lo que le da legitimidad y confianza", "peso": 8, "calificacion": 4},
-            {"factor": "Está registrada y supervisada por la SBS, lo que fortalece su formalidad", "peso": 7, "calificacion": 4},
-            {"factor": "Cuenta con nivel de activos 2, lo que le permite operar con un marco institucional adecuado", "peso": 5, "calificacion": 3},
-            {"factor": "Posee presencia territorial en Lima y provincias, con oficinas en puntos estratégicos", "peso": 5, "calificacion": 4},
-            {"factor": "Atiende a un segmento claramente definido: personal militar del Ejército, Marina y FAP", "peso": 6, "calificacion": 4},
-            {"factor": "Mantiene una oferta de servicios financieros y no financieros, ampliando el valor al socio", "peso": 5, "calificacion": 3},
-            {"factor": "Tiene canales de contacto, atención presencial y mecanismos de afiliación y descuento", "peso": 4, "calificacion": 3},
-            {"factor": "Presenta una imagen institucional asociada a disciplina, lealtad y servicio", "peso": 4, "calificacion": 4},
-            {"factor": "Ha recibido reconocimientos por excelencia y buenas prácticas institucionales", "peso": 3, "calificacion": 3},
-            {"factor": "Cuenta con Equipo de trabajo comprometido e identificado con la institución", "peso": 3, "calificacion": 4},
-            {"factor": "Su dependencia de un segmento específico de socios limita la diversificación", "peso": 8, "calificacion": 2},
-            {"factor": "La concentración geográfica en zonas ligadas a su base social puede restringir expansión", "peso": 5, "calificacion": 2},
-            {"factor": "Puede presentar rigidez institucional propia de organizaciones con fuerte verticalidad", "peso": 4, "calificacion": 2},
-            {"factor": "El uso de múltiples puntos de atención genera mayores costos operativos y logísticos", "peso": 6, "calificacion": 1},
-            {"factor": "La transformación digital aún parece parcial si se compara con entidades financieras top", "peso": 7, "calificacion": 1},
-            {"factor": "La dependencia del ahorro de socios puede volver sensible su liquidez ante crisis sistémicas", "peso": 6, "calificacion": 2},
-            {"factor": "Su cartera podría estar expuesta a concentración por perfil ocupacional, afectando morosidad", "peso": 5, "calificacion": 1},
-            {"factor": "Puede existir brecha entre crecimiento institucional y modernización de sistemas de TI", "peso": 4, "calificacion": 2},
-            {"factor": "La adaptación a nuevas exigencias SBS y de riesgo cooperativo puede implicar altos costos", "peso": 3, "calificacion": 1},
-            {"factor": "La estructura cooperativa puede ralentizar algunos procesos de decisión frente a la banca ágil", "peso": 2, "calificacion": 2}
-        ]
-        if not efi:
-            efi = StrategicMatrix(plan=plan, matrix_type='EFI', data=default_efi)
-            efi.save()
-        else:
-            efi.data = default_efi
-            efi.save()
-            
     efe = StrategicMatrix.objects.filter(plan=plan, matrix_type='EFE').first()
-    
-    is_corrupt_efe = False
-    if not efe or not efe.data or not isinstance(efe.data, list) or len(efe.data) < 20:
-        is_corrupt_efe = True
-    elif len(efe.data) > 0:
-        first_factor_e = efe.data[0].get('factor', '')
-        if first_factor_e == 'undefined' or first_factor_e == '':
-            is_corrupt_efe = True
+    efe_data = efe.data if efe and efe.data and isinstance(efe.data, list) else []
 
-    if is_corrupt_efe:
-        default_efe = [
-            {"factor": "El entorno económico peruano 2026 muestra crecimiento proyectado cerca de 3%", "peso": 6, "calificacion": 4},
-            {"factor": "La estabilidad de tasas y la inflación controlada permiten mejores condiciones de crédito", "peso": 5, "calificacion": 4},
-            {"factor": "El crecimiento de crédito de consumo e hipotecario abre espacio para nuevos productos", "peso": 6, "calificacion": 5},
-            {"factor": "La digitalización permite ampliar cobertura sin depender solo de oficinas físicas", "peso": 5, "calificacion": 4},
-            {"factor": "Existe oportunidad para reforzar educación financiera y fidelización de socios actuales", "peso": 4, "calificacion": 3},
-            {"factor": "La base militar y sus familias constituyen un mercado con potencial para productos cautivos", "peso": 7, "calificacion": 5},
-            {"factor": "La demanda por depósitos competitivos permite captar ahorros con tasas atractivas", "peso": 5, "calificacion": 4},
-            {"factor": "El marco de mayor inclusión financiera en Perú abre espacio para productos microfinancieros", "peso": 6, "calificacion": 4},
-            {"factor": "El posicionamiento ético y social del cooperativismo puede atraer nuevos afiliados", "peso": 4, "calificacion": 3},
-            {"factor": "Posibilidad de buscar financiamientos menos costosos a través de entidades de segundo piso", "peso": 2, "calificacion": 3},
-            {"factor": "La competencia de bancos, cajas y otras COOPACs por depósitos y créditos es agresiva", "peso": 8, "calificacion": 2},
-            {"factor": "El riesgo de mora y deterioro crediticio sigue siendo una amenaza relevante post-pandemia", "peso": 7, "calificacion": 1},
-            {"factor": "El entorno electoral y político de 2026 puede aumentar incertidumbre y postergar inversión", "peso": 6, "calificacion": 2},
-            {"factor": "Las mayores exigencias regulatorias y de supervisión incrementan costos de cumplimiento", "peso": 5, "calificacion": 1},
-            {"factor": "La rápida digitalización del mercado financiero puede dejar rezagadas a las cooperativas", "peso": 6, "calificacion": 2},
-            {"factor": "La concentración en un solo nicho social puede aumentar vulnerabilidad ante shocks específicos", "peso": 4, "calificacion": 2},
-            {"factor": "Los retiros de depósitos motivados por tasas más altas en el mercado pueden afectar liquidez", "peso": 6, "calificacion": 1},
-            {"factor": "La percepción pública sobre riesgo cooperativo puede afectar la captación de nuevos socios", "peso": 3, "calificacion": 2},
-            {"factor": "Eventuales shocks económicos o fiscales pueden reducir la demanda de crédito y capacidad de pago", "peso": 3, "calificacion": 2},
-            {"factor": "Incremento del sobreendeudamiento en los sectores que trabajan con microfinancieras", "peso": 2, "calificacion": 2}
-        ]
-        if not efe:
-            efe = StrategicMatrix(plan=plan, matrix_type='EFE', data=default_efe)
-            efe.save()
-        else:
-            efe.data = default_efe
-            efe.save()
     mpc = StrategicMatrix.objects.filter(plan=plan, matrix_type='MPC').first()
-    is_corrupt_mpc = False
-    if not mpc or not mpc.data or (isinstance(mpc.data, dict) and not mpc.data.get('factors')):
-        is_corrupt_mpc = True
-    elif isinstance(mpc.data, list):
-        is_corrupt_mpc = True
-    elif isinstance(mpc.data, dict) and len(mpc.data.get('factors', [])) <= 2:
-        is_corrupt_mpc = True
+    mpc_data = mpc.data if mpc and mpc.data and isinstance(mpc.data, dict) and mpc.data.get('factors') else {
+        "competitors": ["Nuestra Entidad", "Competidor 1", "Competidor 2"],
+        "factors": []
+    }
 
-    if is_corrupt_mpc:
-        default_mpc = {
-            "competitors": [
-                "Nuestra Entidad", 
-                "COOPAC SANTA ROSA", 
-                "COOPAC LA REHAB.", 
-                "BANCO INTERBANK", 
-                "BANCO BBVA", 
-                "CAJA HUANCAYO"
-            ],
-            "factors": [
-                {"name": "Cuota mercado", "peso": 10.00, "scores": [4, 3, 2, 3, 2, 5]},
-                {"name": "Rápidez", "peso": 9.00, "scores": [5, 5, 5, 5, 3, 2]},
-                {"name": "Tasas de Interés", "peso": 5.00, "scores": [3, 3, 3, 3, 4, 5]},
-                {"name": "Atención Cliente", "peso": 8.00, "scores": [3, 3, 3, 3, 2, 4]},
-                {"name": "Ubicación (con respecto a pla)", "peso": 9.00, "scores": [4, 4, 3, 3, 2, 4]},
-                {"name": "Servicios no Financieros", "peso": 10.00, "scores": [4, 3, 3, 3, 4, 5]},
-                {"name": "Inversion publicitaria", "peso": 5.00, "scores": [2, 2, 2, 1, 3, 5]},
-                {"name": "Gama de Productos", "peso": 10.00, "scores": [4, 1, 2, 2, 4, 5]},
-                {"name": "Regulada y Supervisada", "peso": 24.00, "scores": [5, 1, 1, 1, 5, 5]},
-                {"name": "Imagen corporativa", "peso": 10.00, "scores": [3, 2, 2, 2, 3, 5]}
-            ]
-        }
-        if not mpc:
-            mpc = StrategicMatrix(plan=plan, matrix_type='MPC', data=default_mpc)
-            mpc.save()
-        else:
-            mpc.data = default_mpc
-            mpc.save()
     canvas_actual = BusinessModelCanvas.objects.filter(plan=plan, version__in=['1.0', 'Actual']).first()
     if canvas_actual and canvas_actual.version == '1.0':
         canvas_actual.version = 'Actual'
         canvas_actual.save()
-        
-    if not canvas_actual or (not canvas_actual.key_partners and not canvas_actual.customer_segments):
-        if not canvas_actual:
-            canvas_actual = BusinessModelCanvas(plan=plan, version='Actual')
-        
-        canvas_actual.key_partners = "AFILIACIÓN SBS\nALIANZAS ESTRATÉGICAS CON REPRESENTANTES DE RED DE SALUD, UGEL Y MUNICIPALIDADES\nSENTINEL, EQUIFAX"
-        canvas_actual.key_activities = "PROMOCIÓN DE PRODUCTOS ACTIVOS Y PASIVOS\nGENERACIÓN DE CONVENIOS DE DTO.\nSEGUIMIENTO Y GESTIÓN DE CARTERA\nEVALUACIÓN DE CARTERA"
-        canvas_actual.key_resources = "PERSONAL CAPACITADO\nINFRAESTRUCTURA, HERRAMIENTAS Y EQUIPOS EN RED DE AGENCIAS"
-        canvas_actual.value_proposition = "PRODUCTOS ACTIVOS\n- CONVENIOS\n- CRÉDITO PERSONAL\n\nPRODUCTOS PASIVOS\n- APORTES\n- AHORROS CORRIENTES\n- DEPÓSITOS A PLAZO FIJO\n\nPRODUCTOS Y SERVICIO NO FINANCIERO\n- GIROS\n- PREVISIÓN SOCIAL"
-        canvas_actual.customer_relationships = "REDES SOCIALES\nPUBLICIDAD ESCRITA\nPUBLICIDAD RADIAL\nGIGANTOGRAFÍAS"
-        canvas_actual.channels = "RED DE OFICINAS INFORMATIVAS LIMA, TARAPOTO, AREQUIPA, IQUITOS\nASESORES DE CRÉDITOS\nASESORES DE COBRANZAS"
-        canvas_actual.customer_segments = "PERSONAS NATURALES ( 18 - 65 AÑOS)\nMILITARES O CASTRENCES\nSECTOR PÚBLICO (RED SALUD, UGEL, MUNICIPALIDADES, ETC.)\nAGROPECUARIO"
-        canvas_actual.cost_structure = "GASTOS ADMINISTRATIVOS Y DE GESTIÓN\nALQUILERES DE AGENCIAS, SERVICIOS, CORE FINANCIERO, ETC.\nOBLIGACIONES POR AHORROS Y DEPÓSITOS\nOBLIGACIONES CON ENTIDADES FINANCIERAS\nTRIBUTOS\nPROVISIONES POR CRÉDITOS\nCOMISIONES\nCUOTA DE SUPERVISIÓN SBS"
-        canvas_actual.revenue_streams = "INGRESO POR INTERESES POR CARTERA CRÉDITOS POR CONVENIO (80%)\nINGRESO POR OTROS PRODUCTOS O SERVICIOS (20%)\nINGRESO POR COMISIONES (DERECHO DE DESEMBOLSO, INSCRIPCIÓN POR GIROS)\nMORAS\nOTROS INGRESOS POR VENTAS DE PRODUCTOS PRENDADOS"
-        canvas_actual.save()
+    if not canvas_actual:
+        canvas_actual = BusinessModelCanvas(plan=plan, version='Actual')
         
     canvas_futuro = BusinessModelCanvas.objects.filter(plan=plan, version='Futuro').first()
     if not canvas_futuro:
@@ -358,10 +266,10 @@ def methodologies(request):
     context = {
         'page_title': 'Planificación Estratégica - Matrices Estratégicas',
         'plan': plan,
-        'foda_data': json.dumps(foda.data) if foda and foda.data else '{}',
-        'efi_data': json.dumps(efi.data) if efi and efi.data else '[]',
-        'efe_data': json.dumps(efe.data) if efe and efe.data else '[]',
-        'mpc_data': json.dumps(mpc.data) if mpc and mpc.data else '{}',
+        'foda_data': json.dumps(foda_data),
+        'efi_data': json.dumps(efi_data),
+        'efe_data': json.dumps(efe_data),
+        'mpc_data': json.dumps(mpc_data),
         'canvas_actual': canvas_actual,
         'canvas_futuro': canvas_futuro,
         'philosophy': philosophy
@@ -492,13 +400,11 @@ def controls(request):
     else:
         plan = StrategicPlan.objects.order_by('-start_year').first()
         
-    perspectives = StrategicPerspective.objects.filter(plan=plan).prefetch_related('objectives__kpis') if plan else []
     metas_matrix = StrategicMatrix.objects.filter(plan=plan, matrix_type='METAS').first() if plan else None
     
     context = {
         'page_title': 'Planificación Estratégica - Balanced Scorecard',
         'plan': plan,
-        'perspectives': perspectives,
         'metas_data': metas_matrix.data if metas_matrix and metas_matrix.data else []
     }
     return render(request, 'strategic_risk/controls.html', context)
@@ -658,8 +564,6 @@ def reports(request):
             mpc.data['totals'] = [round(t, 2) for t in totals]
             
         context['mpc'] = mpc
-
-        context['perspectives'] = plan.perspectives.prefetch_related('objectives__kpis').all()
 
     return render(request, 'strategic_risk/reports.html', context)
 

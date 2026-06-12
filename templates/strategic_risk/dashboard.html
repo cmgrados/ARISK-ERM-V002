@@ -6,6 +6,70 @@
 {% endblock %}
 
 {% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0" style="border-top: 5px solid #161065;">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fas fa-sitemap mr-2 text-primary"></i>Gestión de Planes Estratégicos</h3>
+                <a href="{% url 'strategic_risk:plan_create' %}" class="btn btn-success font-weight-bold"><i class="fas fa-plus mr-1"></i> Nuevo Plan</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 text-center align-middle">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th>Nombre del Plan</th>
+                                <th>Periodo</th>
+                                <th>Horizonte</th>
+                                <th>Versión</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in planes %}
+                            <tr>
+                                <td class="font-weight-bold text-left pl-4">{{ plan.name }}
+                                    {% if request.session.active_strategic_plan_id == plan.id %}
+                                    <span class="badge badge-primary ml-2"><i class="fas fa-star mr-1"></i>Activo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ plan.start_year }} - {{ plan.start_year|add:plan.horizon_years|add:"-1" }}</td>
+                                <td>{{ plan.horizon_years }} Años</td>
+                                <td>v{{ plan.version }}</td>
+                                <td>
+                                    {% if plan.status == 'DRAFT' %}<span class="badge badge-secondary">Borrador</span>{% endif %}
+                                    {% if plan.status == 'ACTIVE' %}<span class="badge badge-success">Activo</span>{% endif %}
+                                    {% if plan.status == 'CLOSED' %}<span class="badge badge-warning">Cerrado</span>{% endif %}
+                                    {% if plan.status == 'ARCHIVED' %}<span class="badge badge-danger">Archivado</span>{% endif %}
+                                </td>
+                                <td>
+                                    {% if request.session.active_strategic_plan_id != plan.id %}
+                                    <a href="{% url 'strategic_risk:set_active_plan' plan.id %}" class="btn btn-sm btn-outline-primary" title="Seleccionar para Trabajar"><i class="fas fa-check"></i> Ingresar</a>
+                                    {% else %}
+                                    <a href="{% url 'strategic_risk:strat_data' %}" class="btn btn-sm btn-primary" title="Actualmente Trabajando"><i class="fas fa-check-double"></i> En Uso</a>
+                                    {% endif %}
+                                    <a href="{% url 'strategic_risk:plan_update' plan.id %}" class="btn btn-sm btn-outline-warning" title="Editar Propiedades"><i class="fas fa-edit"></i> Editar</a>
+                                    <a href="{% url 'strategic_risk:plan_copy' plan.id %}" class="btn btn-sm btn-outline-info" title="Crear una copia exacta de este plan"><i class="fas fa-copy"></i> Clonar</a>
+                                    <form action="{% url 'strategic_risk:plan_delete' plan.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Está seguro de que desea eliminar el Plan \'{{ plan.name|escapejs }}\' y todo su contenido asociado? Esta acción no se puede deshacer.');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar Plan"><i class="fas fa-trash-alt"></i> Eliminar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No existen planes estratégicos. Crea uno nuevo para comenzar.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-8">
         <div class="card shadow-sm border-0">

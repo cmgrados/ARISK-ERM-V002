@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow border-0" style="border-top: 5px solid #161065;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold mb-0"><i class="fas fa-sitemap text-primary mr-2"></i>{{ page_title }}</h3>
+            </div>
+            <div class="card-body bg-light">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="font-weight-bold text-secondary">Nombre del Plan Estratégico</label>
+                            {{ form.name }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="font-weight-bold text-secondary">Institución</label>
+                            {{ form.institution }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="font-weight-bold text-secondary">Año de Inicio</label>
+                            {{ form.start_year }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="font-weight-bold text-secondary">Horizonte (Años)</label>
+                            {{ form.horizon_years }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="font-weight-bold text-secondary">Versión</label>
+                            {{ form.version }}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="font-weight-bold text-secondary">Estado del Plan</label>
+                            {{ form.status }}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'strategic_risk:dashboard' %}" class="btn btn-secondary font-weight-bold"><i class="fas fa-times mr-1"></i> Cancelar</a>
+                        <button type="submit" class="btn btn-success font-weight-bold"><i class="fas fa-save mr-1"></i> Guardar Plan Estratégico</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
