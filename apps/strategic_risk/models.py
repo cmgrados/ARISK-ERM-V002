@@ -80,9 +80,10 @@ class StrategicMatrix(models.Model):
         ('EFE', 'Matriz EFE'),
         ('MPC', 'Matriz de Perfil Competitivo'),
         ('METAS', 'Metas Planeadas'),
+        ('CONCLUSIONES', 'Matriz de Conclusiones'),
     ]
     plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='matrices')
-    matrix_type = models.CharField('Tipo de Matriz', max_length=10, choices=MATRIX_CHOICES)
+    matrix_type = models.CharField('Tipo de Matriz', max_length=20, choices=MATRIX_CHOICES)
     data = models.JSONField('Datos de la Matriz', default=dict) # Guarda factores, pesos, calificaciones JSON
     conclusions = models.TextField('Conclusiones', blank=True, null=True)
 
@@ -103,29 +104,56 @@ class BusinessModelCanvas(models.Model):
 # --- BALANCED SCORECARD ---
 
 class Perspectiva(TenantAwareModel):
-    TIPO_CHOICES = (
-        ('FINANCIERA', 'Financiera'),
-        ('SOCIOS_CLIENTES', 'Socios/Clientes'),
-        ('PROCESOS', 'Procesos Internos'),
-        ('APRENDIZAJE', 'Aprendizaje y Crecimiento'),
-    )
-    nombre = models.CharField(max_length=50, choices=TIPO_CHOICES, verbose_name="Perspectiva")
+    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='perspectivas', null=True, blank=True)
+    nombre = models.CharField(max_length=150, verbose_name="Perspectiva")
     descripcion = models.TextField(blank=True, null=True)
     peso_porcentual = models.DecimalField(max_digits=5, decimal_places=2, default=25.00)
 
     class Meta:
         verbose_name = "Perspectiva"
         verbose_name_plural = "Perspectivas"
-        unique_together = ('organization', 'nombre')
+        unique_together = ('plan', 'nombre')
+
+class TipoObjetivo(TenantAwareModel):
+    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='tipos_objetivo', null=True, blank=True)
+    nombre = models.CharField(max_length=150, verbose_name="Tipo de Objetivo")
+
+    class Meta:
+        verbose_name = "Tipo de Objetivo"
+        verbose_name_plural = "Tipos de Objetivo"
+        unique_together = ('plan', 'nombre')
+
+class AreaResponsable(TenantAwareModel):
+    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='areas_responsables', null=True, blank=True)
+    nombre = models.CharField(max_length=150, verbose_name="Área Responsable")
+
+    class Meta:
+        verbose_name = "Área Responsable"
+        verbose_name_plural = "Áreas Responsables"
+        unique_together = ('plan', 'nombre')
+
+class ResponsablePlan(TenantAwareModel):
+    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='responsables', null=True, blank=True)
+    nombre = models.CharField(max_length=150, verbose_name="Responsable")
+
+    class Meta:
+        verbose_name = "Responsable"
+        verbose_name_plural = "Responsables"
+        unique_together = ('plan', 'nombre')
 
     def __str__(self):
-        return f"{self.get_nombre_display()}"
+        return self.nombre
 
 class ObjetivoEstrategico(TenantAwareModel):
     perspectiva = models.ForeignKey(Perspectiva, on_delete=models.CASCADE, related_name='objetivos')
     codigo = models.CharField(max_length=20, verbose_name="Código (Ej. OE-01)")
     nombre = models.CharField(max_length=255, verbose_name="Objetivo Estratégico")
     descripcion = models.TextField(blank=True, null=True)
+    
+    tipo_objetivo = models.CharField(max_length=150, blank=True, null=True, verbose_name="Tipo de Objetivo")
+    area_responsable = models.CharField(max_length=200, blank=True, null=True, verbose_name="Área Responsable")
+    responsable = models.CharField(max_length=200, blank=True, null=True, verbose_name="Responsable")
+    peso = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Peso (%)")
 
     class Meta:
         verbose_name = "Objetivo Estratégico"
@@ -150,9 +178,16 @@ class Indicador(TenantAwareModel):
     )
     unidad_medida = models.CharField(max_length=50, verbose_name="Unidad (%, $, N°)")
     frecuencia_medicion = models.CharField(max_length=20, choices=FRECUENCIA_CHOICES)
+    tipo_objetivo = models.CharField(max_length=150, blank=True, null=True, verbose_name="Tipo Objetivo")
     
     linea_base = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     meta_final = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    peso = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Peso (%)")
+    fecha_inicio = models.DateField(null=True, blank=True, verbose_name="Fecha Inicio")
+    fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha Fin")
+    responsable = models.CharField(max_length=200, blank=True, null=True, verbose_name="Responsable")
+    medio_verificacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Medio de Verificación")
 
     class Meta:
         verbose_name = "Indicador KPI"

@@ -4,7 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.http import JsonResponse
 import json
-from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy
+from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy, TipoObjetivo, AreaResponsable, ResponsablePlan
 from .forms import StrategicPlanForm, ExternalEnvironmentForm, FinancialEnvironmentForm, InternalDiagnosisForm
 
 def check_module_access(module_name):
@@ -48,6 +48,40 @@ def plan_create(request):
             StrategicMatrix.objects.create(plan=plan, matrix_type='MPC')
             BusinessModelCanvas.objects.create(plan=plan)
             CorporatePhilosophy.objects.create(plan=plan)
+            
+            # Guardar Perspectivas
+            nombres = request.POST.getlist('perspectivas[]')
+            # Intentar obtener la organización del usuario para TenantAwareModel
+            from users.models import Organization
+            org = getattr(request.user, 'organization', None)
+            if not org:
+                org = Organization.objects.first()
+                if not org:
+                    org = Organization.objects.create(name="Organización Principal")
+                
+            for nombre in nombres:
+                nombre = nombre.strip()
+                if nombre:
+                    Perspectiva.objects.create(plan=plan, nombre=nombre, organization=org)
+            
+            # Guardar Tipos de Objetivo
+            tipos = request.POST.getlist('tipos_objetivo[]')
+            for t in tipos:
+                t = t.strip()
+                if t: TipoObjetivo.objects.create(plan=plan, nombre=t, organization=org)
+
+            # Guardar Áreas Responsables
+            areas = request.POST.getlist('areas_responsables[]')
+            for a in areas:
+                a = a.strip()
+                if a: AreaResponsable.objects.create(plan=plan, nombre=a, organization=org)
+
+            # Guardar Responsables
+            responsables = request.POST.getlist('responsables[]')
+            for r in responsables:
+                r = r.strip()
+                if r: ResponsablePlan.objects.create(plan=plan, nombre=r, organization=org)
+                    
             request.session['active_strategic_plan_id'] = plan.id
             messages.success(request, 'Plan Estratégico creado exitosamente.')
             return redirect('strategic_risk:dashboard')
@@ -68,12 +102,71 @@ def plan_update(request, pk):
         form = StrategicPlanForm(request.POST, instance=plan)
         if form.is_valid():
             form.save()
+            
+            # Guardar Perspectivas
+            nombres = request.POST.getlist('perspectivas[]')
+            from users.models import Organization
+            org = getattr(request.user, 'organization', None)
+            if not org:
+                org = Organization.objects.first()
+                if not org:
+                    org = Organization.objects.create(name="Organización Principal")
+            
+            existing_perspectivas = {p.nombre: p for p in plan.perspectivas.all()}
+            keep_ids = []
+            
+            for nombre in nombres:
+                nombre = nombre.strip()
+                if not nombre: continue
+                if nombre in existing_perspectivas:
+                    keep_ids.append(existing_perspectivas[nombre].id)
+                else:
+                    p = Perspectiva.objects.create(plan=plan, nombre=nombre, organization=org)
+                    keep_ids.append(p.id)
+            
+            # Eliminar las que fueron quitadas (esto borrará también Objetivos en cascada, si los hubiera)
+            plan.perspectivas.exclude(id__in=keep_ids).delete()
+            
+            # Guardar Tipos
+            tipos = request.POST.getlist('tipos_objetivo[]')
+            plan.tipos_objetivo.all().delete()
+            for t in tipos:
+                t = t.strip()
+                if t: TipoObjetivo.objects.create(plan=plan, nombre=t, organization=org)
+
+            # Guardar Areas
+            areas = request.POST.getlist('areas_responsables[]')
+            plan.areas_responsables.all().delete()
+            for a in areas:
+                a = a.strip()
+                if a: AreaResponsable.objects.create(plan=plan, nombre=a, organization=org)
+
+            # Guardar Responsables
+            responsables = request.POST.getlist('responsables[]')
+            plan.responsables.all().delete()
+            for r in responsables:
+                r = r.strip()
+                if r: ResponsablePlan.objects.create(plan=plan, nombre=r, organization=org)
+            
             messages.success(request, 'Plan Estratégico actualizado exitosamente.')
             return redirect('strategic_risk:dashboard')
     else:
         form = StrategicPlanForm(instance=plan)
     
-    context = {'page_title': 'Editar Plan Estratégico', 'form': form, 'plan': plan}
+    perspectivas = plan.perspectivas.all()
+    tipos_objetivo = plan.tipos_objetivo.all()
+    areas_responsables = plan.areas_responsables.all()
+    responsables = plan.responsables.all()
+
+    context = {
+        'page_title': 'Editar Plan Estratégico', 
+        'form': form, 
+        'plan': plan, 
+        'perspectivas': perspectivas,
+        'tipos_objetivo': tipos_objetivo,
+        'areas_responsables': areas_responsables,
+        'responsables': responsables
+    }
     return render(request, 'strategic_risk/plan_form.html', context)
 
 @login_required
@@ -263,6 +356,12 @@ def methodologies(request):
         
     philosophy, _ = CorporatePhilosophy.objects.get_or_create(plan=plan)
     
+    conclusiones = StrategicMatrix.objects.filter(plan=plan, matrix_type='CONCLUSIONES').first()
+    conclusiones_data = conclusiones.data if conclusiones and conclusiones.data else {
+        "interno": [""] * 10,
+        "externo": [""] * 10
+    }
+    
     context = {
         'page_title': 'Planificación Estratégica - Matrices Estratégicas',
         'plan': plan,
@@ -270,6 +369,7 @@ def methodologies(request):
         'efi_data': json.dumps(efi_data),
         'efe_data': json.dumps(efe_data),
         'mpc_data': json.dumps(mpc_data),
+        'conclusiones_data': json.dumps(conclusiones_data),
         'canvas_actual': canvas_actual,
         'canvas_futuro': canvas_futuro,
         'philosophy': philosophy
@@ -353,6 +453,80 @@ def save_metas_planeadas(request):
             matrix.data = metas_data
             matrix.save()
             
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+                if not organization:
+                    organization = Organization.objects.create(name="Organización Principal")
+            
+            for row in metas_data:
+                persp_name = row.get('perspectiva', '').upper().replace('/', '_').replace(' ', '_')
+                
+                tipo_persp = 'FINANCIERA'
+                if 'CLIENTE' in persp_name or 'SOCIO' in persp_name:
+                    tipo_persp = 'SOCIOS_CLIENTES'
+                elif 'PROCESO' in persp_name:
+                    tipo_persp = 'PROCESOS'
+                elif 'APRENDIZAJE' in persp_name:
+                    tipo_persp = 'APRENDIZAJE'
+
+                perspectiva, _ = Perspectiva.objects.get_or_create(
+                    organization=organization,
+                    nombre=tipo_persp,
+                    defaults={'plan': plan}
+                )
+                
+                obj_nombre = row.get('objetivo', 'Objetivo sin nombre')
+                tipo_obj = row.get('tipo', 'Estratégico')
+                area_resp = row.get('area', '')
+                responsable = row.get('responsable', '')
+                
+                objetivo, created_obj = ObjetivoEstrategico.objects.get_or_create(
+                    organization=organization,
+                    perspectiva=perspectiva,
+                    nombre=obj_nombre,
+                    defaults={
+                        'codigo': f'OBJ-{ObjetivoEstrategico.objects.filter(organization=organization).count() + 1}',
+                        'tipo_objetivo': tipo_obj,
+                        'area_responsable': area_resp,
+                        'responsable': responsable
+                    }
+                )
+                
+                if not created_obj:
+                    objetivo.tipo_objetivo = tipo_obj
+                    objetivo.area_responsable = area_resp
+                    objetivo.responsable = responsable
+                    objetivo.save()
+                
+                ind_nombre = row.get('indicador', 'Indicador')
+                linea_base = row.get('base', '0').replace('%', '').strip()
+                try: linea_base = float(linea_base)
+                except: linea_base = 0
+
+                indicador, _ = Indicador.objects.get_or_create(
+                    organization=organization,
+                    objetivo=objetivo,
+                    nombre=ind_nombre,
+                    defaults={
+                        'unidad_medida': '%',
+                        'frecuencia_medicion': 'ANUAL',
+                        'linea_base': linea_base
+                    }
+                )
+                
+                for i in range(1, 4):
+                    meta_val = row.get(f'meta{i}', '0').replace('%', '').strip()
+                    try: meta_val = float(meta_val)
+                    except: continue
+                    
+                    meta, _ = MetaPeriodo.objects.update_or_create(
+                        indicador=indicador,
+                        periodo=f'Meta {i}',
+                        defaults={'meta_programada': meta_val}
+                    )
+            
             return JsonResponse({'status': 'success', 'message': 'Metas Planeadas guardadas correctamente.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
@@ -402,10 +576,19 @@ def controls(request):
         
     metas_matrix = StrategicMatrix.objects.filter(plan=plan, matrix_type='METAS').first() if plan else None
     
+    objetivos_ingresados = ObjetivoEstrategico.objects.filter(perspectiva__plan=plan) if plan else []
+    indicadores_ingresados = Indicador.objects.filter(objetivo__perspectiva__plan=plan) if plan else []
+    
     context = {
-        'page_title': 'Planificación Estratégica - Balanced Scorecard',
+        'page_title': 'Planificación Estratégica - FASE ESTRATEGICA',
         'plan': plan,
-        'metas_data': metas_matrix.data if metas_matrix and metas_matrix.data else []
+        'metas_data': metas_matrix.data if metas_matrix and metas_matrix.data else [],
+        'perspectivas': plan.perspectivas.all() if plan else [],
+        'tipos_objetivo': plan.tipos_objetivo.all() if plan else [],
+        'areas_responsables': plan.areas_responsables.all() if plan else [],
+        'responsables': plan.responsables.all() if plan else [],
+        'objetivos_ingresados': objetivos_ingresados,
+        'indicadores_ingresados': indicadores_ingresados,
     }
     return render(request, 'strategic_risk/controls.html', context)
 
@@ -414,16 +597,66 @@ def add_objective(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            objective_id = data.get('objective_id')
             perspective_id = data.get('perspective_id')
-            name = data.get('name')
-            description = data.get('description', '')
+            nombre = data.get('name')
+            descripcion = data.get('description', '')
+            propuesta_valor = data.get('propuesta_valor', '')
+            tipo_objetivo = data.get('tipo_objetivo', '')
+            area_responsable = data.get('area_responsable', '')
+            responsable = data.get('responsable', '')
             
-            perspective = get_object_or_404(Perspectiva, id=perspective_id)
-            ObjetivoEstrategico.objects.create(perspective=perspective, name=name, description=description)
+            if propuesta_valor:
+                descripcion = f"{descripcion}\n\nPropuesta de Valor:\n{propuesta_valor}".strip()
             
-            return JsonResponse({'status': 'success', 'message': 'Objetivo añadido correctamente.'})
+            perspectiva = get_object_or_404(Perspectiva, id=perspective_id)
+            
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+                
+            if objective_id:
+                obj = get_object_or_404(ObjetivoEstrategico, id=objective_id, organization=organization)
+                obj.perspectiva = perspectiva
+                obj.nombre = nombre
+                obj.descripcion = descripcion
+                obj.tipo_objetivo = tipo_objetivo
+                obj.area_responsable = area_responsable
+                obj.responsable = responsable
+                obj.save()
+                message = 'Objetivo actualizado correctamente.'
+                obj_id = obj.id
+            else:
+                codigo = f"OE-{ObjetivoEstrategico.objects.filter(organization=organization).count() + 1}"
+                obj = ObjetivoEstrategico.objects.create(
+                    organization=organization,
+                    perspectiva=perspectiva, 
+                    nombre=nombre, 
+                    descripcion=descripcion,
+                    tipo_objetivo=tipo_objetivo,
+                    area_responsable=area_responsable,
+                    responsable=responsable,
+                    codigo=codigo
+                )
+                message = 'Objetivo añadido correctamente.'
+                obj_id = obj.id
+            
+            return JsonResponse({'status': 'success', 'message': message, 'id': obj_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+@login_required
+def delete_objective(request, pk):
+    if request.method == 'POST':
+        organization = getattr(request.user, 'organization', None)
+        if not organization:
+            from users.models import Organization
+            organization = Organization.objects.first()
+        obj = get_object_or_404(ObjetivoEstrategico, id=pk, organization=organization)
+        obj.delete()
+        return JsonResponse({'status': 'success', 'message': 'Objetivo eliminado correctamente.'})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 @login_required
@@ -432,19 +665,120 @@ def add_kpi(request):
         try:
             data = json.loads(request.body)
             objective_id = data.get('objective_id')
-            name = data.get('name')
-            target = data.get('target', 0)
-            frequency = data.get('frequency', 'Mensual')
+            nombre = data.get('nombre')
+            formula = data.get('formula', '')
+            peso = data.get('peso', 0)
+            unidad_medida = data.get('unidad_medida', 'Porcentaje')
+            frecuencia_medicion = data.get('frecuencia_medicion', 'MENSUAL')
+            fecha_inicio = data.get('fecha_inicio') or None
+            fecha_fin = data.get('fecha_fin') or None
+            responsable = data.get('responsable', '')
+            medio_verificacion = data.get('medio_verificacion', '')
+            tipo_objetivo = data.get('tipo_objetivo', '')
             
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+
             objective = get_object_or_404(ObjetivoEstrategico, id=objective_id)
-            Indicador.objects.create(
-                objective=objective, 
-                name=name, 
-                target=target, 
-                frequency=frequency
-            )
             
-            return JsonResponse({'status': 'success', 'message': 'KPI añadido correctamente.'})
+            kpi_id = data.get('id')
+            if kpi_id:
+                kpi = Indicador.objects.get(id=kpi_id, organization=organization)
+                kpi.nombre = nombre
+                kpi.formula = formula
+                kpi.peso = peso
+                kpi.unidad_medida = unidad_medida
+                kpi.frecuencia_medicion = frecuencia_medicion
+                kpi.fecha_inicio = fecha_inicio
+                kpi.fecha_fin = fecha_fin
+                kpi.responsable = responsable
+                kpi.medio_verificacion = medio_verificacion
+                kpi.tipo_objetivo = tipo_objetivo
+                kpi.save()
+                message = 'Indicador actualizado correctamente.'
+            else:
+                kpi = Indicador.objects.create(
+                    organization=organization,
+                    objetivo=objective, 
+                    nombre=nombre, 
+                    formula=formula,
+                    peso=peso,
+                    unidad_medida=unidad_medida,
+                    frecuencia_medicion=frecuencia_medicion,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    responsable=responsable,
+                    medio_verificacion=medio_verificacion,
+                    tipo_objetivo=tipo_objetivo
+                )
+                message = 'Indicador añadido correctamente.'
+            
+            return JsonResponse({'status': 'success', 'message': message})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def delete_kpi(request, pk):
+    if request.method == 'POST':
+        try:
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+
+            kpi = Indicador.objects.get(id=pk, organization=organization)
+            kpi.delete()
+            return JsonResponse({'status': 'success', 'message': 'Indicador eliminado exitosamente'})
+        except Indicador.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'El indicador no existe o no tiene permisos.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def delete_multiple_kpis(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            kpi_ids = data.get('kpi_ids', [])
+            if not kpi_ids:
+                return JsonResponse({'status': 'error', 'message': 'No se seleccionaron indicadores'})
+
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+
+            deleted_count, _ = Indicador.objects.filter(id__in=kpi_ids, organization=organization).delete()
+            return JsonResponse({'status': 'success', 'message': f'{deleted_count} indicadores eliminados exitosamente'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'})
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def save_ponderaciones(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            ponderaciones = data.get('ponderaciones', [])
+            
+            for item in ponderaciones:
+                obj_id = item.get('id')
+                peso = item.get('peso')
+                try:
+                    obj = ObjetivoEstrategico.objects.get(id=obj_id)
+                    obj.peso = peso
+                    obj.save()
+                except ObjetivoEstrategico.DoesNotExist:
+                    continue
+            
+            return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
@@ -577,8 +911,9 @@ def export_bsc_excel(request):
         return HttpResponse("Organización no encontrada.", status=400)
         
     wb = openpyxl.Workbook()
+    
     ws = wb.active
-    ws.title = "Balanced Scorecard"
+    ws.title = "FASE ESTRATEGICA"
     
     # Header
     headers = ["Perspectiva", "Objetivo", "Indicador", "Línea Base", "Periodo Meta", "Meta Programada", "Resultado Real", "% Cumplimiento", "Semáforo"]

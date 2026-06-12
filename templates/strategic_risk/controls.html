@@ -1,63 +1,100 @@
 {% extends 'base.html' %}
 
-{% block title_header %}Balanced Scorecard y Metas Planeadas{% endblock %}
+{% block title_header %}FASE ESTRATEGICA y Metas Planeadas{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Balanced Scorecard Section -->
-    <div class="card shadow-sm border-0 mb-4" style="border-left: 5px solid #161065;">
-        <div class="card-header bg-white">
-            <h3 class="card-title font-weight-bold text-indigo"><i class="fas fa-columns mr-2"></i>Balanced Scorecard (Cuadro de Mando Integral)</h3>
+
+    <!-- Navegación Superior (Horizontal Tabs) -->
+    <div class="card shadow-sm border-0 mb-4" style="border-top: 5px solid #161065;">
+        <div class="card-header bg-white p-0 border-bottom-0">
+            <ul class="nav nav-tabs nav-justified" id="faseEstrategicaTab" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active font-weight-bold text-dark" id="tab-desarrollo" data-toggle="tab" href="#content-desarrollo" role="tab">Desarrollo de Objetivos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-ponderacion" data-toggle="tab" href="#content-ponderacion" role="tab">Ponderación Objetivos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-indicadores" data-toggle="tab" href="#content-indicadores" role="tab">Indicadores de Gestión</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-indicadores-ing" data-toggle="tab" href="#content-indicadores-ing" role="tab">Indicadores Ingresados</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-metas" data-toggle="tab" href="#content-metas" role="tab">Metas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-consulta" data-toggle="tab" href="#content-consulta" role="tab">Consulta Metas</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-alineamiento" data-toggle="tab" href="#content-alineamiento" role="tab">Alineamiento Visión</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-mapa" data-toggle="tab" href="#content-mapa" role="tab">Mapa Estratégico</a>
+                </li>
+            </ul>
         </div>
         <div class="card-body bg-light">
-            <div class="row">
-                <div class="col-md-3">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-success"><i class="fas fa-dollar-sign"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text font-weight-bold">Financiera</span>
-                            <span class="info-box-number text-success">92%</span>
-                            <small class="text-muted">ROA/ROE dentro de metas</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-warning"><i class="fas fa-users"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text font-weight-bold">Cliente/Socio</span>
-                            <span class="info-box-number text-warning">78%</span>
-                            <small class="text-muted">Satisfacci&oacute;n en observaci&oacute;n</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-primary"><i class="fas fa-cogs"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text font-weight-bold">Procesos</span>
-                            <span class="info-box-number text-primary">85%</span>
-                            <small class="text-muted">Eficiencia operativa</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-box shadow-sm">
-                        <span class="info-box-icon bg-danger"><i class="fas fa-graduation-cap"></i></span>
-                        <div class="info-box-content">
-                            <span class="info-box-text font-weight-bold">Aprendizaje</span>
-                            <span class="info-box-number text-danger">45%</span>
-                            <small class="text-muted">Brecha en capacitaci&oacute;n</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            <div class="tab-content" id="faseEstrategicaTabContent">
+                
+                <!-- SECCIÓN METAS (Actual content) -->
+                <div class="tab-pane fade" id="content-metas" role="tabpanel">
 
-    <!-- Metas Planeadas Section -->
-    <div class="card shadow-sm border-0" style="border-top: 5px solid #10b981;">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <!-- FASE ESTRATEGICA Section (Cuadro Mando Integral) -->
+                    <div class="card shadow-sm border-0 mb-4" style="border-left: 5px solid #161065;">
+                        <div class="card-header bg-white">
+                            <h3 class="card-title font-weight-bold text-indigo"><i class="fas fa-columns mr-2"></i>FASE ESTRATEGICA (Cuadro de Mando Integral)</h3>
+                        </div>
+                        <div class="card-body bg-light">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="info-box shadow-sm">
+                                        <span class="info-box-icon bg-success"><i class="fas fa-dollar-sign"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text font-weight-bold">Financiera</span>
+                                            <span class="info-box-number text-success">92%</span>
+                                            <small class="text-muted">ROA/ROE dentro de metas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box shadow-sm">
+                                        <span class="info-box-icon bg-warning"><i class="fas fa-users"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text font-weight-bold">Cliente/Socio</span>
+                                            <span class="info-box-number text-warning">78%</span>
+                                            <small class="text-muted">Satisfacci&oacute;n en observaci&oacute;n</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box shadow-sm">
+                                        <span class="info-box-icon bg-primary"><i class="fas fa-cogs"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text font-weight-bold">Procesos</span>
+                                            <span class="info-box-number text-primary">85%</span>
+                                            <small class="text-muted">Eficiencia operativa</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-box shadow-sm">
+                                        <span class="info-box-icon bg-danger"><i class="fas fa-graduation-cap"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text font-weight-bold">Aprendizaje</span>
+                                            <span class="info-box-number text-danger">45%</span>
+                                            <small class="text-muted">Brecha en capacitaci&oacute;n</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Metas Planeadas Section -->
+                    <div class="card shadow-sm border-0" style="border-top: 5px solid #10b981;">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h3 class="card-title font-weight-bold text-success"><i class="fas fa-bullseye mr-2"></i>Metas Planeadas</h3>
             <button class="btn btn-sm btn-outline-success" onclick="addMetaRow()">
                 <i class="fas fa-plus mr-1"></i> Nueva Meta
@@ -68,15 +105,18 @@
                 <table class="table table-hover table-striped mb-0 text-center align-middle" id="metas-table">
                     <thead class="bg-light text-secondary">
                         <tr>
-                            <th style="width: 5%">#</th>
-                            <th style="width: 15%">Perspectiva</th>
-                            <th style="width: 20%">Objetivo Estrat&eacute;gico</th>
-                            <th style="width: 15%">Indicador (KPI)</th>
-                            <th style="width: 10%">L&iacute;nea Base</th>
-                            <th style="width: 10%">Meta 1</th>
-                            <th style="width: 10%">Meta 2</th>
-                            <th style="width: 10%">Meta 3</th>
-                            <th style="width: 5%">Acci&oacute;n</th>
+                            <th style="width: 3%">#</th>
+                            <th style="width: 10%">Perspectiva</th>
+                            <th style="width: 15%">Objetivo Estrat&eacute;gico</th>
+                            <th style="width: 10%">Tipo de Obj.</th>
+                            <th style="width: 10%">&Aacute;rea Resp.</th>
+                            <th style="width: 10%">Responsable</th>
+                            <th style="width: 10%">Indicador (KPI)</th>
+                            <th style="width: 7%">L. Base</th>
+                            <th style="width: 7%">Meta 1</th>
+                            <th style="width: 7%">Meta 2</th>
+                            <th style="width: 7%">Meta 3</th>
+                            <th style="width: 4%">Acci&oacute;n</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -86,13 +126,33 @@
                                 <td class="align-middle index-cell">{{ forloop.counter }}</td>
                                 <td>
                                     <select class="form-control form-control-sm meta-perspectiva">
-                                        <option value="Financiera" {% if row.perspectiva == 'Financiera' %}selected{% endif %}>Financiera</option>
-                                        <option value="Cliente/Socio" {% if row.perspectiva == 'Cliente/Socio' %}selected{% endif %}>Cliente/Socio</option>
-                                        <option value="Procesos" {% if row.perspectiva == 'Procesos' %}selected{% endif %}>Procesos</option>
-                                        <option value="Aprendizaje" {% if row.perspectiva == 'Aprendizaje' %}selected{% endif %}>Aprendizaje</option>
+                                        {% for p in perspectivas %}
+                                        <option value="{{ p.nombre }}" {% if row.perspectiva == p.nombre %}selected{% endif %}>{{ p.nombre }}</option>
+                                        {% endfor %}
                                     </select>
                                 </td>
                                 <td><input type="text" class="form-control form-control-sm meta-objetivo" value="{{ row.objetivo }}"></td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-tipo">
+                                        {% for t in tipos_objetivo %}
+                                        <option value="{{ t.nombre }}" {% if row.tipo == t.nombre %}selected{% endif %}>{{ t.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-area">
+                                        {% for a in areas_responsables %}
+                                        <option value="{{ a.nombre }}" {% if row.area == a.nombre %}selected{% endif %}>{{ a.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-responsable">
+                                        {% for r in responsables %}
+                                        <option value="{{ r.nombre }}" {% if row.responsable == r.nombre %}selected{% endif %}>{{ r.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
                                 <td><input type="text" class="form-control form-control-sm meta-indicador" value="{{ row.indicador }}"></td>
                                 <td><input type="text" class="form-control form-control-sm meta-base" value="{{ row.base }}"></td>
                                 <td><input type="text" class="form-control form-control-sm meta-1" value="{{ row.meta1 }}"></td>
@@ -109,13 +169,33 @@
                                 <td class="align-middle index-cell">1</td>
                                 <td>
                                     <select class="form-control form-control-sm meta-perspectiva">
-                                        <option value="Financiera">Financiera</option>
-                                        <option value="Cliente/Socio" selected>Cliente/Socio</option>
-                                        <option value="Procesos">Procesos</option>
-                                        <option value="Aprendizaje">Aprendizaje</option>
+                                        {% for p in perspectivas %}
+                                        <option value="{{ p.nombre }}">{{ p.nombre }}</option>
+                                        {% endfor %}
                                     </select>
                                 </td>
                                 <td><input type="text" class="form-control form-control-sm meta-objetivo" value="Incrementar la satisfacci&oacute;n general" placeholder="Ej. Aumentar SOCIOS..."></td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-tipo">
+                                        {% for t in tipos_objetivo %}
+                                        <option value="{{ t.nombre }}">{{ t.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-area">
+                                        {% for a in areas_responsables %}
+                                        <option value="{{ a.nombre }}">{{ a.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-control form-control-sm meta-responsable">
+                                        {% for r in responsables %}
+                                        <option value="{{ r.nombre }}">{{ r.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
                                 <td><input type="text" class="form-control form-control-sm meta-indicador" value="NPS" placeholder="KPI"></td>
                                 <td><input type="text" class="form-control form-control-sm meta-base" value="50%" placeholder="Base"></td>
                                 <td><input type="text" class="form-control form-control-sm meta-1" value="60%" placeholder="Meta 1"></td>
@@ -137,6 +217,449 @@
         </div>
     </div>
 </div>
+
+<!-- Desarrollo de Objetivos Content -->
+<div class="tab-pane fade show active" id="content-desarrollo" role="tabpanel">
+    <div class="card shadow-sm border-0" style="border-top: 5px solid #161065;">
+                        <div class="card-header bg-white d-flex align-items-center" style="background-color: #e3f2fd !important;">
+                            <button class="btn btn-outline-primary" title="Guardar Objetivo" onclick="saveDesarrolloObjetivo()">
+                                <i class="fas fa-save fa-lg"></i>
+                            </button>
+                            <h5 class="mb-0 ml-3 text-indigo font-weight-bold">Desarrollo de Objetivos</h5>
+                        </div>
+                        <div class="card-body bg-light">
+                            <form id="form-desarrollo-objetivo">
+                                <div class="row form-group align-items-center">
+                                    <div class="col-md-2 text-right">
+                                        <label class="mb-0 text-muted font-weight-bold">Perspectiva</label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="desarrollo_perspectiva" style="background-color: #e3f2fd; border-color: #b6d4fe;">
+                                            <option value="">--Seleccione un ítem del listado--</option>
+                                            {% for p in perspectivas %}
+                                            <option value="{{ p.id }}">{{ p.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 text-right">
+                                        <label class="mb-0 text-muted font-weight-bold">Tipo Objetivo</label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="desarrollo_tipo" style="background-color: #e3f2fd; border-color: #b6d4fe;">
+                                            <option value="">--Seleccione un ítem del listado--</option>
+                                            {% for t in tipos_objetivo %}
+                                            <option value="{{ t.nombre }}">{{ t.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row form-group align-items-center">
+                                    <div class="col-md-2 text-right">
+                                        <label class="mb-0 text-muted font-weight-bold">Área Responsable</label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="desarrollo_area" style="background-color: #e3f2fd; border-color: #b6d4fe;">
+                                            <option value="">--Seleccione un ítem del listado--</option>
+                                            {% for a in areas_responsables %}
+                                            <option value="{{ a.nombre }}">{{ a.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2 text-right">
+                                        <label class="mb-0 text-muted font-weight-bold">Responsable</label>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-control" name="desarrollo_responsable" style="background-color: #e3f2fd; border-color: #b6d4fe;">
+                                            <option value="">--Seleccione un ítem del listado--</option>
+                                            {% for r in responsables %}
+                                            <option value="{{ r.nombre }}">{{ r.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row form-group align-items-center">
+                                    <div class="col-md-2 text-right">
+                                        <label class="mb-0 text-muted font-weight-bold">Nombre del Objetivo</label>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <input type="text" class="form-control" name="desarrollo_nombre" style="border-color: #ced4da;">
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-md-2 text-right mt-2">
+                                        <label class="mb-0 text-muted font-weight-bold">Descripción</label>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <textarea class="form-control" name="desarrollo_descripcion" rows="3" style="border-color: #ced4da;"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row form-group mb-0">
+                                    <div class="col-md-2 text-right mt-2">
+                                        <label class="mb-0 text-muted font-weight-bold">Propuesta de Valor</label>
+                                    </div>
+                                    <div class="col-md-10">
+                                        <textarea class="form-control" name="desarrollo_propuesta_valor" rows="3" style="border-color: #ced4da;"></textarea>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer bg-white text-right">
+                            <button class="btn btn-success" onclick="saveDesarrolloObjetivo()">
+                                <i class="fas fa-save mr-1"></i> Guardar Objetivo
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Moved Objetivos Ingresados Table here -->
+                    <div class="card shadow-sm border-0 mt-4" style="border-top: 5px solid #161065;">
+                        <div class="card-header bg-white d-flex align-items-center justify-content-between" style="background-color: #e3f2fd !important;">
+                            <div class="d-flex align-items-center">
+                                <button class="btn btn-sm btn-outline-success mr-3" title="Limpiar y Nuevo Objetivo" onclick="clearFormAndScrollToTop()">
+                                    <i class="fas fa-file-medical fa-lg"></i>
+                                </button>
+                                <h5 class="mb-0 text-indigo font-weight-bold">Objetivos Ingresados</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped mb-0" id="tabla-objetivos-ingresados">
+                                    <thead class="bg-light text-indigo">
+                                        <tr>
+                                            <th class="border-top-0">Perspectiva <i class="fas fa-filter text-muted ml-1"></i></th>
+                                            <th class="border-top-0">Tipo Objetivo <i class="fas fa-filter text-muted ml-1"></i></th>
+                                            <th class="border-top-0">Objetivo</th>
+                                            <th class="border-top-0 text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for obj in objetivos_ingresados %}
+                                        <tr id="obj-row-{{ obj.id }}">
+                                            <td class="align-middle"><span class="badge badge-info">{{ obj.perspectiva.nombre }}</span></td>
+                                            <td class="align-middle">{{ obj.tipo_objetivo }}</td>
+                                            <td class="align-middle">{{ obj.nombre }}</td>
+                                            <td class="text-center align-middle">
+                                                <button class="btn btn-sm btn-light text-primary" title="Editar" onclick="editObjective({{ obj.id }}, '{{ obj.perspectiva.id }}', '{{ obj.tipo_objetivo|escapejs }}', '{{ obj.nombre|escapejs }}', '{{ obj.descripcion|escapejs }}', '{{ obj.area_responsable|escapejs }}', '{{ obj.responsable|escapejs }}')"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-light text-danger" title="Eliminar" onclick="deleteObjective({{ obj.id }})"><i class="fas fa-times"></i></button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr id="no-data-row">
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fas fa-folder-open fa-2x mb-2 text-black-50"></i><br>
+                                                No se han registrado objetivos para esta planificación.
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="content-ponderacion" role="tabpanel">
+                    <div class="card shadow-sm border-0" style="border-top: 5px solid #161065;">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0 text-indigo font-weight-bold">Ponderación de Objetivos Estratégicos</h5>
+                            <small class="text-muted">Asigne el peso porcentual a cada objetivo. Asegúrese de que la suma total sea correcta según su metodología (100%).</small>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0" id="tabla-ponderacion">
+                                    <thead class="bg-light text-indigo">
+                                        <tr>
+                                            <th style="width: 25%;" class="border-top-0">Perspectiva</th>
+                                            <th style="width: 60%;" class="border-top-0">Objetivo Estratégico</th>
+                                            <th style="width: 15%; text-align: center;" class="border-top-0">Peso (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% regroup objetivos_ingresados by perspectiva.nombre as perspectivas_list %}
+                                        {% for perspectiva in perspectivas_list %}
+                                            <tr class="font-weight-bold" style="background-color: #f8f9fa;">
+                                                <td colspan="3"><i class="fas fa-layer-group mr-2 text-primary"></i>{{ perspectiva.grouper }}</td>
+                                            </tr>
+                                            {% for obj in perspectiva.list %}
+                                            <tr>
+                                                <td class="align-middle text-muted">{{ obj.perspectiva.nombre }}</td>
+                                                <td class="align-middle">{{ obj.nombre }}</td>
+                                                <td class="align-middle text-center">
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" step="0.01" min="0" max="100" class="form-control text-right peso-input" data-obj-id="{{ obj.id }}" value="{{ obj.peso|stringformat:'f'|default:'0.00' }}">
+                                                        <div class="input-group-append">
+                                                            <span class="input-group-text bg-white text-muted">%</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted py-4">No hay objetivos registrados para ponderar.</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot class="bg-light">
+                                        <tr>
+                                            <th colspan="3" class="text-right align-middle font-weight-bold text-indigo">Total Ponderación:</th>
+                                            <th class="text-center align-middle font-weight-bold" id="total-ponderacion">0.00%</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white text-right">
+                            <button class="btn btn-success" onclick="savePonderaciones()">
+                                <i class="fas fa-save mr-1"></i> Guardar Ponderaciones
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="content-indicadores" role="tabpanel">
+                    <div class="card shadow-sm border-0" style="border-top: 5px solid #161065;">
+                        <div class="card-body bg-light">
+                            <!-- Filters -->
+                            <div class="row align-items-center mb-3">
+                                <div class="col-md-2 text-right font-weight-bold">Perspectiva</div>
+                                <div class="col-md-4">
+                                    <select class="form-control form-control-sm" id="ind-perspectiva" onchange="filterObjectivesForInd()">
+                                        <option value="">--Seleccione un ítem del listado--</option>
+                                        {% for p in perspectivas %}
+                                        <option value="{{ p.id }}">{{ p.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2 text-right font-weight-bold">Tipo Objetivo</div>
+                                <div class="col-md-4">
+                                    <select class="form-control form-control-sm" id="ind-tipo-objetivo" onchange="filterObjectivesForInd()">
+                                        <option value="">--Seleccione un ítem del listado--</option>
+                                        {% for t in tipos_objetivo %}
+                                        <option value="{{ t.nombre }}">{{ t.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row align-items-center mb-4">
+                                <div class="col-md-2 text-right font-weight-bold">Objetivo</div>
+                                <div class="col-md-10">
+                                    <select class="form-control form-control-sm" id="ind-objetivo" onchange="loadIndicatorsForObjective()">
+                                        <option value="">--Seleccione un ítem del listado--</option>
+                                        {% for obj in objetivos_ingresados %}
+                                        <option value="{{ obj.id }}" data-perspectiva="{{ obj.perspectiva.id }}" data-tipo="{{ obj.tipo_objetivo }}" style="display: none;">{{ obj.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-2">
+                                <button class="btn btn-sm text-success" style="background-color: transparent;" onclick="openIndicatorModal()" title="Agregar Indicador">
+                                    <i class="fas fa-file-medical fa-2x"></i>
+                                </button>
+                            </div>
+
+                            <!-- Table -->
+                            <div class="table-responsive bg-white shadow-sm rounded">
+                                <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;" id="table-indicadores">
+                                    <thead style="background-color: #f1f5f9; color: #161065;">
+                                        <tr>
+                                            <th>Nombre del Indicador</th>
+                                            <th>Forma Cálculo</th>
+                                            <th class="text-center">Peso (%)</th>
+                                            <th class="text-center">Unidad de me...</th>
+                                            <th class="text-center">Periodicidad</th>
+                                            <th class="text-center">Fecha Inicio</th>
+                                            <th class="text-center">Fecha Fin</th>
+                                            <th>Responsable</th>
+                                            <th>Medio de Veri...</th>
+                                            <th class="text-center" style="width: 80px;">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody-indicadores">
+                                        {% for ind in indicadores_ingresados %}
+                                        <tr class="indicador-row" data-obj-id="{{ ind.objetivo.id }}" style="display: none;">
+                                            <td class="align-middle font-weight-bold" style="color: #005b9f;">
+                                                {{ ind.nombre }}
+                                                <br>
+                                                <small class="text-muted font-weight-normal"><i class="fas fa-tag mr-1"></i>Tipo: {{ ind.tipo_objetivo|default:ind.objetivo.tipo_objetivo }}</small>
+                                            </td>
+                                            <td class="align-middle">{{ ind.formula }}</td>
+                                            <td class="align-middle text-center">{{ ind.peso|floatformat:2 }}</td>
+                                            <td class="align-middle text-center">{{ ind.unidad_medida }}</td>
+                                            <td class="align-middle text-center">{{ ind.get_frecuencia_medicion_display }}</td>
+                                            <td class="align-middle text-center">{{ ind.fecha_inicio|date:"d/m/Y"|default:"" }}</td>
+                                            <td class="align-middle text-center">{{ ind.fecha_fin|date:"d/m/Y"|default:"" }}</td>
+                                            <td class="align-middle">{{ ind.responsable }}</td>
+                                            <td class="align-middle">
+                                                {% if ind.medio_verificacion %}
+                                                <span class="badge badge-primary">{{ ind.medio_verificacion }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <button class="btn btn-sm btn-link text-success p-0 mr-1" onclick="editIndicator('{{ ind.id }}', '{{ ind.nombre|escapejs }}', '{{ ind.formula|escapejs }}', '{{ ind.peso|floatformat:'2' }}', '{{ ind.unidad_medida|escapejs }}', '{{ ind.frecuencia_medicion }}', '{{ ind.fecha_inicio|date:'Y-m-d'|default:'' }}', '{{ ind.fecha_fin|date:'Y-m-d'|default:'' }}', '{{ ind.responsable|escapejs }}', '{{ ind.medio_verificacion|escapejs }}', '{{ ind.tipo_objetivo|escapejs }}')"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-sm btn-link text-danger p-0" onclick="deleteIndicator('{{ ind.id }}')"><i class="fas fa-trash-alt"></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        <tr id="no-indicadores-row">
+                                            <td colspan="10" class="text-center text-muted py-4">No hay registros disponibles</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="content-indicadores-ing" role="tabpanel">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-primary"><i class="fas fa-list-ul mr-2"></i>Relación de Indicadores Ingresados</h5>
+                            <button class="btn btn-sm btn-danger" id="btn-delete-selected-kpis" style="display: none;" onclick="deleteSelectedKpis()">
+                                <i class="fas fa-trash-alt mr-1"></i>Eliminar Seleccionados
+                            </button>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;" id="table-all-indicadores">
+                                    <thead style="background-color: #f1f5f9; color: #161065;">
+                                        <tr>
+                                            <th class="align-middle text-center" style="width: 40px;">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input" id="check-all-kpis">
+                                                    <label class="custom-control-label" for="check-all-kpis"></label>
+                                                </div>
+                                            </th>
+                                            <th class="align-middle">Perspectiva</th>
+                                            <th class="align-middle">Tipo de Objetivo</th>
+                                            <th class="align-middle">Objetivo Estratégico</th>
+                                            <th class="align-middle">Nombre del Indicador</th>
+                                            <th class="align-middle text-center">Fórmula</th>
+                                            <th class="align-middle text-center">Peso (%)</th>
+                                            <th class="align-middle text-center">Frecuencia</th>
+                                            <th class="align-middle">Responsable</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ind in indicadores_ingresados %}
+                                        <tr id="row-kpi-all-{{ ind.id }}">
+                                            <td class="align-middle text-center">
+                                                <div class="custom-control custom-checkbox">
+                                                    <input type="checkbox" class="custom-control-input kpi-checkbox" id="check-kpi-{{ ind.id }}" value="{{ ind.id }}">
+                                                    <label class="custom-control-label" for="check-kpi-{{ ind.id }}"></label>
+                                                </div>
+                                            </td>
+                                            <td class="align-middle font-weight-bold text-secondary">{{ ind.objetivo.perspectiva.nombre }}</td>
+                                            <td class="align-middle text-muted">{{ ind.tipo_objetivo|default:ind.objetivo.tipo_objetivo }}</td>
+                                            <td class="align-middle" style="color: #005b9f;">{{ ind.objetivo.nombre }}</td>
+                                            <td class="align-middle font-weight-bold">{{ ind.nombre }}</td>
+                                            <td class="align-middle text-center">{{ ind.formula }}</td>
+                                            <td class="align-middle text-center">{{ ind.peso|floatformat:2 }}</td>
+                                            <td class="align-middle text-center">{{ ind.get_frecuencia_medicion_display }}</td>
+                                            <td class="align-middle">{{ ind.responsable }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="9" class="text-center text-muted py-4">No hay indicadores ingresados en el sistema.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="content-consulta" role="tabpanel">
+                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Consulta Metas.</div>
+                </div>
+                <div class="tab-pane fade" id="content-alineamiento" role="tabpanel">
+                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Alineamiento Visión.</div>
+                </div>
+                <div class="tab-pane fade" id="content-mapa" role="tabpanel">
+                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Mapa Estratégico.</div>
+                </div>
+
+            </div> <!-- End tab-content -->
+        </div> <!-- End card-body -->
+    </div> <!-- End card tabs -->
+
+<!-- Modal Indicador -->
+<div class="modal fade" id="modalIndicador" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalIndicadorTitle"><i class="fas fa-chart-line mr-2"></i>Agregar Indicador</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-light">
+                <input type="hidden" id="ind-modal-id">
+                <div class="row">
+                    <div class="col-md-5 form-group">
+                        <label class="font-weight-bold text-secondary">Nombre del Indicador <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="ind-modal-nombre" placeholder="Ej. Cartera Bruta / Activos">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label class="font-weight-bold text-secondary">Forma Cálculo</label>
+                        <input type="text" class="form-control" id="ind-modal-formula" placeholder="Ej. Cartera Bruta / Activos">
+                    </div>
+                    <div class="col-md-3 form-group">
+                        <label class="font-weight-bold text-secondary">Tipo Objetivo</label>
+                        <select class="form-control" id="ind-modal-tipo-objetivo">
+                            <option value="">--Seleccione--</option>
+                            {% for t in tipos_objetivo %}
+                            <option value="{{ t.nombre }}">{{ t.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 form-group">
+                        <label class="font-weight-bold text-secondary">Peso (%)</label>
+                        <input type="number" step="0.01" class="form-control" id="ind-modal-peso" value="0.00">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label class="font-weight-bold text-secondary">Unidad de medida</label>
+                        <input type="text" class="form-control" id="ind-modal-unidad" value="Porcentaje">
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label class="font-weight-bold text-secondary">Periodicidad</label>
+                        <select class="form-control" id="ind-modal-frecuencia">
+                            <option value="MENSUAL">Mensual</option>
+                            <option value="TRIMESTRAL">Trimestral</option>
+                            <option value="SEMESTRAL">Semestral</option>
+                            <option value="ANUAL">Anual</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label class="font-weight-bold text-secondary">Fecha Inicio</label>
+                        <input type="date" class="form-control" id="ind-modal-inicio">
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="font-weight-bold text-secondary">Fecha Fin</label>
+                        <input type="date" class="form-control" id="ind-modal-fin">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label class="font-weight-bold text-secondary">Responsable</label>
+                        <input type="text" class="form-control" id="ind-modal-responsable" placeholder="Ej. Gerente de Administración">
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label class="font-weight-bold text-secondary">Medio de Verificación</label>
+                        <input type="text" class="form-control" id="ind-modal-medio" placeholder="Ej. EEFF">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="saveIndicator()"><i class="fas fa-save mr-1"></i>Guardar Indicador</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -154,13 +677,33 @@
                 <td class="align-middle index-cell"></td>
                 <td>
                     <select class="form-control form-control-sm meta-perspectiva">
-                        <option value="Financiera">Financiera</option>
-                        <option value="Cliente/Socio">Cliente/Socio</option>
-                        <option value="Procesos">Procesos</option>
-                        <option value="Aprendizaje">Aprendizaje</option>
+                        {% for p in perspectivas %}
+                        <option value="{{ p.nombre }}">{{ p.nombre }}</option>
+                        {% endfor %}
                     </select>
                 </td>
                 <td><input type="text" class="form-control form-control-sm meta-objetivo" placeholder="Nuevo objetivo"></td>
+                <td>
+                    <select class="form-control form-control-sm meta-tipo">
+                        {% for t in tipos_objetivo %}
+                        <option value="{{ t.nombre }}">{{ t.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select class="form-control form-control-sm meta-area">
+                        {% for a in areas_responsables %}
+                        <option value="{{ a.nombre }}">{{ a.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select class="form-control form-control-sm meta-responsable">
+                        {% for r in responsables %}
+                        <option value="{{ r.nombre }}">{{ r.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
                 <td><input type="text" class="form-control form-control-sm meta-indicador" placeholder="KPI"></td>
                 <td><input type="text" class="form-control form-control-sm meta-base" placeholder="Base"></td>
                 <td><input type="text" class="form-control form-control-sm meta-1" placeholder="Meta 1"></td>
@@ -186,6 +729,9 @@
             metas.push({
                 perspectiva: $(this).find('.meta-perspectiva').val(),
                 objetivo: $(this).find('.meta-objetivo').val(),
+                tipo: $(this).find('.meta-tipo').val(),
+                area: $(this).find('.meta-area').val(),
+                responsable: $(this).find('.meta-responsable').val(),
                 indicador: $(this).find('.meta-indicador').val(),
                 base: $(this).find('.meta-base').val(),
                 meta1: $(this).find('.meta-1').val(),
@@ -204,13 +750,22 @@
             }
         });
 
+        const plan_id = "{{ plan.id|default_if_none:'' }}";
+        if (!plan_id) {
+            Swal.fire('Error', 'No hay un plan activo seleccionado.', 'error');
+            return;
+        }
+
         fetch("{% url 'strategic_risk:save_metas_planeadas' %}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify(metas)
+            body: JSON.stringify({
+                plan_id: plan_id,
+                data: metas
+            })
         })
         .then(response => response.json())
         .then(data => {
@@ -238,6 +793,479 @@
                 text: 'No se pudo contactar al servidor. Revisa tu conexión.',
                 confirmButtonColor: '#ef4444'
             });
+        });
+    }
+
+    function saveDesarrolloObjetivo() {
+        const data = {
+            objective_id: $('#objective_id_hidden').val() || null,
+            perspective_id: $('select[name="desarrollo_perspectiva"]').val(),
+            name: $('input[name="desarrollo_nombre"]').val(),
+            description: $('textarea[name="desarrollo_descripcion"]').val(),
+            propuesta_valor: $('textarea[name="desarrollo_propuesta_valor"]').val(),
+            tipo_objetivo: $('select[name="desarrollo_tipo"]').val(),
+            area_responsable: $('select[name="desarrollo_area"]').val(),
+            responsable: $('select[name="desarrollo_responsable"]').val()
+        };
+
+        if (!data.perspective_id || !data.name || !data.tipo_objetivo) {
+            Swal.fire('Atención', 'Por favor complete los campos obligatorios: Perspectiva, Tipo y Nombre.', 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Estamos procesando tu información.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch("{% url 'strategic_risk:add_objective' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === 'success') {
+                // Agregar a la tabla de Objetivos Ingresados
+                const tbody = $('#tabla-objetivos-ingresados tbody');
+                $('#no-data-row').remove();
+                
+                let fullDesc = data.description;
+                if(data.propuesta_valor) {
+                    fullDesc += '\n\nPropuesta de Valor:\n' + data.propuesta_valor;
+                }
+
+                let persText = $('select[name="desarrollo_perspectiva"] option:selected').text();
+                let tipoText = $('select[name="desarrollo_tipo"] option:selected').text();
+                
+                const escapeHtmlAttr = (str) => {
+                    if (!str) return '';
+                    return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, "\\n");
+                };
+                
+                const trHtml = `
+                    <td class="align-middle"><span class="badge badge-info">${persText}</span></td>
+                    <td class="align-middle">${tipoText}</td>
+                    <td class="align-middle">${data.name}</td>
+                    <td class="text-center align-middle">
+                        <button class="btn btn-sm btn-light text-primary" title="Editar" onclick="editObjective(${res.id}, '${data.perspective_id}', '${escapeHtmlAttr(data.tipo_objetivo)}', '${escapeHtmlAttr(data.name)}', '${escapeHtmlAttr(fullDesc)}', '${escapeHtmlAttr(data.area_responsable)}', '${escapeHtmlAttr(data.responsable)}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-light text-danger" title="Eliminar" onclick="deleteObjective(${res.id})"><i class="fas fa-times"></i></button>
+                    </td>
+                `;
+
+                if (data.objective_id) {
+                    $('#obj-row-' + res.id).html(trHtml);
+                } else {
+                    const tr = `<tr id="obj-row-${res.id}">${trHtml}</tr>`;
+                    tbody.append(tr);
+                }
+                
+                // Limpiar formulario
+                $('#form-desarrollo-objetivo')[0].reset();
+                $('#objective_id_hidden').remove();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Guardado!',
+                    text: res.message,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire('Error', res.message || 'Hubo un error al guardar.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error de Red', 'No se pudo contactar al servidor. Revisa tu conexión.', 'error');
+        });
+    }
+
+    function clearFormAndScrollToTop() {
+        $('#form-desarrollo-objetivo')[0].reset();
+        $('#objective_id_hidden').remove();
+        
+        $('html, body').animate({ scrollTop: $('#form-desarrollo-objetivo').offset().top - 100 }, 500);
+    }
+
+    // --- LOGICA DE PONDERACION ---
+    function updateTotalPonderacion() {
+        let total = 0;
+        $('.peso-input').each(function() {
+            let val = parseFloat($(this).val()) || 0;
+            total += val;
+        });
+        
+        const totalEl = $('#total-ponderacion');
+        totalEl.text(total.toFixed(2) + '%');
+        
+        if (total === 100) {
+            totalEl.removeClass('text-danger text-warning').addClass('text-success');
+        } else if (total > 100) {
+            totalEl.removeClass('text-success text-warning').addClass('text-danger');
+        } else {
+            totalEl.removeClass('text-success text-danger').addClass('text-warning');
+        }
+    }
+
+    $(document).on('input', '.peso-input', updateTotalPonderacion);
+
+    // Initial update
+    $(document).ready(function() {
+        updateTotalPonderacion();
+    });
+
+    function savePonderaciones() {
+        let total = 0;
+        const data = [];
+        $('.peso-input').each(function() {
+            let val = parseFloat($(this).val()) || 0;
+            total += val;
+            data.push({
+                id: $(this).data('obj-id'),
+                peso: val
+            });
+        });
+
+        if (total !== 100) {
+            Swal.fire('Atención', `La suma total de la ponderación debe ser exactamente 100%. Actualmente es ${total.toFixed(2)}%.`, 'warning');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Guardando ponderaciones...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        fetch("{% url 'strategic_risk:save_ponderaciones' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ ponderaciones: data })
+        })
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Guardado!',
+                    text: 'Las ponderaciones se han actualizado correctamente.',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire('Error', res.message || 'Error al guardar.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'No se pudo conectar con el servidor.', 'error');
+        });
+    }
+
+    // Funciones de edicion y eliminacion
+    function editObjective(id, pers_id, tipo, nombre, desc, area, resp) {
+        let textDesc = desc || '';
+        let pv = '';
+        if (textDesc.includes('\n\nPropuesta de Valor:\n')) {
+            let parts = textDesc.split('\n\nPropuesta de Valor:\n');
+            textDesc = parts[0];
+            pv = parts[1] || '';
+        }
+        
+        $('#objective_id_hidden').remove();
+        $('#form-desarrollo-objetivo').append(`<input type="hidden" id="objective_id_hidden" name="objective_id" value="${id}">`);
+        
+        $('select[name="desarrollo_perspectiva"]').val(pers_id);
+        $('select[name="desarrollo_tipo"]').val(tipo);
+        $('input[name="desarrollo_nombre"]').val(nombre);
+        $('textarea[name="desarrollo_descripcion"]').val(textDesc);
+        $('textarea[name="desarrollo_propuesta_valor"]').val(pv);
+        $('select[name="desarrollo_area"]').val(area);
+        $('select[name="desarrollo_responsable"]').val(resp);
+        
+        $('#tab-desarrollo').tab('show');
+        $('html, body').animate({ scrollTop: $('#form-desarrollo-objetivo').offset().top - 100 }, 500);
+    }
+
+    function deleteObjective(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Se eliminará este objetivo y sus indicadores asociados.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/estrategico/ajax/delete-objective/' + id + '/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        $('#obj-row-' + id).remove();
+                        if($('#tabla-objetivos-ingresados tbody tr').length === 0) {
+                            $('#tabla-objetivos-ingresados tbody').append(`
+                                <tr id="no-data-row">
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="fas fa-folder-open fa-2x mb-2 text-black-50"></i><br>
+                                        No se han registrado objetivos para esta planificación.
+                                    </td>
+                                </tr>
+                            `);
+                        }
+                        Swal.fire('Eliminado!', 'El objetivo ha sido eliminado.', 'success');
+                    } else {
+                        Swal.fire('Error!', res.message, 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    // --- Indicadores de Gestion ---
+    function filterObjectivesForInd() {
+        const pers = $('#ind-perspectiva').val();
+        const tipo = $('#ind-tipo-objetivo').val();
+        
+        $('#ind-objetivo option').each(function() {
+            const val = $(this).val();
+            if (val === '') {
+                $(this).show();
+                return;
+            }
+            
+            const objPers = $(this).data('perspectiva').toString();
+            const objTipo = $(this).data('tipo').toString();
+            
+            let match = true;
+            if (pers && objPers !== pers) match = false;
+            if (tipo && objTipo !== tipo) match = false;
+            
+            if (match) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        $('#ind-objetivo').val('');
+        loadIndicatorsForObjective();
+    }
+    
+    function loadIndicatorsForObjective() {
+        const objId = $('#ind-objetivo').val();
+        let count = 0;
+        
+        $('#tbody-indicadores .indicador-row').each(function() {
+            if ($(this).data('obj-id').toString() === objId.toString() && objId !== '') {
+                $(this).show();
+                count++;
+            } else {
+                $(this).hide();
+            }
+        });
+        
+        if (count === 0) {
+            $('#no-indicadores-row').show();
+        } else {
+            $('#no-indicadores-row').hide();
+        }
+    }
+    
+    function openIndicatorModal() {
+        const objId = $('#ind-objetivo').val();
+        if (!objId) {
+            Swal.fire('Atención', 'Debe seleccionar un Objetivo Estratégico primero.', 'warning');
+            return;
+        }
+        
+        $('#ind-modal-id').val('');
+        $('#ind-modal-nombre').val('');
+        $('#ind-modal-formula').val('');
+        $('#ind-modal-peso').val('0.00');
+        $('#ind-modal-unidad').val('Porcentaje');
+        $('#ind-modal-frecuencia').val('MENSUAL');
+        $('#ind-modal-inicio').val('');
+        $('#ind-modal-fin').val('');
+        $('#ind-modal-responsable').val('');
+        $('#ind-modal-medio').val('');
+        $('#ind-modal-tipo-objetivo').val('');
+        
+        $('#modalIndicadorTitle').html('<i class="fas fa-chart-line mr-2"></i>Agregar Indicador');
+        $('#modalIndicador').modal('show');
+    }
+    
+    function editIndicator(id, nombre, formula, peso, unidad, freq, inicio, fin, responsable, medio, tipo_objetivo) {
+        $('#ind-modal-id').val(id);
+        $('#ind-modal-nombre').val(nombre);
+        $('#ind-modal-formula').val(formula);
+        $('#ind-modal-peso').val(peso);
+        $('#ind-modal-unidad').val(unidad);
+        $('#ind-modal-frecuencia').val(freq);
+        $('#ind-modal-inicio').val(inicio);
+        $('#ind-modal-fin').val(fin);
+        $('#ind-modal-responsable').val(responsable);
+        $('#ind-modal-medio').val(medio);
+        $('#ind-modal-tipo-objetivo').val(tipo_objetivo);
+        
+        $('#modalIndicadorTitle').html('<i class="fas fa-chart-line mr-2"></i>Editar Indicador');
+        $('#modalIndicador').modal('show');
+    }
+    
+    function saveIndicator() {
+        const objId = $('#ind-objetivo').val();
+        const data = {
+            id: $('#ind-modal-id').val(),
+            objective_id: objId,
+            nombre: $('#ind-modal-nombre').val(),
+            formula: $('#ind-modal-formula').val(),
+            peso: $('#ind-modal-peso').val(),
+            unidad_medida: $('#ind-modal-unidad').val(),
+            frecuencia_medicion: $('#ind-modal-frecuencia').val(),
+            fecha_inicio: $('#ind-modal-inicio').val() || null,
+            fecha_fin: $('#ind-modal-fin').val() || null,
+            responsable: $('#ind-modal-responsable').val(),
+            medio_verificacion: $('#ind-modal-medio').val(),
+            tipo_objetivo: $('#ind-modal-tipo-objetivo').val(),
+        };
+        
+        if (!data.nombre.trim()) {
+            Swal.fire('Atención', 'El nombre del indicador es obligatorio.', 'warning');
+            return;
+        }
+        
+        fetch('/estrategico/ajax/add-kpi/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => res.json())
+        .then(res => {
+            if (res.status === 'success') {
+                Swal.fire('Éxito', res.message, 'success').then(() => {
+                    location.reload(); 
+                });
+            } else {
+                Swal.fire('Error', res.message, 'error');
+            }
+        });
+    }
+
+    function deleteIndicator(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Este indicador será eliminado permanentemente.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('/estrategico/ajax/delete-kpi/' + id + '/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        Swal.fire('Eliminado!', res.message, 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error!', res.message, 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    // Check all functionality for Indicadores Ingresados
+    $('#check-all-kpis').on('change', function() {
+        $('.kpi-checkbox').prop('checked', $(this).prop('checked'));
+        toggleDeleteSelectedBtn();
+    });
+
+    // Individual check for Indicadores Ingresados
+    $(document).on('change', '.kpi-checkbox', function() {
+        if (!$(this).prop('checked')) {
+            $('#check-all-kpis').prop('checked', false);
+        }
+        toggleDeleteSelectedBtn();
+    });
+
+    function toggleDeleteSelectedBtn() {
+        if ($('.kpi-checkbox:checked').length > 0) {
+            $('#btn-delete-selected-kpis').fadeIn();
+        } else {
+            $('#btn-delete-selected-kpis').fadeOut();
+        }
+    }
+
+    function deleteSelectedKpis() {
+        let selectedIds = [];
+        $('.kpi-checkbox:checked').each(function() {
+            selectedIds.push($(this).val());
+        });
+
+        if (selectedIds.length === 0) return;
+
+        Swal.fire({
+            title: '¿Eliminar indicadores seleccionados?',
+            text: `Se eliminarán ${selectedIds.length} indicadores de forma permanente.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('{% url "strategic_risk:delete_multiple_kpis" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ kpi_ids: selectedIds })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire('¡Eliminados!', data.message, 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error', data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
+                });
+            }
         });
     }
 

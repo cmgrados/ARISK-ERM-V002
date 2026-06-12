@@ -666,22 +666,33 @@
                 </a>
               </li>
               {% if request.session.active_strategic_plan_id %}
-              <li class="nav-item">
-                <a href="{% url 'strategic_risk:strat_data' %}" class="nav-link {% if request.resolver_match.url_name == 'strat_data' %}active{% endif %}">
-                  <i class="fas fa-bullseye nav-icon small"></i>
-                  <p>Diagnóstico y Entorno</p>
+              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'strat_data methodologies' %}menu-open{% endif %}">
+                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'strat_data methodologies' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
+                  <i class="nav-icon fas fa-search-plus text-info"></i>
+                  <p>
+                    FASE DE ANALISIS Y DIAGNOSTICO
+                    <i class="right fas fa-angle-left"></i>
+                  </p>
                 </a>
-              </li>
-              <li class="nav-item">
-                <a href="{% url 'strategic_risk:methodologies' %}" class="nav-link {% if request.resolver_match.url_name == 'methodologies' %}active{% endif %}">
-                  <i class="fas fa-project-diagram nav-icon small"></i>
-                  <p>Alineamiento Estratégico</p>
-                </a>
+                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'strat_data methodologies' %}block{% else %}none{% endif %};">
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:strat_data' %}" class="nav-link {% if request.resolver_match.url_name == 'strat_data' %}active{% endif %}">
+                      <i class="fas fa-bullseye nav-icon small"></i>
+                      <p>Diagnóstico y Entorno</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:methodologies' %}" class="nav-link {% if request.resolver_match.url_name == 'methodologies' %}active{% endif %}">
+                      <i class="fas fa-project-diagram nav-icon small"></i>
+                      <p>Alineamiento Estratégico</p>
+                    </a>
+                  </li>
+                </ul>
               </li>
               <li class="nav-item">
                 <a href="{% url 'strategic_risk:controls' %}" class="nav-link {% if request.resolver_match.url_name == 'controls' %}active{% endif %}">
                   <i class="fas fa-balance-scale nav-icon small text-warning"></i>
-                  <p>Balanced Scorecard</p>
+                  <p>FASE ESTRATEGICA</p>
                 </a>
               </li>
               <li class="nav-item">

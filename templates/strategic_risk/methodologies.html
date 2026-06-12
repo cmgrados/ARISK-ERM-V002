@@ -52,6 +52,11 @@
                         <i class="fas fa-chess-board mr-2"></i>Business Model Canvas
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link font-weight-bold text-primary" id="tab-conclusiones" data-toggle="tab" href="#content-conclusiones" role="tab">
+                        <i class="fas fa-list-ol mr-2"></i>Conclusiones
+                    </a>
+                </li>
             </ul>
         </div>
         <div class="card-body bg-light">
@@ -702,6 +707,51 @@
                             </div>
                         </div>
                     </div>
+                <!-- SECCIÓN CONCLUSIONES -->
+                <div class="tab-pane fade" id="content-conclusiones" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex align-items-center">
+                            <h4 class="text-primary font-weight-bold mb-0 mr-3"><i class="fas fa-list-ol text-primary mr-2"></i>Conclusiones</h4>
+                        </div>
+                        <button class="btn btn-success font-weight-bold" onclick="saveConclusiones()"><i class="fas fa-save mr-1"></i> Guardar Conclusiones</button>
+                    </div>
+                    <p class="text-muted small mb-4">Registre las conclusiones clave derivadas de los análisis internos y externos.</p>
+                    
+                    <div class="table-responsive shadow-sm border rounded-lg bg-white">
+                        <table class="table table-bordered mb-0" id="conclusiones-table">
+                            <thead>
+                                <tr class="bg-light text-center">
+                                    <th colspan="2" class="text-secondary font-weight-bold border-bottom-0 h5">CONCLUSIONES <span class="float-right text-muted" style="font-size: 0.8rem;">{{ plan.start_year }} - {{ plan.start_year|add:plan.horizon_years|add:'-1' }}</span></th>
+                                </tr>
+                                <tr class="text-center text-dark" style="background-color: #e5e5e5;">
+                                    <th style="width: 50%;">Análisis INTERNO</th>
+                                    <th style="width: 50%;">Análisis EXTERNO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in "1234567890" %}
+                                <tr>
+                                    <td class="p-0">
+                                        <div class="input-group input-group-sm border-0 h-100">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text bg-transparent border-0 font-weight-bold text-muted" style="width: 30px;">{{ forloop.counter }}</span>
+                                            </div>
+                                            <input type="text" class="form-control border-0 bg-transparent shadow-none conc-int" value="">
+                                        </div>
+                                    </td>
+                                    <td class="p-0 border-left">
+                                        <div class="input-group input-group-sm border-0 h-100">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text bg-transparent border-0 font-weight-bold text-muted" style="width: 30px;">{{ forloop.counter }}</span>
+                                            </div>
+                                            <input type="text" class="form-control border-0 bg-transparent shadow-none conc-ext" value="">
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>
@@ -786,6 +836,7 @@
     const efiData = JSON.parse('{{ efi_data|escapejs }}' || '[]');
     const efeData = JSON.parse('{{ efe_data|escapejs }}' || '[]');
     let mpcData = JSON.parse('{{ mpc_data|escapejs }}' || '{}');
+    let conclusionesData = JSON.parse('{{ conclusiones_data|escapejs }}' || '{"interno": [], "externo": []}');
 
     // Muestra alertas dinámicas
     function showSuccess(msg) {
@@ -1275,6 +1326,54 @@
             width: '600px'
         });
     }
+
+    // --- LÓGICA CONCLUSIONES ---
+    function initConclusiones() {
+        const internos = document.querySelectorAll('#conclusiones-table .conc-int');
+        const externos = document.querySelectorAll('#conclusiones-table .conc-ext');
+        
+        let intData = conclusionesData.interno || [];
+        let extData = conclusionesData.externo || [];
+        
+        internos.forEach((input, index) => {
+            if (intData[index]) input.value = intData[index];
+        });
+        
+        externos.forEach((input, index) => {
+            if (extData[index]) input.value = extData[index];
+        });
+    }
+
+    function saveConclusiones() {
+        const internos = document.querySelectorAll('#conclusiones-table .conc-int');
+        const externos = document.querySelectorAll('#conclusiones-table .conc-ext');
+        
+        let intData = [];
+        let extData = [];
+        
+        internos.forEach(input => {
+            intData.push(input.value);
+        });
+        
+        externos.forEach(input => {
+            extData.push(input.value);
+        });
+        
+        const payload = {
+            matrix_type: 'CONCLUSIONES',
+            data: {
+                interno: intData,
+                externo: extData
+            }
+        };
+        
+        postData(payload, 'Conclusiones guardadas con éxito.');
+    }
+    
+    // Initialize conclusiones on load
+    $(document).ready(function() {
+        initConclusiones();
+    });
 
     // --- FUNCIÓN AJAX GLOBAL ---
     function postData(payload, successMsg) {

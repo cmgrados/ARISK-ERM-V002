@@ -37,6 +37,138 @@
                             {{ form.status }}
                         </div>
                     </div>
+                    
+                    <hr>
+                    <h5 class="font-weight-bold text-primary mb-3">Perspectivas Estratégicas</h5>
+                    <p class="text-muted small">Defina las perspectivas con las que trabajará este plan (por defecto se incluyen las sugeridas, pero puede editarlas, eliminarlas o agregar nuevas).</p>
+                    <div id="perspectivas-container">
+                        {% if perspectivas %}
+                            {% for p in perspectivas %}
+                            <div class="input-group mb-2 perspectiva-item">
+                                <input type="text" name="perspectivas[]" class="form-control" value="{{ p.nombre }}" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="input-group mb-2 perspectiva-item">
+                                <input type="text" name="perspectivas[]" class="form-control" value="FINANCIERA" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 perspectiva-item">
+                                <input type="text" name="perspectivas[]" class="form-control" value="SOCIO/CLIENTE" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 perspectiva-item">
+                                <input type="text" name="perspectivas[]" class="form-control" value="PROCESOS INTERNOS" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 perspectiva-item">
+                                <input type="text" name="perspectivas[]" class="form-control" value="CRECIMIENTO Y APRENDIZAJE" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-perspectiva"><i class="fas fa-plus"></i> Añadir Perspectiva</button>
+                    <hr>
+
+                    <h5 class="font-weight-bold text-primary mb-3">Tipos de Objetivo</h5>
+                    <p class="text-muted small">Defina los tipos de objetivo disponibles en este plan.</p>
+                    <div id="tipos-container">
+                        {% if tipos_objetivo %}
+                            {% for t in tipos_objetivo %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="tipos_objetivo[]" class="form-control" value="{{ t.nombre }}" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="tipos_objetivo[]" class="form-control" value="Estratégico" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="tipos_objetivo[]" class="form-control" value="Operativo" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-tipo"><i class="fas fa-plus"></i> Añadir Tipo</button>
+                    <hr>
+
+                    <h5 class="font-weight-bold text-primary mb-3">Áreas Responsables</h5>
+                    <p class="text-muted small">Defina las áreas que estarán a cargo de los objetivos en este plan.</p>
+                    <div id="areas-container">
+                        {% if areas_responsables %}
+                            {% for a in areas_responsables %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="areas_responsables[]" class="form-control" value="{{ a.nombre }}" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="areas_responsables[]" class="form-control" value="Gerencia General" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="areas_responsables[]" class="form-control" value="Riesgos" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-area"><i class="fas fa-plus"></i> Añadir Área</button>
+                    <hr>
+
+                    <h5 class="font-weight-bold text-primary mb-3">Responsables (Cargos)</h5>
+                    <p class="text-muted small">Defina los responsables o roles para la ejecución de los objetivos.</p>
+                    <div id="responsables-container">
+                        {% if responsables %}
+                            {% for r in responsables %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="responsables[]" class="form-control" value="{{ r.nombre }}" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="responsables[]" class="form-control" value="Gerente General" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                            <div class="input-group mb-2 item-row">
+                                <input type="text" name="responsables[]" class="form-control" value="Jefe de Riesgos" required>
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mb-3" id="add-responsable"><i class="fas fa-plus"></i> Añadir Responsable</button>
                     <hr>
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'strategic_risk:dashboard' %}" class="btn btn-secondary font-weight-bold"><i class="fas fa-times mr-1"></i> Cancelar</a>
@@ -47,4 +179,56 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function createAdder(btnId, containerId, inputName, placeholder) {
+            document.getElementById(btnId).addEventListener('click', function() {
+                var container = document.getElementById(containerId);
+                var div = document.createElement('div');
+                div.className = 'input-group mb-2 item-row';
+                div.innerHTML = `
+                    <input type="text" name="${inputName}[]" class="form-control" placeholder="${placeholder}" required>
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-danger remove-item" type="button"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            
+            document.getElementById(containerId).addEventListener('click', function(e) {
+                if(e.target.closest('.remove-item')) {
+                    e.target.closest('.item-row').remove();
+                }
+            });
+        }
+
+        // Original Perspectiva Logic
+        document.getElementById('add-perspectiva').addEventListener('click', function() {
+            var container = document.getElementById('perspectivas-container');
+            var div = document.createElement('div');
+            div.className = 'input-group mb-2 perspectiva-item';
+            div.innerHTML = `
+                <input type="text" name="perspectivas[]" class="form-control" placeholder="Nueva perspectiva" required>
+                <div class="input-group-append">
+                    <button class="btn btn-outline-danger remove-perspectiva" type="button"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        document.getElementById('perspectivas-container').addEventListener('click', function(e) {
+            if(e.target.closest('.remove-perspectiva')) {
+                e.target.closest('.perspectiva-item').remove();
+            }
+        });
+
+        // New Lists Logic
+        createAdder('add-tipo', 'tipos-container', 'tipos_objetivo', 'Nuevo Tipo de Objetivo');
+        createAdder('add-area', 'areas-container', 'areas_responsables', 'Nueva Área Responsable');
+        createAdder('add-responsable', 'responsables-container', 'responsables', 'Nuevo Responsable');
+    });
+</script>
 {% endblock %}

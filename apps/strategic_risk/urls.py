@@ -29,8 +29,12 @@ urlpatterns = [
     path('ajax/save-mpc/', views.save_mpc, name='save_mpc'),
     path('ajax/save-philosophy/', views.save_philosophy, name='save_philosophy'),
     path('ajax/add-objective/', views.add_objective, name='add_objective'),
+    path('ajax/delete-objective/<int:pk>/', views.delete_objective, name='delete_objective'),
+    path('ajax/save-ponderaciones/', views.save_ponderaciones, name='save_ponderaciones'),
     path('ajax/add-kpi/', views.add_kpi, name='add_kpi'),
-    path('ajax/save-metas-planeadas/', BulkMetasPlaneadasView.as_view(), name='save_metas_planeadas'),
+    path('ajax/delete-kpi/<int:pk>/', views.delete_kpi, name='delete_kpi'),
+    path('ajax/delete-multiple-kpis/', views.delete_multiple_kpis, name='delete_multiple_kpis'),
+    path('ajax/save-metas-planeadas/', views.save_metas_planeadas, name='save_metas_planeadas'),
 ]
 
 # API Router Setup

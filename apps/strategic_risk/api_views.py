@@ -86,12 +86,28 @@ class BulkMetasPlaneadasView(APIView):
                 )
                 
                 obj_nombre = row.get('objetivo', 'Objetivo sin nombre')
+                tipo_obj = row.get('tipo', 'Estratégico')
+                area_resp = row.get('area', '')
+                responsable = row.get('responsable', '')
+                
                 objetivo, _ = ObjetivoEstrategico.objects.get_or_create(
                     organization=organization,
                     perspectiva=perspectiva,
                     nombre=obj_nombre,
-                    defaults={'codigo': f'OBJ-{ObjetivoEstrategico.objects.filter(organization=organization).count() + 1}'}
+                    defaults={
+                        'codigo': f'OBJ-{ObjetivoEstrategico.objects.filter(organization=organization).count() + 1}',
+                        'tipo_objetivo': tipo_obj,
+                        'area_responsable': area_resp,
+                        'responsable': responsable
+                    }
                 )
+                
+                # Update existing objective if fields changed
+                if not _:
+                    objetivo.tipo_objetivo = tipo_obj
+                    objetivo.area_responsable = area_resp
+                    objetivo.responsable = responsable
+                    objetivo.save()
                 
                 ind_nombre = row.get('indicador', 'Indicador')
                 linea_base = row.get('base', '0').replace('%', '').strip()
