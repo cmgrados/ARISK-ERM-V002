@@ -120,11 +120,27 @@
         document.getElementById('survey-title').textContent = title;
         document.getElementById('survey-desc').textContent = desc;
 
-        const savedData = localStorage.getItem('survey_data_' + surveyId);
+        const savedData = localStorage.getItem('survey_' + surveyId);
         const qContainer = document.getElementById('questions-container');
         
-        if (savedData && savedData !== '[]') {
-            const questions = JSON.parse(savedData);
+        if (savedData) {
+            const surveyDataObj = JSON.parse(savedData);
+            const questions = surveyDataObj.questions || [];
+            
+            if (surveyDataObj.title) document.getElementById('survey-title').textContent = surveyDataObj.title;
+            if (surveyDataObj.description) document.getElementById('survey-desc').textContent = surveyDataObj.description;
+            
+            if (questions.length === 0) {
+                qContainer.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle mb-2" style="font-size: 2rem;"></i><br>
+                        Esta encuesta aún no tiene preguntas publicadas.
+                    </div>
+                `;
+                document.getElementById('submit-card').classList.add('d-none');
+                return;
+            }
+
             let html = '';
             
             questions.forEach((q, index) => {
