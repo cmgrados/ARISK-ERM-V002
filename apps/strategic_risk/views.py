@@ -1003,7 +1003,7 @@ def get_kpi_metas(request, pk):
                 'linea_base': str(ind.linea_base) if ind.linea_base else '0.00',
                 'fecha_inicio': ind.fecha_inicio.strftime('%Y-%m-%d') if ind.fecha_inicio else '',
                 'fecha_fin': ind.fecha_fin.strftime('%Y-%m-%d') if ind.fecha_fin else '',
-                'frecuencia': ind.get_frecuencia_medicion_display(),
+                'frecuencia': ind.frecuencia_medicion,
                 'responsable': ind.responsable,
             },
             'metas': metas_list
@@ -1029,6 +1029,18 @@ def save_kpi_metas(request, pk):
             return JsonResponse({'status': 'error', 'message': 'No tiene permisos para modificar este indicador.'}, status=403)
             
         data = json.loads(request.body)
+        
+        # Update indicator fields
+        indicador_data = data.get('indicador_data', {})
+        if indicador_data:
+            if 'unidad_medida' in indicador_data: ind.unidad_medida = indicador_data['unidad_medida']
+            if 'linea_base' in indicador_data: ind.linea_base = indicador_data['linea_base'] or 0.00
+            if 'fecha_inicio' in indicador_data and indicador_data['fecha_inicio']: ind.fecha_inicio = indicador_data['fecha_inicio']
+            if 'fecha_fin' in indicador_data and indicador_data['fecha_fin']: ind.fecha_fin = indicador_data['fecha_fin']
+            if 'frecuencia' in indicador_data: ind.frecuencia_medicion = indicador_data['frecuencia']
+            if 'responsable' in indicador_data: ind.responsable = indicador_data['responsable']
+            ind.save()
+
         metas_data = data.get('metas', [])
         
         # Delete existing metas for this indicator to replace with new ones (or update them)

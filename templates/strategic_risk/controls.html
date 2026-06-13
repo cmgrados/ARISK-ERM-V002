@@ -499,21 +499,28 @@
                         </div>
                         <div class="row form-group mb-2">
                             <div class="col-md-2 text-right text-muted font-weight-bold">Unidad de medida</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-unidad" disabled></div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-unidad"></div>
                             <div class="col-md-2 text-right text-muted font-weight-bold">Línea Base</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-base" value="0.00" disabled></div>
+                            <div class="col-md-4"><input type="number" step="0.01" class="form-control form-control-sm" id="meta-info-base" value="0.00"></div>
                         </div>
                         <div class="row form-group mb-2">
                             <div class="col-md-2 text-right text-muted font-weight-bold">Fecha Inicio</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-inicio" disabled></div>
+                            <div class="col-md-4"><input type="date" class="form-control form-control-sm" id="meta-info-inicio"></div>
                             <div class="col-md-2 text-right text-muted font-weight-bold">Fecha Fin</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-fin" disabled></div>
+                            <div class="col-md-4"><input type="date" class="form-control form-control-sm" id="meta-info-fin"></div>
                         </div>
                         <div class="row form-group mb-0">
                             <div class="col-md-2 text-right text-muted font-weight-bold">Periodicidad</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-frecuencia" disabled></div>
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="meta-info-frecuencia">
+                                    <option value="MENSUAL">Mensual</option>
+                                    <option value="TRIMESTRAL">Trimestral</option>
+                                    <option value="SEMESTRAL">Semestral</option>
+                                    <option value="ANUAL">Anual</option>
+                                </select>
+                            </div>
                             <div class="col-md-2 text-right text-muted font-weight-bold">Área Responsable</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-responsable" disabled></div>
+                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-responsable"></div>
                         </div>
                     </div>
                 </div>
@@ -1391,13 +1398,25 @@
         // Filter out empty ones just in case
         let payload = currentMetas.filter(m => m.meta_programada !== null && m.meta_programada !== '');
         
+        let indicador_data = {
+            'unidad_medida': $('#meta-info-unidad').val(),
+            'linea_base': $('#meta-info-base').val(),
+            'fecha_inicio': $('#meta-info-inicio').val(),
+            'fecha_fin': $('#meta-info-fin').val(),
+            'frecuencia': $('#meta-info-frecuencia').val(),
+            'responsable': $('#meta-info-responsable').val()
+        };
+        
         fetch(`/estrategico/ajax/save-kpi-metas/${currentKpiId}/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token }}'
             },
-            body: JSON.stringify({ metas: payload })
+            body: JSON.stringify({ 
+                metas: payload,
+                indicador_data: indicador_data
+            })
         })
         .then(res => res.json())
         .then(data => {
