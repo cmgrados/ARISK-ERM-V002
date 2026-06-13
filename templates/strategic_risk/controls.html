@@ -1336,6 +1336,12 @@
         $('#table-metas-anuales tbody').html(html);
     }
 
+    $('#meta-info-inicio, #meta-info-fin').on('change', function() {
+        let start = $('#meta-info-inicio').val();
+        let end = $('#meta-info-fin').val();
+        renderMetasAnuales(start, end);
+    });
+
     function loadMetasParciales(year) {
         currentSelectedYear = year;
         
