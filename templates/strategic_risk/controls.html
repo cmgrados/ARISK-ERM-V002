@@ -1317,6 +1317,11 @@
         let startYear = startStr ? parseInt(startStr.split('-')[0]) : new Date().getFullYear();
         let endYear = endStr ? parseInt(endStr.split('-')[0]) : startYear + 2;
         
+        // Ensure at least 3 years are displayed for planning
+        if (endYear < startYear + 2) {
+            endYear = startYear + 2;
+        }
+        
         let html = '';
         for(let y = startYear; y <= endYear; y++) {
             let metaVal = currentMetas.find(m => m.periodo === String(y))?.meta_programada || '';
