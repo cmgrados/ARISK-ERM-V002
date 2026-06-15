@@ -2,6 +2,28 @@
 
 {% block title_header %}FASE ESTRATEGICA y Metas Planeadas{% endblock %}
 
+{% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap4.min.css">
+<style>
+    .metas-scroll-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    .metas-scroll-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .metas-scroll-container::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .metas-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
 
@@ -447,14 +469,418 @@
                 </div>
                 <!-- Indicadores Ingresados Content Removed -->
                 <div class="tab-pane fade" id="content-consulta" role="tabpanel">
-                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Consulta Metas.</div>
+                    <div class="card border-0 shadow-sm mt-3">
+                        <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="card-title text-primary mb-0"><i class="fas fa-search-chart mr-2"></i>Consulta General de Metas</h5>
+                            <div class="d-flex align-items-center">
+                                <label for="filter-perspectiva-metas" class="mr-2 mb-0 font-weight-bold text-muted" style="font-size: 0.85rem;">Perspectiva:</label>
+                                <select id="filter-perspectiva-metas" class="form-control form-control-sm" style="width: 250px;">
+                                    <option value="">Todas</option>
+                                    {% for p in perspectivas %}
+                                    <option value="{{ p.nombre }}">{{ p.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="tabla-consulta-metas" class="table table-bordered table-hover w-100" style="font-size: 0.85rem;">
+                                    <thead style="background-color: #f8fafc; color: #1e293b;">
+                                        <tr>
+                                            <th style="min-width: 150px;">Perspectiva</th>
+                                            <th style="min-width: 150px;">Tipo Objetivo</th>
+                                            <th style="min-width: 250px;">Objetivo</th>
+                                            <th style="min-width: 250px;">Indicador</th>
+                                            <th style="min-width: 150px;">Responsable</th>
+                                            <th class="text-center">Rango</th>
+                                            <th class="text-center">Unid.</th>
+                                            <th class="text-center">Tend.</th>
+                                            <th class="text-center">Perio.</th>
+                                            {% for mes in meses_nombres %}
+                                            <th class="text-center" style="min-width: 70px;">{{ mes }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for data in indicadores_data %}
+                                        <tr>
+                                            <td class="align-middle">{{ data.ind.objetivo.perspectiva.nombre }}</td>
+                                            <td class="align-middle">{{ data.ind.tipo_objetivo|default:data.ind.objetivo.tipo_objetivo }}</td>
+                                            <td class="align-middle">{{ data.ind.objetivo.nombre }}</td>
+                                            <td class="align-middle font-weight-bold" style="color: #005b9f;">{{ data.ind.nombre }}</td>
+                                            <td class="align-middle" style="font-size: 0.8rem;">{{ data.ind.responsable|default:"-" }}</td>
+                                            <td class="align-middle text-center">NO</td>
+                                            <td class="align-middle text-center">{{ data.ind.unidad_medida }}</td>
+                                            <td class="align-middle text-center">-</td>
+                                            <td class="align-middle text-center">{{ data.ind.frecuencia_medicion|make_list|first }}</td>
+                                            {% for meta in data.meses_data %}
+                                            <td class="align-middle text-center p-1" style="background-color: #f1f5f9;">
+                                                {% if meta %}
+                                                    <div style="font-size: 0.75rem; color: #0369a1; font-weight: 500;" title="Meta Programada">P: {{ meta.meta_programada|floatformat:2|default:"-" }}</div>
+                                                    <div style="border-top: 1px dashed #cbd5e1; margin: 2px 0;"></div>
+                                                    <div style="font-size: 0.75rem; color: #15803d; font-weight: 500;" title="Resultado Real">R: {{ meta.resultado_real|floatformat:2|default:"-" }}</div>
+                                                {% else %}
+                                                    <div class="text-muted" style="font-size: 0.75rem;">-</div>
+                                                {% endif %}
+                                            </td>
+                                            {% endfor %}
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="content-alineamiento" role="tabpanel">
-                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Alineamiento Visión.</div>
+                    <div class="alineamiento-container mt-4 mb-5">
+                        <h4 class="text-center font-weight-bold mb-5" style="color: #2c3e50; text-transform: uppercase; letter-spacing: 2px;">Alineamiento Estratégico Institucional</h4>
+
+                        <!-- Visión y Misión -->
+                        <div class="row mb-5 justify-content-center" style="gap: 1rem;">
+                            <div class="col-md-5 mb-4 mb-md-0">
+                                <div class="card border-0 h-100" style="background: linear-gradient(145deg, #ffffff, #f1f5f9); border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative;">
+                                    <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #007bff;"></div>
+                                    <div class="card-body p-4 text-center">
+                                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: rgba(0,123,255,0.1); color: #007bff; border-radius: 50%; font-size: 1.8rem;">
+                                            <i class="fas fa-eye"></i>
+                                        </div>
+                                        <h5 class="font-weight-bold mb-3 text-uppercase" style="color: #334155; letter-spacing: 1px;">Nuestra Visión</h5>
+                                        <p style="font-size: 0.95rem; line-height: 1.6; font-style: italic; color: #475569;">
+                                            {{ filosofia.vision|default:"La visión institucional aún no ha sido definida." }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <div class="card border-0 h-100" style="background: linear-gradient(145deg, #ffffff, #f1f5f9); border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative;">
+                                    <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #17a2b8;"></div>
+                                    <div class="card-body p-4 text-center">
+                                        <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: rgba(23,162,184,0.1); color: #17a2b8; border-radius: 50%; font-size: 1.8rem;">
+                                            <i class="fas fa-bullseye"></i>
+                                        </div>
+                                        <h5 class="font-weight-bold mb-3 text-uppercase" style="color: #334155; letter-spacing: 1px;">Nuestra Misión</h5>
+                                        <p style="font-size: 0.95rem; line-height: 1.6; font-style: italic; color: #475569;">
+                                            {{ filosofia.mission|default:"La misión institucional aún no ha sido definida." }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Flecha de alineamiento -->
+                        <div class="text-center mb-5">
+                            <i class="fas fa-chevron-down text-muted" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p class="text-muted font-weight-bold mt-2" style="letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">Objetivos que impulsan nuestra filosofía</p>
+                        </div>
+
+                        <!-- Objetivos Alineados -->
+                        <div class="row justify-content-center">
+                            <div class="col-md-10">
+                                <div class="card border-0 shadow-sm" style="border-radius: 15px; overflow: hidden;">
+                                    <div class="card-header bg-white border-bottom p-4">
+                                        <h5 class="m-0 font-weight-bold text-center" style="color: #495057;">Matriz de Objetivos Estratégicos</h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th class="border-0 font-weight-bold text-uppercase text-muted" style="width: 25%;">Perspectiva</th>
+                                                    <th class="border-0 font-weight-bold text-uppercase text-muted" style="width: 15%;">Código</th>
+                                                    <th class="border-0 font-weight-bold text-uppercase text-muted" style="width: 60%;">Objetivo Estratégico</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for perspectiva in perspectivas %}
+                                                    {% for objetivo in perspectiva.objetivos.all %}
+                                                    <tr>
+                                                        {% if forloop.first %}
+                                                            <td rowspan="{{ perspectiva.objetivos.count }}" class="align-middle font-weight-bold" style="border-right: 1px solid #e9ecef; background: #fdfdfe; color: {% if 'FINANCIERA' in perspectiva.nombre|upper %}#28a745{% elif 'CLIENTE' in perspectiva.nombre|upper or 'SOCIO' in perspectiva.nombre|upper %}#007bff{% elif 'PROCESO' in perspectiva.nombre|upper %}#fd7e14{% else %}#6f42c1{% endif %};">
+                                                                {{ perspectiva.nombre }}
+                                                            </td>
+                                                        {% endif %}
+                                                        <td class="align-middle">
+                                                            <span class="badge badge-light border" style="font-size: 0.8rem;">{{ objetivo.codigo }}</span>
+                                                        </td>
+                                                        <td class="align-middle" style="color: #334155;">
+                                                            {{ objetivo.descripcion }}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted font-italic py-4">
+                                                            No hay objetivos registrados para alinear con la visión.
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="content-mapa" role="tabpanel">
-                    <div class="alert alert-info border-0 shadow-sm"><i class="fas fa-info-circle mr-2"></i>Módulo en construcción: Mapa Estratégico.</div>
+                    <style>
+                        /* Botón Premium */
+                        .btn-premium {
+                            background: linear-gradient(135deg, #2563eb, #1e40af);
+                            color: white;
+                            font-weight: 700;
+                            letter-spacing: 1px;
+                            padding: 1rem 2.5rem;
+                            border-radius: 50px;
+                            border: none;
+                            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+                            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                            text-transform: uppercase;
+                            display: inline-flex;
+                            align-items: center;
+                            gap: 10px;
+                        }
+                        .btn-premium:hover {
+                            transform: translateY(-4px) scale(1.02);
+                            box-shadow: 0 15px 35px rgba(37, 99, 235, 0.6);
+                            color: white;
+                        }
+                        
+                        /* Animaciones */
+                        @keyframes pulse-glow {
+                            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+                            70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+                            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+                        }
+                        .pulse-btn {
+                            animation: pulse-glow 2s infinite;
+                        }
+                        
+                        @keyframes fade-in-up {
+                            0% { opacity: 0; transform: translateY(30px); }
+                            100% { opacity: 1; transform: translateY(0); }
+                        }
+                        .stagger-item {
+                            opacity: 0;
+                            animation: fade-in-up 0.8s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
+                        }
+                        
+                        /* Tarjetas de Objetivos Premium */
+                        .objective-card-premium {
+                            flex: 1 1 calc(33.333% - 1.5rem); 
+                            min-width: 240px; 
+                            max-width: 280px; 
+                            background: #ffffff;
+                            border: 1px solid rgba(0,0,0,0.05);
+                            border-radius: 12px; 
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+                            border-top: 4px solid var(--card-color);
+                            transition: all 0.3s ease; 
+                            cursor: default;
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        .objective-card-premium:hover {
+                            transform: translateY(-5px);
+                            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+                        }
+
+                        /* Container Perspectiva Premium */
+                        .perspective-row-premium {
+                            z-index: 1; 
+                            width: 100%; 
+                            max-width: 1100px; 
+                            display: flex; 
+                            align-items: stretch; 
+                            background: #ffffff; 
+                            border-radius: 20px; 
+                            box-shadow: 0 10px 40px rgba(0,0,0,0.06); 
+                            overflow: hidden; 
+                            border-left: 10px solid var(--card-color);
+                            position: relative;
+                        }
+                        
+                        /* Loader spinner */
+                        .map-loader {
+                            width: 60px;
+                            height: 60px;
+                            border: 5px solid rgba(37, 99, 235, 0.2);
+                            border-radius: 50%;
+                            border-top-color: #2563eb;
+                            animation: spin 1s ease-in-out infinite;
+                            margin: 0 auto;
+                        }
+                        @keyframes spin {
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
+
+                    <div class="strategic-map-container mt-4 mb-5" style="min-height: 500px;">
+                        
+                        <!-- Empty State / Generation Button -->
+                        <div id="mapa-empty-state" class="text-center d-flex flex-column justify-content-center align-items-center" style="height: 400px;">
+                            <div class="mb-4" style="color: #cbd5e1;">
+                                <i class="fas fa-project-diagram" style="font-size: 5rem;"></i>
+                            </div>
+                            <h3 class="font-weight-bold text-dark mb-3">Generación de Mapa Estratégico</h3>
+                            <p class="text-muted mb-4" style="max-width: 500px;">El Mapa Estratégico Institucional estructurará y ordenará visualmente los objetivos por perspectiva, permitiendo visualizar la estrategia corporativa integral.</p>
+                            <button class="btn-premium pulse-btn" onclick="generateStrategicMap()">
+                                <i class="fas fa-cogs"></i> Crear Mapa Estratégico
+                            </button>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div id="mapa-loading-state" class="text-center d-flex flex-column justify-content-center align-items-center" style="height: 400px; display: none !important;">
+                            <div class="map-loader mb-4"></div>
+                            <h5 class="font-weight-bold text-primary">Procesando Arquitectura Estratégica...</h5>
+                            <p class="text-muted small">Alineando objetivos y perspectivas institucionales.</p>
+                        </div>
+
+                        <!-- Actual Map (Hidden initially) -->
+                        <div id="mapa-content-state" style="display: none;">
+                            <div class="text-center mb-5">
+                                <h3 class="font-weight-bold mb-2 stagger-item" style="color: #1e293b; text-transform: uppercase; letter-spacing: 2px;">Mapa Estratégico Institucional</h3>
+                                <p class="text-muted stagger-item" style="animation-delay: 0.1s;">Visualización BSC (Balanced Scorecard)</p>
+                            </div>
+                            
+                            <!-- Misión y Visión integradas en el Mapa -->
+                            <div class="row justify-content-center mb-5 stagger-item" style="animation-delay: 0.15s; max-width: 1050px; margin: 0 auto; gap: 1rem;">
+                                <div class="col-md-5 mb-3 mb-md-0">
+                                    <div class="card border-0 h-100" style="background: linear-gradient(145deg, #ffffff, #f1f5f9); border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #17a2b8;"></div>
+                                        <div class="card-body p-4 text-center">
+                                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px; background: rgba(23,162,184,0.1); color: #17a2b8; border-radius: 50%; font-size: 1.5rem;">
+                                                <i class="fas fa-bullseye"></i>
+                                            </div>
+                                            <h6 class="font-weight-bold text-uppercase" style="color: #334155; letter-spacing: 1.5px;">Nuestra Misión</h6>
+                                            <p class="text-muted mb-0" style="font-size: 0.9rem; line-height: 1.6; font-style: italic;">
+                                                {{ filosofia.mission|default:"La misión institucional aún no ha sido definida." }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="card border-0 h-100" style="background: linear-gradient(145deg, #ffffff, #f1f5f9); border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; position: relative;">
+                                        <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #007bff;"></div>
+                                        <div class="card-body p-4 text-center">
+                                            <div class="d-inline-flex align-items-center justify-content-center mb-3" style="width: 50px; height: 50px; background: rgba(0,123,255,0.1); color: #007bff; border-radius: 50%; font-size: 1.5rem;">
+                                                <i class="fas fa-eye"></i>
+                                            </div>
+                                            <h6 class="font-weight-bold text-uppercase" style="color: #334155; letter-spacing: 1.5px;">Nuestra Visión</h6>
+                                            <p class="text-muted mb-0" style="font-size: 0.9rem; line-height: 1.6; font-style: italic;">
+                                                {{ filosofia.vision|default:"La visión institucional aún no ha sido definida." }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex flex-column align-items-center" style="gap: 3.5rem; position: relative;">
+                                <!-- Vertical connector line -->
+                                <div class="stagger-item" style="position: absolute; width: 8px; background: linear-gradient(to top, #e2e8f0, #f1f5f9); height: 90%; top: 5%; z-index: 0; border-radius: 4px; animation-delay: 0.2s;"></div>
+                                
+                                {% for perspectiva in perspectivas %}
+                                    {% with perspective_type=perspectiva.nombre|upper %}
+                                    <div class="perspective-row-premium stagger-item" style="--card-color: {% if 'FINANCIERA' in perspective_type %}#10b981{% elif 'CLIENTE' in perspective_type or 'SOCIO' in perspective_type %}#3b82f6{% elif 'PROCESO' in perspective_type %}#f59e0b{% else %}#8b5cf6{% endif %}; animation-delay: {% if 'FINANCIERA' in perspective_type %}0.3s{% elif 'CLIENTE' in perspective_type or 'SOCIO' in perspective_type %}0.5s{% elif 'PROCESO' in perspective_type %}0.7s{% else %}0.9s{% endif %};">
+                                        
+                                        <!-- Perspective Label -->
+                                        <div class="d-flex flex-column align-items-center justify-content-center p-4" style="width: 240px; background: #ffffff; border-right: 1px solid rgba(0,0,0,0.03); z-index: 2;">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background: linear-gradient(135deg, #ffffff, #f8f9fa); box-shadow: 0 8px 20px rgba(0,0,0,0.08); color: var(--card-color); font-size: 1.8rem; border: 2px solid rgba(0,0,0,0.02);">
+                                                <i class="fas {% if 'FINANCIERA' in perspective_type %}fa-chart-line{% elif 'CLIENTE' in perspective_type or 'SOCIO' in perspective_type %}fa-users{% elif 'PROCESO' in perspective_type %}fa-cogs{% else %}fa-lightbulb{% endif %}"></i>
+                                            </div>
+                                            <h5 class="m-0 text-center font-weight-bold" style="color: #334155; text-transform: uppercase; font-size: 0.95rem; letter-spacing: 1px;">
+                                                {{ perspectiva.nombre }}
+                                            </h5>
+                                        </div>
+
+                                        <!-- Objectives Container -->
+                                        <div class="d-flex flex-wrap align-items-center justify-content-center p-4 w-100" style="gap: 1.5rem; background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNlMmU4ZjAiIGZpbGwtb3BhY2l0eT0iMC40Ii8+PC9zdmc+') repeat; z-index: 2;">
+                                            {% for objetivo in perspectiva.objetivos.all %}
+                                                <div class="objective-card-premium text-center p-4" style="--card-color: {% if 'FINANCIERA' in perspective_type %}#10b981{% elif 'CLIENTE' in perspective_type or 'SOCIO' in perspective_type %}#3b82f6{% elif 'PROCESO' in perspective_type %}#f59e0b{% else %}#8b5cf6{% endif %};">
+                                                    <div class="mb-3">
+                                                        <span class="badge badge-pill shadow-sm" style="font-size: 0.75rem; font-weight: 700; background-color: var(--card-color); color: white; padding: 0.4rem 0.8rem;">
+                                                            <i class="fas fa-bullseye mr-1"></i>{{ objetivo.codigo }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.9rem; line-height: 1.6;">
+                                                        {{ objetivo.descripcion }}
+                                                    </p>
+                                                </div>
+                                            {% empty %}
+                                                <div class="text-muted text-center w-100 font-italic py-3" style="font-size: 0.9rem;">
+                                                    <i class="fas fa-info-circle mr-1 text-primary"></i>No se han establecido objetivos para esta perspectiva.
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endwith %}
+                                {% endfor %}
+                                
+                                {% if not perspectivas %}
+                                    <div class="alert alert-light border shadow-sm w-100 text-center stagger-item" style="max-width: 1050px; border-radius: 15px;">
+                                        <i class="fas fa-exclamation-circle text-warning mr-2" style="font-size: 1.5rem;"></i>
+                                        <span class="font-weight-bold">Aún no hay plan estratégico estructurado.</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
+
+                <script>
+                    const PLAN_ID = "{{ plan.id|default:'none' }}";
+                    const STORAGE_KEY = `mapa_estrategico_generado_${PLAN_ID}`;
+
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (PLAN_ID !== 'none' && localStorage.getItem(STORAGE_KEY) === 'true') {
+                            document.getElementById('mapa-empty-state').style.setProperty('display', 'none', 'important');
+                            document.getElementById('mapa-content-state').style.display = 'block';
+                        }
+                    });
+
+                    function generateStrategicMap() {
+                        const emptyState = document.getElementById('mapa-empty-state');
+                        const loadingState = document.getElementById('mapa-loading-state');
+                        const contentState = document.getElementById('mapa-content-state');
+                        
+                        // Hide empty state, show loading
+                        emptyState.style.setProperty('display', 'none', 'important');
+                        loadingState.style.setProperty('display', 'flex', 'important');
+                        
+                        // Simulate generation delay for UX
+                        setTimeout(() => {
+                            loadingState.style.setProperty('display', 'none', 'important');
+                            contentState.style.display = 'block';
+                            
+                            // Save to local storage
+                            if (PLAN_ID !== 'none') {
+                                localStorage.setItem(STORAGE_KEY, 'true');
+                            }
+                            
+                            // Retrigger animations
+                            const items = contentState.querySelectorAll('.stagger-item');
+                            items.forEach(item => {
+                                item.style.animation = 'none';
+                                item.offsetHeight; /* trigger reflow */
+                                item.style.animation = null; 
+                            });
+
+                            // Show success message
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: '¡Generado!',
+                                    text: 'El Mapa Estratégico se ha generado y guardado exitosamente.',
+                                    icon: 'success',
+                                    confirmButtonText: 'Aceptar',
+                                    confirmButtonColor: '#2563eb'
+                                });
+                            }
+                        }, 1800);
+                    }
+                </script>
 
             </div> <!-- End tab-content -->
         </div> <!-- End card-body -->
@@ -520,7 +946,25 @@
                                 </select>
                             </div>
                             <div class="col-md-2 text-right text-muted font-weight-bold">Área Responsable</div>
-                            <div class="col-md-4"><input type="text" class="form-control form-control-sm" id="meta-info-responsable"></div>
+                            <div class="col-md-4">
+                                <select class="form-control form-control-sm" id="meta-info-responsable">
+                                    <option value="">--Seleccione--</option>
+                                    {% if areas_responsables %}
+                                    <optgroup label="Áreas Responsables">
+                                        {% for area in areas_responsables %}
+                                        <option value="{{ area.nombre }}">{{ area.nombre }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    {% endif %}
+                                    {% if responsables %}
+                                    <optgroup label="Responsables (Cargos)">
+                                        {% for cargo in responsables %}
+                                        <option value="{{ cargo.nombre }}">{{ cargo.nombre }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                    {% endif %}
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -648,7 +1092,23 @@
                 <div class="row">
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold text-secondary">Responsable</label>
-                        <input type="text" class="form-control" id="ind-modal-responsable" placeholder="Ej. Gerente de Administración">
+                        <select class="form-control" id="ind-modal-responsable">
+                            <option value="">--Seleccione--</option>
+                            {% if areas_responsables %}
+                            <optgroup label="Áreas Responsables">
+                                {% for area in areas_responsables %}
+                                <option value="{{ area.nombre }}">{{ area.nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if responsables %}
+                            <optgroup label="Responsables (Cargos)">
+                                {% for cargo in responsables %}
+                                <option value="{{ cargo.nombre }}">{{ cargo.nombre }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
                     </div>
                     <div class="col-md-6 form-group">
                         <label class="font-weight-bold text-secondary">Medio de Verificación</label>
@@ -669,6 +1129,50 @@
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap4.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        if ($('#tabla-consulta-metas').length) {
+            $('#tabla-consulta-metas').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json"
+                },
+                "pageLength": 10,
+                "lengthMenu": [ [10, 25, 50, -1], [10, 25, 50, "Todos"] ],
+                "dom": "<'row'<'col-sm-12 col-md-4'l><'col-sm-12 col-md-4 text-center'B><'col-sm-12 col-md-4'f>>" +
+                       "<'row'<'col-sm-12'tr>>" +
+                       "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                "buttons": [
+                    { extend: 'copy', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'csv', className: 'btn btn-sm btn-outline-secondary' },
+                    { extend: 'excel', className: 'btn btn-sm btn-outline-success' },
+                    { extend: 'pdf', className: 'btn btn-sm btn-outline-danger' },
+                    { extend: 'print', className: 'btn btn-sm btn-outline-info' }
+                ],
+                "scrollX": true,
+                "autoWidth": false
+            });
+            
+            // Filtro por perspectiva
+            $('#filter-perspectiva-metas').on('change', function() {
+                var table = $('#tabla-consulta-metas').DataTable();
+                var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                table.column(0).search(val ? '^' + val + '$' : '', true, false).draw();
+            });
+        }
+    });
+</script>
+
 <script>
     function updateIndexes() {
         $('#metas-table tbody tr').each(function(index) {
@@ -1363,13 +1867,18 @@
                 <tr>
                     <td class="align-middle">${perName}</td>
                     <td class="align-middle">
-                        <input type="number" step="0.01" class="form-control form-control-sm meta-parcial-input" data-periodo="${perName}" value="${metaVal}" onchange="updateCurrentMeta('${perName}', this.value)">
+                        <input type="number" step="0.01" class="form-control form-control-sm meta-parcial-input" data-periodo="${perName}" value="${metaVal}">
                     </td>
                 </tr>
             `;
         }
         $('#table-metas-parciales tbody').html(html);
     }
+
+    $(document).on('change', '.meta-parcial-input', function() {
+        let periodo = $(this).data('periodo');
+        updateCurrentMeta(periodo, $(this).val());
+    });
 
     function updateCurrentMeta(periodo, val) {
         let exist = currentMetas.find(m => m.periodo === periodo);

@@ -22,6 +22,7 @@ urlpatterns = [
     path('graficos/set-active/<int:pk>/', views.set_active_plan, name='set_active_plan'),
     path('reportes/', views.reports, name='reports'),
     path('exportar/bsc/', views.export_bsc_excel, name='export_bsc_excel'),
+    path('public_survey/<str:survey_id>/', views.public_survey, name='public_survey'),
     
     # AJAX Endpoints
     path('ajax/save-matrix/', views.save_matrix, name='save_matrix'),

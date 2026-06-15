@@ -578,17 +578,66 @@ def controls(request):
     metas_matrix = StrategicMatrix.objects.filter(plan=plan, matrix_type='METAS').first() if plan else None
     
     objetivos_ingresados = ObjetivoEstrategico.objects.filter(perspectiva__plan=plan) if plan else []
-    indicadores_ingresados = Indicador.objects.filter(objetivo__perspectiva__plan=plan) if plan else []
+    indicadores_ingresados = Indicador.objects.filter(objetivo__perspectiva__plan=plan).prefetch_related('metas_periodo') if plan else []
     
+    selected_year = plan.start_year if plan else 2026
+    meses_nombres = [
+        f"Enero {selected_year}", f"Febrero {selected_year}", f"Marzo {selected_year}", f"Abril {selected_year}", 
+        f"Mayo {selected_year}", f"Junio {selected_year}", f"Julio {selected_year}", f"Agosto {selected_year}", 
+        f"Septiembre {selected_year}", f"Octubre {selected_year}", f"Noviembre {selected_year}", f"Diciembre {selected_year}"
+    ]
+    indicadores_data = []
+    for ind in indicadores_ingresados:
+        # Match 'Enero 2026' or 'Enero-2026'
+        metas_dict = {}
+        for m in ind.metas_periodo.all():
+            periodo_clean = m.periodo.replace('-', ' ').strip()
+            metas_dict[periodo_clean] = m
+            
+        meses_data = []
+        for mes in meses_nombres:
+            meses_data.append(metas_dict.get(mes, None))
+        
+        indicadores_data.append({
+            'ind': ind,
+            'meses_data': meses_data
+        })
+        
+    def sort_perspectiva(item):
+        nombre = item['ind'].objetivo.perspectiva.nombre.upper()
+        if 'FINANCIERA' in nombre: return 1
+        elif 'CLIENTE' in nombre or 'SOCIO' in nombre: return 2
+        elif 'PROCESO' in nombre: return 3
+        elif 'CRECIMIENTO' in nombre or 'APRENDIZAJE' in nombre: return 4
+        return 5
+        
+    indicadores_data.sort(key=sort_perspectiva)
+
+    perspectivas_list = list(plan.perspectivas.all()) if plan else []
+    def sort_perspectiva_obj(p):
+        nombre = p.nombre.upper()
+        if 'FINANCIERA' in nombre: return 1
+        elif 'CLIENTE' in nombre or 'SOCIO' in nombre: return 2
+        elif 'PROCESO' in nombre: return 3
+        elif 'CRECIMIENTO' in nombre or 'APRENDIZAJE' in nombre: return 4
+        return 5
+    perspectivas_list.sort(key=sort_perspectiva_obj)
+
+    from .models import CorporatePhilosophy
+    filosofia = CorporatePhilosophy.objects.filter(plan=plan).first() if plan else None
+
     context = {
         'page_title': 'Planificación Estratégica - FASE ESTRATEGICA',
         'plan': plan,
-        'perspectivas': plan.perspectivas.all() if plan else [],
+        'filosofia': filosofia,
+        'perspectivas': perspectivas_list,
         'tipos_objetivo': plan.tipos_objetivo.all() if plan else [],
         'areas_responsables': plan.areas_responsables.all() if plan else [],
         'responsables': plan.responsables.all() if plan else [],
         'objetivos_ingresados': objetivos_ingresados,
         'indicadores_ingresados': indicadores_ingresados,
+        'indicadores_data': indicadores_data,
+        'meses_nombres': meses_nombres,
     }
     return render(request, 'strategic_risk/controls.html', context)
 
@@ -1069,10 +1118,14 @@ def save_kpi_metas(request, pk):
                 }
             )
             
-        # Optional: remove metas that are no longer in the payload?
-        # Let's just keep them or delete ones not in payload
-        # MetaPeriodo.objects.filter(indicador=ind).exclude(periodo__in=new_periodos).delete()
+        # Remove metas that are no longer in the payload
+        MetaPeriodo.objects.filter(indicador=ind).exclude(periodo__in=new_periodos).delete()
         
         return JsonResponse({'status': 'success', 'message': 'Metas guardadas correctamente.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def public_survey(request, survey_id):
+    return render(request, 'strategic_risk/public_survey.html', {'survey_id': survey_id})
+
