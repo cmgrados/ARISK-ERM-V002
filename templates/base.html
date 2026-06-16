@@ -689,23 +689,40 @@
                   </li>
                 </ul>
               </li>
-              <li class="nav-item">
-                <a href="{% url 'strategic_risk:controls' %}" class="nav-link {% if request.resolver_match.url_name == 'controls' %}active{% endif %}">
-                  <i class="nav-icon fas fa-balance-scale text-warning"></i>
-                  <p>FASE ESTRATEGICA</p>
+              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'controls estrategias' %}menu-open{% endif %}">
+                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'controls estrategias' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
+                  <i class="nav-icon fas fa-chess text-warning"></i>
+                  <p>
+                    FASE ESTRATEGICA
+                    <i class="right fas fa-angle-left"></i>
+                  </p>
                 </a>
+                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'controls estrategias' %}block{% else %}none{% endif %};">
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:controls' %}" class="nav-link {% if request.resolver_match.url_name == 'controls' %}active{% endif %}">
+                      <i class="fas fa-sitemap nav-icon small"></i>
+                      <p>Mapa Estratégico</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:estrategias' %}" class="nav-link {% if request.resolver_match.url_name == 'estrategias' %}active{% endif %}">
+                      <i class="fas fa-lightbulb nav-icon small"></i>
+                      <p>Estrategias</p>
+                    </a>
+                  </li>
+                </ul>
               </li>
-              <li class="nav-item has-treeview">
-                <a href="#" class="nav-link" style="background-color: rgba(255,255,255,0.1);">
+              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'elaboracion_poa' %}menu-open{% endif %}">
+                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'elaboracion_poa' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
                   <i class="nav-icon fas fa-cogs text-info"></i>
                   <p>
                     FASE OPERATIVA
                     <i class="right fas fa-angle-left"></i>
                   </p>
                 </a>
-                <ul class="nav nav-treeview pl-3" style="display: none;">
+                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'elaboracion_poa' %}block{% else %}none{% endif %};">
                   <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="{% url 'strategic_risk:elaboracion_poa' %}" class="nav-link {% if request.resolver_match.url_name == 'elaboracion_poa' %}active{% endif %}">
                       <i class="fas fa-project-diagram nav-icon small"></i>
                       <p>Elaboración POA / Proyectos</p>
                     </a>

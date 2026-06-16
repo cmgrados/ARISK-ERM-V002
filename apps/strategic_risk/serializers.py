@@ -34,7 +34,25 @@ class PerspectivaSerializer(serializers.ModelSerializer):
         model = Perspectiva
         fields = ['id', 'nombre', 'descripcion', 'peso_porcentual', 'objetivos']
 
-from .models import ProyectoIniciativa, EjecucionPresupuestaria, HitoProyecto
+from .models import ProyectoIniciativa, EjecucionPresupuestaria, HitoProyecto, PortafolioPOA, ActividadPOA
+
+class ActividadPOASerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ActividadPOA
+        fields = '__all__'
+        read_only_fields = ['organization']
+
+class PortafolioPOASerializer(serializers.ModelSerializer):
+    actividades = ActividadPOASerializer(many=True, read_only=True)
+    estrategia_desc = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PortafolioPOA
+        fields = '__all__'
+        read_only_fields = ['organization']
+
+    def get_estrategia_desc(self, obj):
+        return obj.estrategia.descripcion if obj.estrategia else None
 
 class EjecucionPresupuestariaSerializer(serializers.ModelSerializer):
     class Meta:

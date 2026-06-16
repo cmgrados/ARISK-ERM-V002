@@ -1,0 +1,1220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-header pb-1">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark font-weight-bold"><i class="fas fa-lightbulb text-warning mr-2"></i>Estrategias</h1>
+                <p class="text-muted mb-0 font-italic">Gestión y Definición de Estrategias y Portafolios</p>
+            </div>
+            <div class="col-sm-6 text-right">
+                {% if plan %}
+                <span class="badge badge-success px-3 py-2 text-uppercase" style="font-size: 0.9rem; border-radius: 20px;">
+                    <i class="fas fa-calendar-check mr-1"></i> Plan Activo: {{ plan.name }}
+                </span>
+                {% else %}
+                <span class="badge badge-danger px-3 py-2 text-uppercase" style="font-size: 0.9rem; border-radius: 20px;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Sin Plan Activo
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content mt-3">
+    <div class="container-fluid">
+        {% if not plan %}
+        <div class="alert alert-warning shadow-sm border-left-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i> <strong>Atención:</strong> No hay un plan estratégico seleccionado. Por favor, seleccione o cree uno en el <a href="{% url 'strategic_risk:dashboard' %}" class="text-primary font-weight-bold">Dashboard</a>.
+        </div>
+        {% else %}
+        
+        <div class="card card-primary card-outline shadow-sm rounded-lg border-0">
+            <div class="card-header p-0 border-bottom-0">
+                <ul class="nav nav-tabs" id="estrategias-tabs" role="tablist" style="background-color: #f8f9fa; border-top-left-radius: .25rem; border-top-right-radius: .25rem;">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold px-4 py-3" id="tab-cruce" data-toggle="pill" href="#content-cruce" role="tab">
+                            <i class="fas fa-compress-arrows-alt text-primary mr-1"></i> Cruce de Variables
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold px-4 py-3" id="tab-estrategias" data-toggle="pill" href="#content-estrategias" role="tab">
+                            <i class="fas fa-chess-knight text-success mr-1"></i> Estrategias
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold px-4 py-3" id="tab-portafolio" data-toggle="pill" href="#content-portafolio" role="tab">
+                            <i class="fas fa-briefcase text-info mr-1"></i> Portafolio de POA/Proyectos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold px-4 py-3" id="tab-resumen" data-toggle="pill" href="#content-resumen" role="tab">
+                            <i class="fas fa-list-alt text-warning mr-1"></i> Resumen de Estrategias
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold px-4 py-3" id="tab-consulta" data-toggle="pill" href="#content-consulta" role="tab">
+                            <i class="fas fa-search text-secondary mr-1"></i> Consulta de Estrategias
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4" style="background-color: #ffffff;">
+                <div class="tab-content" id="estrategias-tabs-content">
+                    
+                    <!-- CRUCE DE VARIABLES -->
+                    <div class="tab-pane fade show active" id="content-cruce" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-primary font-weight-bold mb-0"><i class="fas fa-compress-arrows-alt mr-2"></i>Estrategias - MATRIZ FODA CRUZADO</h4>
+                            <div>
+                                <div class="dropdown d-inline-block mr-2">
+                                    <button class="btn btn-outline-secondary dropdown-toggle font-weight-bold shadow-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-download mr-1"></i> Exportar
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-cruce', 'excel', 'FODA_Cruzado')"><i class="fas fa-file-excel text-success mr-2"></i> Excel</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-cruce', 'pdf', 'FODA_Cruzado')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-cruce', 'word', 'FODA_Cruzado')"><i class="fas fa-file-word text-primary mr-2"></i> Word</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-cruce', 'image', 'FODA_Cruzado')"><i class="fas fa-image text-info mr-2"></i> Imagen</a>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline-primary bg-light shadow-sm font-weight-bold mr-2" onclick="autogenerateStrategies()"><i class="fas fa-robot mr-1"></i> Autogenerar (IA)</button>
+                                <button class="btn btn-primary shadow-sm font-weight-bold" onclick="saveFODA()"><i class="fas fa-save mr-1"></i> Guardar Estrategias</button>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive shadow-sm rounded-lg border border-light">
+                            <table class="table table-bordered mb-0 bg-white" style="table-layout: fixed;">
+                                <tbody>
+                                    <!-- Fila 1 -->
+                                    <tr>
+                                        <td class="bg-light align-middle text-center w-25">
+                                            <h5 class="text-indigo font-weight-bold mb-0">Factores Internos &rarr;<br><small>&darr; Factores Externos</small></h5>
+                                        </td>
+                                        <td class="w-25 border-success border-top-0 border-bottom-0" style="background-color: #f0fdf4;">
+                                            <h6 class="text-success font-weight-bold text-center"><i class="fas fa-arrow-up mr-1"></i> FORTALEZAS (F)</h6>
+                                            <div id="foda-list-F" class="small text-muted p-1"></div>
+                                        </td>
+                                        <td class="w-25 border-danger border-top-0 border-bottom-0" style="background-color: #fef2f2;">
+                                            <h6 class="text-danger font-weight-bold text-center"><i class="fas fa-arrow-down mr-1"></i> DEBILIDADES (D)</h6>
+                                            <div id="foda-list-D" class="small text-muted p-1"></div>
+                                        </td>
+                                    </tr>
+                                    <!-- Fila 2 -->
+                                    <tr>
+                                        <td class="border-info border-left-0 border-right-0" style="background-color: #eff6ff;">
+                                            <h6 class="text-info font-weight-bold text-center"><i class="fas fa-star mr-1"></i> OPORTUNIDADES (O)</h6>
+                                            <div id="foda-list-O" class="small text-muted p-1"></div>
+                                        </td>
+                                        <td class="bg-light">
+                                            <h6 class="text-secondary font-weight-bold text-center">Estrategias OFENSIVAS (F-O)</h6>
+                                            <textarea class="form-control border-0 bg-transparent text-sm" id="foda-fo" rows="6" placeholder="Utilizar fortalezas para aprovechar oportunidades..."></textarea>
+                                        </td>
+                                        <td class="bg-light">
+                                            <h6 class="text-secondary font-weight-bold text-center">Estrategias REORIENTACI&Oacute;N (D-O)</h6>
+                                            <textarea class="form-control border-0 bg-transparent text-sm" id="foda-do" rows="6" placeholder="Superar debilidades aprovechando oportunidades..."></textarea>
+                                        </td>
+                                    </tr>
+                                    <!-- Fila 3 -->
+                                    <tr>
+                                        <td class="border-warning border-left-0 border-right-0" style="background-color: #fffbeb;">
+                                            <h6 class="text-warning font-weight-bold text-center"><i class="fas fa-exclamation-triangle mr-1"></i> AMENAZAS (A)</h6>
+                                            <div id="foda-list-A" class="small text-muted p-1"></div>
+                                        </td>
+                                        <td class="bg-light">
+                                            <h6 class="text-secondary font-weight-bold text-center">Estrategias DEFENSIVAS (F-A)</h6>
+                                            <textarea class="form-control border-0 bg-transparent text-sm" id="foda-fa" rows="6" placeholder="Utilizar fortalezas para evitar o reducir el impacto de las amenazas..."></textarea>
+                                        </td>
+                                        <td class="bg-light">
+                                            <h6 class="text-secondary font-weight-bold text-center">Estrategias SUPERVIVENCIA (D-A)</h6>
+                                            <textarea class="form-control border-0 bg-transparent text-sm" id="foda-da" rows="6" placeholder="Reducir debilidades para evitar el impacto de las amenazas..."></textarea>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ESTRATEGIAS -->
+                    <div class="tab-pane fade" id="content-estrategias" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="text-success font-weight-bold mb-0"><i class="fas fa-chess-knight mr-2"></i>Definición de Estrategias</h4>
+                            <div>
+                                <div class="dropdown d-inline-block mr-2">
+                                    <button class="btn btn-outline-secondary dropdown-toggle font-weight-bold shadow-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-download mr-1"></i> Exportar
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-estrategias', 'excel', 'Estrategias_Detalle')"><i class="fas fa-file-excel text-success mr-2"></i> Excel</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-estrategias', 'pdf', 'Estrategias_Detalle')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-estrategias', 'word', 'Estrategias_Detalle')"><i class="fas fa-file-word text-primary mr-2"></i> Word</a>
+                                        <a class="dropdown-item" href="#" onclick="exportSection('content-estrategias', 'image', 'Estrategias_Detalle')"><i class="fas fa-image text-info mr-2"></i> Imagen</a>
+                                    </div>
+                                </div>
+                                <button class="btn btn-success shadow-sm font-weight-bold" onclick="addEmptyEstrategia()"><i class="fas fa-plus mr-1"></i> Nueva Estrategia</button>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i> Módulo para registrar y detallar las estrategias específicas seleccionadas. Copia las estrategias desde el FODA Cruzado y asígnales una perspectiva del Balanced Scorecard.
+                        </div>
+                        
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white border-bottom">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0 text-dark font-weight-bold"><i class="fas fa-list-ul mr-2 text-primary"></i>Listado de Estrategias</h5>
+                                    <div>
+                                        <button class="btn btn-outline-primary btn-sm font-weight-bold shadow-sm mr-2" onclick="importFromFoda()">
+                                            <i class="fas fa-file-import mr-1"></i> Importar del FODA Cruzado
+                                        </button>
+                                        <button class="btn btn-primary btn-sm font-weight-bold shadow-sm" onclick="saveEstrategias()">
+                                            <i class="fas fa-save mr-1"></i> Guardar Todo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0" id="estrategiasTable">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th width="15%">Tipo</th>
+                                                <th width="45%">Descripción de la Estrategia</th>
+                                                <th width="30%">Objetivo Estratégico</th>
+                                                <th width="10%" class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="estrategias-tbody">
+                                            <!-- Strategies will be dynamically injected here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PORTAFOLIO DE POA/PROYECTOS -->
+                    <div class="tab-pane fade" id="content-portafolio" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="text-info font-weight-bold mb-0"><i class="fas fa-briefcase mr-2"></i>Portafolio de POA/Proyectos</h4>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary dropdown-toggle font-weight-bold shadow-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-portafolio', 'excel', 'Portafolio_POA')"><i class="fas fa-file-excel text-success mr-2"></i> Excel</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-portafolio', 'pdf', 'Portafolio_POA')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-portafolio', 'word', 'Portafolio_POA')"><i class="fas fa-file-word text-primary mr-2"></i> Word</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-portafolio', 'image', 'Portafolio_POA')"><i class="fas fa-image text-info mr-2"></i> Imagen</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4 d-flex align-items-center">
+                                <label for="poaYearFilter" class="mr-3 mb-0 font-weight-bold">Año</label>
+                                <select id="poaYearFilter" class="form-control form-control-sm w-auto shadow-sm" onchange="loadPOA()">
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-light border-bottom p-2 d-flex align-items-center" style="background-color: #e9ecef !important;">
+                                <button class="btn btn-sm btn-link text-success p-0 ml-2" onclick="openPOAModal()" title="Agregar Proyecto">
+                                    <i class="fas fa-file-medical fa-lg" style="font-size: 1.5rem;"></i>
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered mb-0" id="poaTable" style="background-color: #f4f8fb;">
+                                        <thead style="background-color: #dce5f0; color: #495057;">
+                                            <tr>
+                                                <th width="5%" class="text-center">Nro.</th>
+                                                <th width="20%">Nombre Proyecto</th>
+                                                <th width="25%">Descripción</th>
+                                                <th width="15%">Líder de Proyecto</th>
+                                                <th width="15%">Estrategia</th>
+                                                <th width="10%">Presupuesto</th>
+                                                <th width="10%" class="text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="poa-tbody" class="bg-white">
+                                            <tr>
+                                                <td colspan="7" class="text-center text-muted p-4">
+                                                    No hay registros disponibles
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RESUMEN DE ESTRATEGIAS -->
+                    <div class="tab-pane fade" id="content-resumen" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="text-warning font-weight-bold mb-0"><i class="fas fa-list-alt mr-2"></i>Resumen de Estrategias</h4>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary dropdown-toggle font-weight-bold shadow-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-resumen', 'excel', 'Resumen_Estrategias')"><i class="fas fa-file-excel text-success mr-2"></i> Excel</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-resumen', 'pdf', 'Resumen_Estrategias')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-resumen', 'word', 'Resumen_Estrategias')"><i class="fas fa-file-word text-primary mr-2"></i> Word</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-resumen', 'image', 'Resumen_Estrategias')"><i class="fas fa-image text-info mr-2"></i> Imagen</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i> Vista resumida de todas las estrategias planteadas.
+                        </div>
+                        
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered mb-0" id="resumenEstrategiasTable">
+                                        <thead style="background-color: #dce5f0; color: #495057;">
+                                            <tr>
+                                                <th width="15%">Perspectiva</th>
+                                                <th width="20%">Objetivo Estratégico</th>
+                                                <th width="20%">Tipo de Estrategia</th>
+                                                <th width="35%">Estrategia</th>
+                                                <th width="10%">Combinación</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="resumen-estrategias-tbody" class="bg-white">
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted p-4">No hay estrategias registradas.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- CONSULTA DE ESTRATEGIAS -->
+                    <div class="tab-pane fade" id="content-consulta" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="text-secondary font-weight-bold mb-0"><i class="fas fa-search mr-2"></i>Consulta de Estrategias</h4>
+                            <div class="dropdown d-inline-block">
+                                <button class="btn btn-outline-secondary dropdown-toggle font-weight-bold shadow-sm" type="button" data-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-consulta', 'excel', 'Consulta_Estrategias')"><i class="fas fa-file-excel text-success mr-2"></i> Excel</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-consulta', 'pdf', 'Consulta_Estrategias')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-consulta', 'word', 'Consulta_Estrategias')"><i class="fas fa-file-word text-primary mr-2"></i> Word</a>
+                                    <a class="dropdown-item" href="#" onclick="exportSection('content-consulta', 'image', 'Consulta_Estrategias')"><i class="fas fa-image text-info mr-2"></i> Imagen</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i> Motor de búsqueda y filtrado de estrategias por áreas, impacto, etc.
+                        </div>
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-bordered mb-0" id="consultaEstrategiasTable" style="background-color: #f4f8fb;">
+                                        <thead style="background-color: #dce5f0; color: #495057;">
+                                            <tr>
+                                                <th width="15%">Perspectiva</th>
+                                                <th width="30%">Objetivo Estratégico</th>
+                                                <th width="15%">Tipo de Estrategia</th>
+                                                <th width="30%">Estrategia</th>
+                                                <th width="10%">Combinación</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="consulta-estrategias-tbody" class="bg-white">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted p-4">Cargando...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- POA Modal -->
+    <div class="modal fade" id="poaModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title font-weight-bold text-primary"><i class="fas fa-save mr-2"></i>Guardar Portafolio</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body bg-white">
+                    <input type="hidden" id="poaId">
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Año</label>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-control" id="poaAnio">
+                                {% for year in plan.years_range %}
+                                <option value="{{ year|stringformat:"d" }}">{{ year|stringformat:"d" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Presupuesto</label>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text font-weight-bold">S/</span>
+                                </div>
+                                <input type="number" class="form-control" id="poaPresupuesto" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Nombre Proyecto</label>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text" class="form-control" id="poaNombre">
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Descripción</label>
+                        </div>
+                        <div class="col-md-10">
+                            <textarea class="form-control" id="poaDescripcion" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Estrategia</label>
+                        </div>
+                        <div class="col-md-10">
+                            <select class="form-control" id="poaEstrategia" onchange="updateEstrategiaInfo()">
+                                <option value="">--Seleccione un ítem del listado--</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Tipo Estrategia</label>
+                        </div>
+                        <div class="col-md-10">
+                            <input type="text" class="form-control bg-light text-muted" id="poaTipoEstrategia" readonly>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Objetivo</label>
+                        </div>
+                        <div class="col-md-10">
+                            <table class="table table-bordered mb-0 shadow-sm" style="font-size: 0.9rem;">
+                                <thead style="background-color: #dce5f0;">
+                                    <tr>
+                                        <th>Perspectiva</th>
+                                        <th>Objetivo Estratégico</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td id="poaObjPerspectiva" class="bg-white"></td>
+                                        <td id="poaObjNombre" class="bg-white"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="row form-group">
+                        <div class="col-md-2 text-right">
+                            <label class="col-form-label font-weight-bold">Líder</label>
+                        </div>
+                        <div class="col-md-10">
+                            <select class="form-control" id="poaLider">
+                                <option value="">--Seleccione un ítem del listado--</option>
+                                {% for r in responsables_list %}
+                                <option value="{{ r.nombre }}">{{ r.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary shadow-sm" data-dismiss="modal"><i class="fas fa-times mr-1"></i> Cancelar</button>
+                    <button type="button" class="btn btn-primary shadow-sm" onclick="savePOA()"><i class="fas fa-save mr-1"></i> Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const fodaData = JSON.parse('{{ foda_data|escapejs }}' || '{}');
+
+    // Muestra alertas dinámicas
+    function showSuccess(msg) {
+        Swal.fire({icon: 'success', title: '¡Guardado!', text: msg, confirmButtonColor: '#10b981'});
+    }
+    function showError(msg) {
+        Swal.fire({icon: 'error', title: 'Error', text: msg, confirmButtonColor: '#ef4444'});
+    }
+
+    // Lógica para enviar datos al servidor
+    function postData(data, successMsg, customUrl = null) {
+        Swal.fire({
+            title: 'Guardando...',
+            text: 'Procesando información.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        const payload = {
+            plan_id: '{{ plan.id }}',
+            ...data
+        };
+
+        const targetUrl = customUrl || "{% url 'strategic_risk:save_matrix' %}";
+
+        fetch(targetUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showSuccess(successMsg);
+            } else {
+                showError(data.message);
+            }
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            showError('Hubo un problema al procesar la solicitud.');
+        });
+    }
+
+    let fodaDataList = {
+        F: Array.isArray(fodaData.F) ? fodaData.F : (fodaData.F ? [fodaData.F] : []),
+        D: Array.isArray(fodaData.D) ? fodaData.D : (fodaData.D ? [fodaData.D] : []),
+        O: Array.isArray(fodaData.O) ? fodaData.O : (fodaData.O ? [fodaData.O] : []),
+        A: Array.isArray(fodaData.A) ? fodaData.A : (fodaData.A ? [fodaData.A] : [])
+    };
+
+    function renderFodaLists() {
+        ['F', 'D', 'O', 'A'].forEach(type => {
+            const listDiv = $(`#foda-list-${type}`);
+            listDiv.empty();
+            fodaDataList[type].forEach((item, idx) => {
+                if(item && item.trim() !== '') {
+                    listDiv.append(`<div class="mb-1 text-left"><strong class="mr-1">${type}${idx+1}.</strong> ${item}</div>`);
+                }
+            });
+        });
+    }
+
+    $(document).ready(function() {
+        if (fodaData.FO) $('#foda-fo').val(fodaData.FO);
+        if (fodaData.DO) $('#foda-do').val(fodaData.DO);
+        if (fodaData.FA) $('#foda-fa').val(fodaData.FA);
+        if (fodaData.DA) $('#foda-da').val(fodaData.DA);
+
+        renderFodaLists();
+    });
+
+    function saveFODA() {
+        const data = {
+            matrix_type: 'FODA',
+            data: {
+                F: fodaDataList.F,
+                D: fodaDataList.D,
+                O: fodaDataList.O,
+                A: fodaDataList.A,
+                FO: $('#foda-fo').val(),
+                DO: $('#foda-do').val(),
+                FA: $('#foda-fa').val(),
+                DA: $('#foda-da').val()
+            }
+        };
+        postData(data, 'Estrategias guardadas con éxito.');
+    }
+
+    function autogenerateStrategies() {
+        Swal.fire({
+            title: 'IA Autogenerando...',
+            text: 'Analizando factores y generando estrategias...',
+            icon: 'info',
+            timer: 2000,
+            showConfirmButton: false
+        }).then(() => {
+            const foStr = "1. Lanzar campañas de captación de socios de FF.AA. destacando la solidez de 50 años.\n" +
+                          "2. Desarrollar nuevos créditos de consumo e hipotecarios aprovechando el contexto económico.\n" +
+                          "3. Ampliar el portafolio de servicios no financieros mediante convenios institucionales clave.\n" +
+                          "4. Diseñar cuentas de ahorro infantil y familiar para fidelizar al entorno de la base social.\n" +
+                          "5. Iniciar un programa de educación financiera integral para fomentar el ahorro en nuevos socios.\n" +
+                          "6. Aprovechar la inclusión financiera para abrir puntos de contacto en zonas estratégicas.\n" +
+                          "7. Promover una campaña de imagen institucional basada en la confianza y el modelo cooperativo.\n" +
+                          "8. Desarrollar líneas de crédito digital rápido enfocadas en el segmento militar y público.";
+
+            const doStr = "1. Impulsar la transformación digital de canales de atención para reducir costos logísticos.\n" +
+                          "2. Diversificar la base de socios hacia segmentos civiles y mypes aprovechando el crecimiento.\n" +
+                          "3. Modernizar los sistemas de TI mediante alianzas tecnológicas para mejorar la eficiencia.\n" +
+                          "4. Diseñar nuevos productos de captación atractivos para mitigar la sensibilidad de liquidez.\n" +
+                          "5. Implementar programas de agilización de procesos para acelerar la toma de decisiones.\n" +
+                          "6. Expandir la presencia digital (app, web) para superar la concentración geográfica.\n" +
+                          "7. Crear un área de innovación enfocada en la rápida adaptación a nuevas exigencias SBS.\n" +
+                          "8. Ejecutar un plan de diversificación crediticia para reducir el riesgo por perfil ocupacional.";
+
+            const faStr = "1. Utilizar la solidez patrimonial (Nivel 2) como argumento comercial ante la fuerte competencia.\n" +
+                          "2. Implementar campañas de retención para proteger los depósitos ante ofertas de mayores tasas.\n" +
+                          "3. Reforzar las políticas de evaluación crediticia y cobranzas para mitigar el riesgo de mora.\n" +
+                          "4. Respaldarse en la trayectoria de 50 años para brindar seguridad ante incertidumbre política.\n" +
+                          "5. Optimizar costos administrativos para poder absorber los incrementos regulatorios de la SBS.\n" +
+                          "6. Fortalecer el servicio personalizado y convenios como escudo frente a bancos digitalizados.\n" +
+                          "7. Desarrollar una estrategia de comunicación transparente para mejorar la percepción pública.\n" +
+                          "8. Diseñar productos financieros anticrisis que ofrezcan tasas fijas seguras ante shocks económicos.";
+
+            const daStr = "1. Acelerar urgentemente la implementación de canales digitales para evitar fuga de socios jóvenes.\n" +
+                          "2. Evaluar alianzas o integraciones para consolidar posición y diluir costos de cumplimiento SBS.\n" +
+                          "3. Rediseñar la estructura de fondeo para reducir dependencia de depósitos de alto costo.\n" +
+                          "4. Establecer un plan de contingencia de liquidez estricto ante el riesgo de retiros externos.\n" +
+                          "5. Automatizar y externalizar servicios (BPO) para convertir costos fijos en variables.\n" +
+                          "6. Desarrollar campañas intensivas de recuperación para contener morosidad en nichos vulnerables.\n" +
+                          "7. Reformular la gobernanza institucional para agilizar decisiones críticas ante la regulación.\n" +
+                          "8. Diversificar la oferta a nuevos nichos de emergencia para distribuir el riesgo de la cartera.";
+
+            $('#foda-fo').val(foStr);
+            $('#foda-do').val(doStr);
+            $('#foda-fa').val(faStr);
+            $('#foda-da').val(daStr);
+            
+            showSuccess('Estrategias completas generadas y asignadas correctamente.');
+        });
+    }
+
+    // --- FUNCIÓN DE EXPORTACIÓN ---
+    function exportSection(containerId, format, filename) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        Swal.fire({
+            title: 'Generando Exportación',
+            text: 'Preparando archivo...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        setTimeout(() => {
+            const elementsToHide = container.querySelectorAll('button, .dropdown, .nav-tabs');
+            const originalStyles = [];
+            elementsToHide.forEach(el => {
+                originalStyles.push({ el: el, display: el.style.display });
+                el.style.display = 'none';
+            });
+
+            const restoreElements = () => {
+                originalStyles.forEach(item => {
+                    item.el.style.display = item.display;
+                });
+                Swal.close();
+            };
+
+            if (format === 'pdf') {
+                const opt = {
+                    margin:       0.5,
+                    filename:     `${filename}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
+                };
+                html2pdf().set(opt).from(container).save().then(restoreElements).catch(restoreElements);
+            } else if (format === 'image') {
+                html2canvas(container, { scale: 2, useCORS: true }).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = `${filename}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    restoreElements();
+                }).catch(e => { console.error(e); restoreElements(); });
+            } else if (format === 'word' || format === 'excel') {
+                let clone = container.cloneNode(true);
+                
+                // Limpiar Textareas
+                const originalTextareas = container.querySelectorAll('textarea');
+                const cloneTextareas = clone.querySelectorAll('textarea');
+                cloneTextareas.forEach((ta, i) => {
+                    const div = document.createElement('div');
+                    if(format === 'word') {
+                        div.innerHTML = originalTextareas[i].value.replace(/\n/g, '<br>');
+                        div.style.border = "1px solid #ccc";
+                        div.style.padding = "10px";
+                        div.style.marginBottom = "10px";
+                    } else {
+                        div.innerText = originalTextareas[i].value;
+                    }
+                    ta.parentNode.replaceChild(div, ta);
+                });
+                
+                // Limpiar Selects
+                const originalSelects = container.querySelectorAll('select');
+                const cloneSelects = clone.querySelectorAll('select');
+                cloneSelects.forEach((sel, i) => {
+                    const span = document.createElement('span');
+                    const selectedOption = originalSelects[i].options[originalSelects[i].selectedIndex];
+                    span.innerText = selectedOption ? selectedOption.text : '';
+                    if(format === 'word') span.style.fontWeight = 'bold';
+                    sel.parentNode.replaceChild(span, sel);
+                });
+
+                // Eliminar elementos no deseados (<small> tags inside the Tipo column that cause duplicates)
+                const smalls = clone.querySelectorAll('small.text-muted');
+                smalls.forEach(s => s.remove());
+
+                // Remover columna Acciones de la tabla
+                const tables = clone.querySelectorAll('table');
+                tables.forEach(table => {
+                    const ths = table.querySelectorAll('th');
+                    let accionesIdx = -1;
+                    ths.forEach((th, idx) => {
+                        if(th.innerText.includes('Acciones')) {
+                            accionesIdx = idx;
+                            th.remove();
+                        }
+                    });
+                    if(accionesIdx > -1) {
+                        const trs = table.querySelectorAll('tbody tr');
+                        trs.forEach(tr => {
+                            const tds = tr.querySelectorAll('td');
+                            if(tds[accionesIdx]) tds[accionesIdx].remove();
+                        });
+                    }
+                });
+
+                if (format === 'word') {
+                    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export</title></head><body>";
+                    const footer = "</body></html>";
+                    const sourceHTML = header + clone.innerHTML + footer;
+                    const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                    const fileDownload = document.createElement("a");
+                    document.body.appendChild(fileDownload);
+                    fileDownload.href = source;
+                    fileDownload.download = `${filename}.doc`;
+                    fileDownload.click();
+                    document.body.removeChild(fileDownload);
+                    restoreElements();
+                } else if (format === 'excel') {
+                    if (tables.length > 0 && typeof XLSX !== 'undefined') {
+                        const wb = XLSX.utils.book_new();
+                        tables.forEach((table, index) => {
+                            const ws = XLSX.utils.table_to_sheet(table);
+                            XLSX.utils.book_append_sheet(wb, ws, `Tabla_${index + 1}`);
+                        });
+                        XLSX.writeFile(wb, `${filename}.xlsx`);
+                    } else {
+                        Swal.fire('Atención', 'No se encontraron tablas estructuradas en esta sección para exportar a Excel.', 'warning');
+                    }
+                    restoreElements();
+                }
+            }
+        }, 500);
+    }
+    
+    // ==========================================
+    // LOGICA DE LISTADO DE ESTRATEGIAS (TAB 2)
+    // ==========================================
+    const perspectivasList = [
+        {% for p in perspectivas %}
+        { id: "{{ p.id }}", nombre: "{{ p.nombre|escapejs }}" },
+        {% endfor %}
+    ];
+
+    const objetivosList = [
+        {% for o in objetivos_list %}
+        { id: "{{ o.id }}", perspectiva_id: "{{ o.perspectiva.id }}", nombre: "{{ o.nombre|escapejs }}" },
+        {% endfor %}
+    ];
+    
+    let estrategiasData = [
+        {% for e in estrategias_list %}
+        {
+            id: "{{ e.id }}",
+            tipo: "{{ e.tipo|escapejs }}",
+            descripcion: "{{ e.descripcion|escapejs }}",
+            perspectiva_id: "{{ e.perspectiva_id|default:'' }}",
+            objetivo_id: "{{ e.objetivo_id|default:'' }}"
+        },
+        {% endfor %}
+    ];
+    
+    const tiposEstrategiaMap = {
+        'FO': 'Estrategias OFENSIVAS (F-O)',
+        'DO': 'Estrategias REORIENTACIÓN (D-O)',
+        'FA': 'Estrategias DEFENSIVAS (F-A)',
+        'DA': 'Estrategias SUPERVIVENCIA (D-A)'
+    };
+    
+    function getBadgeClass(tipo) {
+        if(tipo === 'FO') return 'success';
+        if(tipo === 'DO') return 'warning';
+        if(tipo === 'FA') return 'info';
+        if(tipo === 'DA') return 'danger';
+        return 'secondary';
+    }
+    
+    function renderEstrategiasTable() {
+        const tbody = document.getElementById('estrategias-tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (estrategiasData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">No hay estrategias registradas. Haz clic en "Importar del FODA Cruzado" o "Nueva Estrategia".</td></tr>`;
+            return;
+        }
+        
+        estrategiasData.forEach((item, index) => {
+            let options = '<option value="">-- Seleccionar Objetivo --</option>';
+            perspectivasList.forEach(p => {
+                const objs = objetivosList.filter(o => o.perspectiva_id == p.id);
+                if(objs.length > 0) {
+                    options += `<optgroup label="${p.nombre}">`;
+                    objs.forEach(o => {
+                        const selected = (o.id == item.objetivo_id) ? 'selected' : '';
+                        options += `<option value="${o.id}" data-perspectiva="${o.perspectiva_id}" ${selected}>${o.nombre}</option>`;
+                    });
+                    options += `</optgroup>`;
+                }
+            });
+            
+            // Dropdown to change strategy type
+            let typeOptions = '';
+            for(let key in tiposEstrategiaMap) {
+                const sel = (key === item.tipo) ? 'selected' : '';
+                typeOptions += `<option value="${key}" ${sel}>${key}</option>`;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <select class="form-control form-control-sm border-0 font-weight-bold text-${getBadgeClass(item.tipo)}" onchange="updateEstrategia(${index}, 'tipo', this.value); this.className='form-control form-control-sm border-0 font-weight-bold text-'+getBadgeClass(this.value)">
+                        ${typeOptions}
+                    </select>
+                    <small class="d-block text-muted mt-1 px-2">${tiposEstrategiaMap[item.tipo]}</small>
+                </td>
+                <td>
+                    <textarea class="form-control form-control-sm border-0 bg-light" rows="2" placeholder="Escriba la descripción de la estrategia..." onchange="updateEstrategia(${index}, 'descripcion', this.value)">${item.descripcion}</textarea>
+                </td>
+                <td>
+                    <select class="form-control form-control-sm custom-select" onchange="updateEstrategia(${index}, 'objetivo_id', this.value); updateEstrategia(${index}, 'perspectiva_id', this.options[this.selectedIndex].getAttribute('data-perspectiva'))">
+                        ${options}
+                    </select>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="removeEstrategia(${index})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        renderResumenEstrategiasTable();
+        renderConsultaEstrategiasTable();
+    }
+
+    function renderResumenEstrategiasTable() {
+        const tbody = document.getElementById('resumen-estrategias-tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        
+        if (estrategiasData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">No hay estrategias registradas.</td></tr>`;
+            return;
+        }
+        
+        estrategiasData.forEach((item) => {
+            const tr = document.createElement('tr');
+            
+            // Resolve Perspectiva name
+            const p = perspectivasList.find(x => x.id == item.perspectiva_id);
+            const perspectivaName = p ? p.nombre : '<span class="text-danger">Sin Perspectiva</span>';
+            
+            // Resolve Objective name
+            const obj = objetivosList.find(o => o.id == item.objetivo_id);
+            const objNombre = obj ? obj.nombre : '<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Sin Asignar</span>';
+
+            const badgeClass = getBadgeClass(item.tipo);
+            const combinacionText = tiposEstrategiaMap[item.tipo] || item.tipo;
+            
+            tr.innerHTML = `
+                <td class="align-middle text-muted font-weight-bold">${perspectivaName}</td>
+                <td class="align-middle font-weight-bold">${objNombre}</td>
+                <td class="align-middle"><span class="badge badge-${badgeClass} px-2 py-1">${combinacionText}</span></td>
+                <td class="align-middle">${item.descripcion || ''}</td>
+                <td class="align-middle text-center font-weight-bold text-${badgeClass}">${item.tipo}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderConsultaEstrategiasTable() {
+        const tbody = document.getElementById('consulta-estrategias-tbody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        
+        let hasRows = false;
+
+        perspectivasList.forEach(p => {
+            const ests = estrategiasData.filter(e => e.perspectiva_id == p.id);
+            if (ests.length === 0) return;
+            
+            ests.forEach(e => {
+                hasRows = true;
+                const tr = document.createElement('tr');
+                
+                // Objetivo
+                const obj = objetivosList.find(o => o.id == e.objetivo_id);
+                const objNombre = obj ? obj.nombre : '<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Sin Asignar</span>';
+                
+                const badgeClass = getBadgeClass(e.tipo);
+                const combinacionText = tiposEstrategiaMap[e.tipo] || e.tipo;
+                
+                tr.innerHTML = `
+                    <td class="align-middle text-muted font-weight-bold">${p.nombre}</td>
+                    <td class="align-middle text-dark">${objNombre}</td>
+                    <td class="align-middle"><span class="badge badge-${badgeClass} px-2 py-1">${combinacionText}</span></td>
+                    <td class="align-middle">${e.descripcion || ''}</td>
+                    <td class="align-middle font-weight-bold text-${badgeClass}">${e.tipo}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        // Add strategies without a perspective assigned
+        const unassignedEsts = estrategiasData.filter(e => !e.perspectiva_id);
+        if (unassignedEsts.length > 0) {
+            unassignedEsts.forEach(e => {
+                hasRows = true;
+                const tr = document.createElement('tr');
+                
+                const obj = objetivosList.find(o => o.id == e.objetivo_id);
+                const objNombre = obj ? obj.nombre : '<span class="text-danger"><i class="fas fa-exclamation-circle"></i> Sin Asignar</span>';
+                
+                const badgeClass = getBadgeClass(e.tipo);
+                const combinacionText = tiposEstrategiaMap[e.tipo] || e.tipo;
+                
+                tr.innerHTML = `
+                    <td class="align-middle text-danger font-weight-bold"><i class="fas fa-exclamation-circle"></i> Sin Perspectiva</td>
+                    <td class="align-middle text-dark">${objNombre}</td>
+                    <td class="align-middle"><span class="badge badge-${badgeClass} px-2 py-1">${combinacionText}</span></td>
+                    <td class="align-middle">${e.descripcion || ''}</td>
+                    <td class="align-middle font-weight-bold text-${badgeClass}">${e.tipo}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        if (!hasRows) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted p-4">No hay datos disponibles para la consulta.</td></tr>`;
+        }
+    }
+    
+    function updateEstrategia(index, field, value) {
+        estrategiasData[index][field] = value;
+        if(field === 'tipo') {
+            renderEstrategiasTable(); // re-render to update the small text description and badge colors
+        }
+    }
+    
+    function removeEstrategia(index) {
+        estrategiasData.splice(index, 1);
+        renderEstrategiasTable();
+    }
+    
+    function addEmptyEstrategia() {
+        estrategiasData.push({
+            tipo: 'FO',
+            descripcion: '',
+            perspectiva_id: '',
+            objetivo_id: ''
+        });
+        renderEstrategiasTable();
+    }
+    
+    function importFromFoda() {
+        const fodaFO = document.getElementById('foda-fo') ? document.getElementById('foda-fo').value : '';
+        const fodaDO = document.getElementById('foda-do') ? document.getElementById('foda-do').value : '';
+        const fodaFA = document.getElementById('foda-fa') ? document.getElementById('foda-fa').value : '';
+        const fodaDA = document.getElementById('foda-da') ? document.getElementById('foda-da').value : '';
+        
+        let count = 0;
+        const parseText = (text, tipo) => {
+            if(!text) return;
+            const lines = text.split('\n').filter(l => l.trim() !== '');
+            lines.forEach(line => {
+                let cleanLine = line.replace(/^\d+[\.\-]\s*/, '').trim();
+                if(cleanLine) {
+                    estrategiasData.push({
+                        tipo: tipo,
+                        descripcion: cleanLine,
+                        perspectiva_id: '',
+                        objetivo_id: ''
+                    });
+                    count++;
+                }
+            });
+        };
+        
+        parseText(fodaFO, 'FO');
+        parseText(fodaDO, 'DO');
+        parseText(fodaFA, 'FA');
+        parseText(fodaDA, 'DA');
+        
+        renderEstrategiasTable();
+        Swal.fire('Importación Completa', `Se han importado ${count} estrategias del FODA Cruzado exitosamente.`, 'success');
+    }
+    
+    function saveEstrategias() {
+        postData({ estrategias: estrategiasData }, 'Las estrategias han sido guardadas y perfiladas correctamente.', "{% url 'strategic_risk:save_imported_strategies' %}");
+    }
+    
+    // ==========================================
+    // LOGICA DE PORTAFOLIO POA/PROYECTOS (TAB 3)
+    // ==========================================
+    let poaData = [];
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+    // Load POAs from the database
+    function loadPOA() {
+        const year = document.getElementById('poaYearFilter').value;
+        const tbody = document.getElementById('poa-tbody');
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4"><div class="spinner-border text-primary" role="status"></div> Cargando...</td></tr>`;
+
+        const planId = '{{ plan.id|default:"" }}';
+        let url = `/estrategico/api/portafolio-poa/?anio=${year}`;
+        if (planId) {
+            url += `&plan_id=${planId}`;
+        }
+        fetch(url)
+            .then(response => {
+                if(!response.ok) throw new Error("HTTP error " + response.status);
+                return response.json();
+            })
+            .then(data => {
+                poaData = data;
+                renderPOATable();
+            })
+            .catch(error => {
+                console.error("Error loading POAs:", error);
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger p-4"><i class="fas fa-exclamation-triangle"></i> Error al cargar datos.</td></tr>`;
+            });
+    }
+
+    function renderPOATable() {
+        const tbody = document.getElementById('poa-tbody');
+        tbody.innerHTML = '';
+        
+        if (poaData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">No hay registros disponibles para el año seleccionado.</td></tr>`;
+            return;
+        }
+
+        poaData.forEach((item, index) => {
+            const estrategia = estrategiasData.find(e => e.id == item.estrategia) || {};
+            const estrategiaText = estrategia.descripcion ? estrategia.descripcion.substring(0, 50) + '...' : 'Estrategia no encontrada';
+            
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center align-middle font-weight-bold">${index + 1}</td>
+                <td class="align-middle">${item.nombre_proyecto || ''}</td>
+                <td class="align-middle">${item.descripcion || ''}</td>
+                <td class="align-middle">${item.lider_proyecto || ''}</td>
+                <td class="align-middle text-muted small">${estrategiaText}</td>
+                <td class="align-middle text-right font-weight-bold">S/ ${parseFloat(item.presupuesto || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                <td class="text-center align-middle">
+                    <button class="btn btn-sm btn-outline-info shadow-sm mr-1" onclick="openPOAModal(${index})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="deletePOA(${item.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function populateStrategyDropdown() {
+        const select = document.getElementById('poaEstrategia');
+        select.innerHTML = '<option value="">--Seleccione un ítem del listado--</option>';
+        estrategiasData.forEach(e => {
+            if(e.id && e.id !== "None" && e.id !== "") { // Only strategies saved in the DB
+                select.innerHTML += `<option value="${e.id}">${e.descripcion.length > 100 ? e.descripcion.substring(0, 100) + '...' : e.descripcion}</option>`;
+            }
+        });
+    }
+
+    function updateEstrategiaInfo() {
+        const strategyId = document.getElementById('poaEstrategia').value;
+        const estrategia = estrategiasData.find(e => e.id == strategyId);
+        
+        const tipoInput = document.getElementById('poaTipoEstrategia');
+        const persInput = document.getElementById('poaObjPerspectiva');
+        const objInput = document.getElementById('poaObjNombre');
+
+        if (estrategia) {
+            tipoInput.value = tiposEstrategiaMap[estrategia.tipo];
+            
+            const perspectiva = perspectivasList.find(p => p.id == estrategia.perspectiva_id);
+            if (perspectiva) {
+                persInput.innerText = perspectiva.nombre;
+                // Ideally, fetch the Objective related to this Perspective.
+                // Since this might not be available directly in estrategiasData, we show a generic text or empty for now.
+                // In a full implementation, you might want to fetch objectives via API.
+                objInput.innerText = 'Objetivos perfilados a ' + perspectiva.nombre;
+            } else {
+                persInput.innerText = '';
+                objInput.innerText = '';
+            }
+        } else {
+            tipoInput.value = '';
+            persInput.innerText = '';
+            objInput.innerText = '';
+        }
+    }
+
+    function openPOAModal(index = null) {
+        populateStrategyDropdown();
+
+        if (index !== null) {
+            const item = poaData[index];
+            document.getElementById('poaId').value = item.id;
+            document.getElementById('poaAnio').value = item.anio;
+            document.getElementById('poaPresupuesto').value = item.presupuesto;
+            document.getElementById('poaNombre').value = item.nombre_proyecto;
+            document.getElementById('poaDescripcion').value = item.descripcion;
+            document.getElementById('poaEstrategia').value = item.estrategia;
+            document.getElementById('poaLider').value = item.lider_proyecto;
+            updateEstrategiaInfo();
+        } else {
+            document.getElementById('poaId').value = '';
+            document.getElementById('poaAnio').value = document.getElementById('poaYearFilter').value;
+            document.getElementById('poaPresupuesto').value = '';
+            document.getElementById('poaNombre').value = '';
+            document.getElementById('poaDescripcion').value = '';
+            document.getElementById('poaEstrategia').value = '';
+            document.getElementById('poaLider').value = '';
+            updateEstrategiaInfo();
+        }
+
+        $('#poaModal').modal('show');
+    }
+
+    function savePOA() {
+        const id = document.getElementById('poaId').value;
+        const data = {
+            anio: document.getElementById('poaAnio').value,
+            presupuesto: document.getElementById('poaPresupuesto').value,
+            nombre_proyecto: document.getElementById('poaNombre').value,
+            descripcion: document.getElementById('poaDescripcion').value,
+            estrategia: document.getElementById('poaEstrategia').value,
+            lider_proyecto: document.getElementById('poaLider').value
+        };
+
+        if (!data.nombre_proyecto || !data.estrategia) {
+            Swal.fire('Error', 'Debe proporcionar un nombre de proyecto y seleccionar una estrategia.', 'error');
+            return;
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/estrategico/api/portafolio-poa/${id}/` : `/estrategico/api/portafolio-poa/`;
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(data)
+        })
+        .then(async response => {
+            const resData = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                let errorMsg = "No se pudo guardar el portafolio POA.";
+                if (resData) {
+                    if (typeof resData === 'string') errorMsg = resData;
+                    else if (resData.detail) errorMsg = resData.detail;
+                    else {
+                        const errors = [];
+                        for (let key in resData) {
+                            errors.push(`${key}: ${resData[key]}`);
+                        }
+                        if (errors.length > 0) errorMsg = errors.join('<br>');
+                    }
+                }
+                throw new Error(errorMsg);
+            }
+            return resData;
+        })
+        .then(() => {
+            $('#poaModal').modal('hide');
+            Swal.fire('Guardado', 'El portafolio POA se guardó correctamente.', 'success');
+            loadPOA();
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de Validación',
+                html: err.message || 'No se pudo guardar el portafolio POA.'
+            });
+        });
+    }
+
+    function deletePOA(id) {
+        Swal.fire({
+            title: '¿Eliminar registro?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/estrategico/api/portafolio-poa/${id}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': csrfToken }
+                }).then(response => {
+                    if (response.ok) {
+                        Swal.fire('Eliminado', 'El registro ha sido eliminado.', 'success');
+                        loadPOA();
+                    } else {
+                        Swal.fire('Error', 'No se pudo eliminar el registro.', 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderEstrategiasTable();
+        loadPOA();
+    });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}

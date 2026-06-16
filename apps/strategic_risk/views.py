@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 import json
 from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy, TipoObjetivo, AreaResponsable, ResponsablePlan
 from .forms import StrategicPlanForm, ExternalEnvironmentForm, FinancialEnvironmentForm, InternalDiagnosisForm
@@ -642,6 +642,68 @@ def controls(request):
     return render(request, 'strategic_risk/controls.html', context)
 
 @login_required
+@check_module_access('Estrategia y Objetivos')
+def estrategias(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+        
+    import json
+    from .models import Perspectiva, Estrategia, ObjetivoEstrategico
+    
+    foda_data_json = '{}'
+    perspectivas = []
+    estrategias_list = []
+    objetivos_list = []
+    
+    if plan:
+        foda_matrix = StrategicMatrix.objects.filter(plan=plan, matrix_type='FODA').first()
+        if foda_matrix and foda_matrix.data:
+            foda_data_json = json.dumps(foda_matrix.data)
+            
+        perspectivas = Perspectiva.objects.filter(plan=plan)
+        estrategias_list = Estrategia.objects.filter(plan=plan)
+        responsables_list = ResponsablePlan.objects.filter(plan=plan)
+        # Fetching objectives mapped to the perspectives in this plan
+        objetivos_list = ObjetivoEstrategico.objects.filter(perspectiva__plan=plan)
+    else:
+        responsables_list = []
+
+    context = {
+        'page_title': 'Planificación Estratégica - Estrategias',
+        'plan': plan,
+        'foda_data': foda_data_json,
+        'perspectivas': perspectivas,
+        'estrategias_list': estrategias_list,
+        'responsables_list': responsables_list,
+        'objetivos_list': objetivos_list,
+    }
+    return render(request, 'strategic_risk/estrategias.html', context)
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def elaboracion_poa(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+        
+    responsables_list = []
+    if plan:
+        from .models import ResponsablePlan
+        responsables_list = ResponsablePlan.objects.filter(plan=plan)
+        
+    context = {
+        'page_title': 'Planificación Estratégica - Elaboración POA / Proyectos',
+        'plan': plan,
+        'responsables_list': responsables_list,
+    }
+    return render(request, 'strategic_risk/elaboracion_poa.html', context)
+
+@login_required
 def add_objective(request):
     if request.method == 'POST':
         try:
@@ -1129,3 +1191,76 @@ def save_kpi_metas(request, pk):
 def public_survey(request, survey_id):
     return render(request, 'strategic_risk/public_survey.html', {'survey_id': survey_id})
 
+
+@login_required
+@require_POST
+def save_imported_strategies(request):
+    import json
+    from django.http import JsonResponse
+    from .models import StrategicPlan, Perspectiva, Estrategia
+
+    try:
+        data = json.loads(request.body)
+        estrategias_data = data.get('estrategias', [])
+        
+        plan_id = request.session.get('active_strategic_plan_id')
+        if plan_id:
+            plan = StrategicPlan.objects.filter(id=plan_id).first()
+        else:
+            plan = StrategicPlan.objects.order_by('-start_year').first()
+            
+        if not plan:
+            return JsonResponse({'status': 'error', 'message': 'No hay un plan activo.'}, status=400)
+            
+        # Get existing strategies to keep track of what to delete later if needed
+        # We will update strategies if they have an ID, or create new ones.
+        
+        from users.models import Organization
+        org = getattr(request.user, 'organization', None) or Organization.objects.first()
+        
+        processed_ids = []
+        for item in estrategias_data:
+            estrategia_id = item.get('id')
+            perspectiva_id = item.get('perspectiva_id')
+            objetivo_id = item.get('objetivo_id')
+            perspectiva = Perspectiva.objects.filter(id=perspectiva_id).first() if perspectiva_id else None
+            from .models import ObjetivoEstrategico
+            objetivo = ObjetivoEstrategico.objects.filter(id=objetivo_id).first() if objetivo_id else None
+            
+            if estrategia_id:
+                est = Estrategia.objects.filter(id=estrategia_id, plan=plan).first()
+                if est:
+                    est.tipo = item.get('tipo')
+                    est.descripcion = item.get('descripcion')
+                    est.perspectiva = perspectiva
+                    est.objetivo = objetivo
+                    est.save()
+                    processed_ids.append(est.id)
+                else:
+                    new_est = Estrategia.objects.create(
+                        plan=plan,
+                        tipo=item.get('tipo'),
+                        descripcion=item.get('descripcion'),
+                        perspectiva=perspectiva,
+                        objetivo=objetivo,
+                        organization=org
+                    )
+                    processed_ids.append(new_est.id)
+            else:
+                new_est = Estrategia.objects.create(
+                    plan=plan,
+                    tipo=item.get('tipo'),
+                    descripcion=item.get('descripcion'),
+                    perspectiva=perspectiva,
+                    objetivo=objetivo,
+                    organization=org
+                )
+                processed_ids.append(new_est.id)
+                
+        # Only delete strategies that were removed from the frontend (not in processed_ids)
+        Estrategia.objects.filter(plan=plan).exclude(id__in=processed_ids).delete()
+            
+
+        return JsonResponse({'status': 'success', 'message': 'Estrategias guardadas exitosamente.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

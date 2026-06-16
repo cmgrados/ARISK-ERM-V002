@@ -27,6 +27,10 @@ class StrategicPlan(models.Model):
     def __str__(self):
         return f"{self.name} ({self.start_year} - {self.start_year + self.horizon_years - 1})"
 
+    @property
+    def years_range(self):
+        return range(self.start_year, self.start_year + self.horizon_years)
+
 class CorporatePhilosophy(models.Model):
     plan = models.OneToOneField(StrategicPlan, on_delete=models.CASCADE, related_name='philosophy')
     mission = models.TextField('Misión', blank=True, null=True)
@@ -143,6 +147,64 @@ class ResponsablePlan(TenantAwareModel):
 
     def __str__(self):
         return self.nombre
+
+class Estrategia(TenantAwareModel):
+    TIPOS_ESTRATEGIA = [
+        ('FO', 'Estrategias OFENSIVAS (F-O)'),
+        ('DO', 'Estrategias REORIENTACIÓN (D-O)'),
+        ('FA', 'Estrategias DEFENSIVAS (F-A)'),
+        ('DA', 'Estrategias SUPERVIVENCIA (D-A)'),
+    ]
+    
+    plan = models.ForeignKey(StrategicPlan, on_delete=models.CASCADE, related_name='estrategias', null=True, blank=True)
+    perspectiva = models.ForeignKey(Perspectiva, on_delete=models.SET_NULL, null=True, blank=True, related_name='estrategias')
+    objetivo = models.ForeignKey('ObjetivoEstrategico', on_delete=models.SET_NULL, null=True, blank=True, related_name='estrategias')
+    tipo = models.CharField(max_length=2, choices=TIPOS_ESTRATEGIA, verbose_name="Tipo de Estrategia")
+    descripcion = models.TextField(verbose_name="Descripción de la Estrategia")
+
+    class Meta:
+        verbose_name = "Estrategia"
+        verbose_name_plural = "Estrategias"
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.descripcion[:50]}"
+
+class PortafolioPOA(TenantAwareModel):
+    estrategia = models.ForeignKey(Estrategia, on_delete=models.CASCADE, related_name='poas')
+    anio = models.IntegerField(verbose_name="Año")
+    nombre_proyecto = models.CharField(max_length=255, verbose_name="Nombre Proyecto")
+    descripcion = models.TextField(verbose_name="Descripción")
+    presupuesto = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Presupuesto")
+    lider_proyecto = models.CharField(max_length=255, blank=True, null=True, verbose_name="Líder de Proyecto")
+
+    class Meta:
+        verbose_name = "Portafolio POA"
+        verbose_name_plural = "Portafolios POA"
+        unique_together = ('organization', 'nombre_proyecto', 'anio')
+
+    def __str__(self):
+        return f"{self.nombre_proyecto} ({self.anio})"
+
+class ActividadPOA(TenantAwareModel):
+    proyecto = models.ForeignKey(PortafolioPOA, on_delete=models.CASCADE, related_name='actividades')
+    numero = models.IntegerField(verbose_name="No.")
+    descripcion = models.CharField(max_length=500, verbose_name="Actividad")
+    fecha_inicio = models.DateField(verbose_name="Fecha de inicio")
+    fecha_final = models.DateField(verbose_name="Fecha final")
+    duracion = models.IntegerField(verbose_name="Duración (días)")
+    predecesora = models.CharField(max_length=50, blank=True, null=True, verbose_name="Predecesora")
+    responsable = models.CharField(max_length=200, blank=True, null=True, verbose_name="Responsable")
+    medio_verificacion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Medio de Verificación")
+    costo = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Costo")
+
+    class Meta:
+        verbose_name = "Actividad POA"
+        verbose_name_plural = "Actividades POA"
+        ordering = ['numero']
+
+    def __str__(self):
+        return f"{self.numero} - {self.descripcion[:50]}"
+
 
 class ObjetivoEstrategico(TenantAwareModel):
     perspectiva = models.ForeignKey(Perspectiva, on_delete=models.CASCADE, related_name='objetivos')

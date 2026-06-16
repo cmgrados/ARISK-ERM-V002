@@ -1,0 +1,635 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="content-header pb-1">
+    <div class="container-fluid">
+        <div class="row mb-2 align-items-center">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark font-weight-bold"><i class="fas fa-project-diagram text-info mr-2"></i>Elaboración POA / Proyectos</h1>
+                <p class="text-muted mb-0 font-italic">Gestión Operativa de Proyectos y Actividades</p>
+            </div>
+            <div class="col-sm-6 text-right">
+                {% if plan %}
+                <span class="badge badge-success px-3 py-2 text-uppercase" style="font-size: 0.9rem; border-radius: 20px;">
+                    <i class="fas fa-calendar-check mr-1"></i> Plan Activo: {{ plan.name }}
+                </span>
+                {% else %}
+                <span class="badge badge-danger px-3 py-2 text-uppercase" style="font-size: 0.9rem; border-radius: 20px;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Sin Plan Activo
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content mt-3">
+    <div class="container-fluid">
+        {% if not plan %}
+        <div class="alert alert-warning shadow-sm border-left-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i> <strong>Atención:</strong> No hay un plan estratégico seleccionado. Por favor, seleccione o cree uno en el <a href="{% url 'strategic_risk:dashboard' %}" class="text-primary font-weight-bold">Dashboard</a>.
+        </div>
+        {% else %}
+        
+        <!-- Encabezado de Herramientas -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="bg-white border p-2 d-flex shadow-sm rounded">
+                    <button class="btn btn-light border mr-2" title="Guardar" onclick="confirmarGuardadoPOA()"><i class="fas fa-save text-primary fa-lg"></i></button>
+                    <!-- Otros posibles botones del header superior -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros principales (Año y Proyecto) -->
+        <div class="row mb-4 justify-content-center">
+            <div class="col-md-10">
+                <div class="row align-items-center mb-3">
+                    <div class="col-md-2 text-right">
+                        <label for="poaYearFilter" class="mb-0 text-secondary" style="font-size: 0.9rem;">Año</label>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="poaYearFilter" class="form-control form-control-sm shadow-sm" style="background-color: #e6f2ff; border: 1px solid #b3d7ff;" onchange="loadProyectosDropdown()">
+                            {% for year in plan.years_range %}
+                            <option value="{{ year|stringformat:"d" }}">{{ year|stringformat:"d" }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-center pl-4">
+                        <button class="btn btn-primary btn-sm px-4 mr-3 shadow-sm" id="btnEstrategia" data-toggle="popover" data-placement="bottom" title="Estrategia Vinculada" data-content="Seleccione un proyecto primero" style="background-color: #3b82f6; border: none; font-size: 0.85rem;">Estrategia</button>
+                        <button class="btn btn-primary btn-sm px-4 shadow-sm" id="btnLider" data-toggle="popover" data-placement="bottom" title="Líder del Proyecto" data-content="Seleccione un proyecto primero" style="background-color: #3b82f6; border: none; font-size: 0.85rem;">Líder</button>
+                    </div>
+                </div>
+
+                <div class="row align-items-center mb-2">
+                    <div class="col-md-2 text-right">
+                        <label for="proyectoDropdown" class="mb-0 text-secondary" style="font-size: 0.9rem;">Proyecto</label>
+                    </div>
+                    <div class="col-md-10">
+                        <select id="proyectoDropdown" class="form-control form-control-sm shadow-sm" style="background-color: #87ceeb; color: #000; border: 1px solid #0ea5e9; font-weight: 500;" onchange="onProyectoChange()">
+                            <option value="">--Seleccione un ítem del listado--</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="actividadesContainer" style="display: none;">
+            <div class="col-12">
+                <div class="card shadow border-0 mb-4">
+                    <div class="card-header bg-white border-bottom p-2 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-sm btn-light border mr-1 text-muted" title="Agregar" onclick="openActividadModal()"><i class="fas fa-plus"></i></button>
+                            <button class="btn btn-sm btn-light border mr-1 text-muted" title="Eliminar"><i class="fas fa-trash-alt"></i></button>
+                            <button class="btn btn-sm btn-light border mr-1 text-muted" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-sm btn-light border mr-1 text-muted" title="Actualizar" onclick="loadActividades()"><i class="fas fa-sync-alt"></i></button>
+                            <button class="btn btn-sm btn-light border text-muted" title="Exportar PDF"><i class="fas fa-file-pdf"></i></button>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="input-group input-group-sm" style="width: 200px;">
+                                <input type="text" class="form-control" placeholder="Buscar">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="min-height: 500px;">
+                            <table class="table table-hover table-bordered mb-0 table-sm" id="actividadesTable" style="font-size: 0.8rem; table-layout: fixed; min-width: 3200px;">
+                                <thead style="background-color: #f8fafc; color: #475569; white-space: nowrap;">
+                                    <tr>
+                                        <th rowspan="2" style="width: 50px;" class="text-center align-middle">No.</th>
+                                        <th rowspan="2" style="width: 300px;" class="align-middle">Actividad</th>
+                                        <th rowspan="2" style="width: 100px;" class="align-middle">Fecha inicio</th>
+                                        <th rowspan="2" style="width: 100px;" class="align-middle">Fecha final</th>
+                                        <th rowspan="2" style="width: 70px;" class="text-center align-middle">Dur.</th>
+                                        <th rowspan="2" style="width: 100px;" class="text-center align-middle">Predecesora</th>
+                                        <th rowspan="2" style="width: 180px;" class="align-middle">Responsable</th>
+                                        <th rowspan="2" style="width: 180px;" class="align-middle">Medio de Verifica.</th>
+                                        <th rowspan="2" style="width: 100px;" class="align-middle">Costo</th>
+                                        <!-- Gantt Headers -->
+                                        {% for year in plan.years_range %}
+                                        <th colspan="12" class="text-center border-left" style="border-left: 2px solid #cbd5e1 !important;">{{ year|stringformat:"d" }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    <tr>
+                                        {% for year in plan.years_range %}
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px; border-left: 2px solid #cbd5e1 !important;">Ene</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Feb</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Mar</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Abr</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">May</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Jun</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Jul</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Ago</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Sep</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Oct</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Nov</th>
+                                        <th class="text-center" style="font-size: 11px; width: 50px; min-width: 50px; max-width: 50px;">Dic</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody id="actividades-tbody" class="bg-white">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+    </div>
+</section>
+
+<!-- Actividad Modal -->
+<div class="modal fade" id="actividadModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header" style="background-color: #e0e7ff;">
+                <h5 class="modal-title font-weight-bold text-indigo"><i class="fas fa-tasks mr-2"></i>Guardar Actividad</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body bg-white">
+                <input type="hidden" id="actividadId">
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">No.</label>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="number" class="form-control" id="actividadNumero" min="1">
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Costo</label>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text font-weight-bold">S/</span>
+                            </div>
+                            <input type="number" class="form-control" id="actividadCosto" step="0.01" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Actividad</label>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="actividadDescripcion">
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Fecha Inicio</label>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="date" class="form-control" id="actividadFechaInicio" onchange="calculateDuration()">
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Fecha Final</label>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="date" class="form-control" id="actividadFechaFinal" onchange="calculateDuration()">
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Duración</label>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="actividadDuracion" readonly>
+                            <div class="input-group-append">
+                                <span class="input-group-text">días</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Predecesora</label>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="actividadPredecesora" placeholder="Ej. 1, 2">
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Responsable</label>
+                    </div>
+                    <div class="col-md-10">
+                        <select class="form-control" id="actividadResponsable">
+                            <option value="">-- Seleccionar Responsable --</option>
+                            {% for resp in responsables_list %}
+                            <option value="{{ resp.nombre }}">{{ resp.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row form-group">
+                    <div class="col-md-2 text-right">
+                        <label class="col-form-label font-weight-bold">Medio Verif.</label>
+                    </div>
+                    <div class="col-md-10">
+                        <input type="text" class="form-control" id="actividadMedioVerificacion">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal"><i class="fas fa-times mr-1"></i>Cancelar</button>
+                <button type="button" class="btn btn-indigo font-weight-bold" onclick="saveActividad()"><i class="fas fa-save mr-1"></i>Guardar Actividad</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const planId = '{{ plan.id|default:"" }}';
+    const planYearsRange = [{{ plan.years_range|join:"," }}];
+    let currentProyectoId = null;
+    let proyectosData = [];
+
+    $(document).ready(function() {
+        if(planId) {
+            loadProyectosDropdown();
+        }
+        
+        // Initialize popovers
+        $('[data-toggle="popover"]').popover({
+            trigger: 'focus hover', // Show on focus/hover
+            html: true
+        });
+    });
+
+    function loadProyectosDropdown() {
+        const anio = $('#poaYearFilter').val();
+        $('#proyectoDropdown').html('<option value="">Cargando proyectos...</option>');
+        $('#actividadesContainer').hide();
+        currentProyectoId = null;
+
+        fetch(`/estrategico/api/portafolio-poa/?plan_id=${planId}&anio=${anio}`)
+        .then(response => response.json())
+        .then(data => {
+            proyectosData = data;
+            const select = $('#proyectoDropdown');
+            select.empty();
+            
+            if(data.length === 0) {
+                select.html('<option value="">No hay proyectos para este año</option>');
+                return;
+            }
+
+            select.append('<option value="">--Seleccione un ítem del listado--</option>');
+            data.forEach((p, index) => {
+                select.append(`<option value="${p.id}">${index + 1}. ${p.nombre_proyecto}</option>`);
+            });
+        })
+        .catch(error => {
+            console.error("Error loading proyectos:", error);
+            $('#proyectoDropdown').html('<option value="">Error al cargar</option>');
+        });
+    }
+
+    function updatePopover(selector, content) {
+        $(selector).attr('data-content', content);
+        $(selector).popover('dispose').popover({
+            trigger: 'focus hover',
+            html: true
+        });
+    }
+
+    function onProyectoChange() {
+        const id = $('#proyectoDropdown').val();
+        if (!id) {
+            currentProyectoId = null;
+            $('#actividadesContainer').hide();
+            updatePopover('#btnEstrategia', 'Seleccione un proyecto primero');
+            updatePopover('#btnLider', 'Seleccione un proyecto primero');
+            return;
+        }
+
+        currentProyectoId = id;
+        const p = proyectosData.find(x => x.id == id);
+        if (p) {
+            // Update popovers
+            updatePopover('#btnEstrategia', p.estrategia_desc || 'Sin estrategia vinculada');
+            updatePopover('#btnLider', p.lider_proyecto || 'N/A');
+            
+            $('#actividadesContainer').show();
+            loadActividades();
+        }
+    }
+
+    function getGanttCellsHtml(act, years) {
+        if (!act.fecha_inicio || !act.fecha_final) {
+            return Array(years.length * 12).fill('<td class="border-left p-0" style="min-width: 40px;"></td>').join('');
+        }
+        
+        const [sY, sM, sD] = act.fecha_inicio.split('-').map(Number);
+        const [eY, eM, eD] = act.fecha_final.split('-').map(Number);
+        
+        const start = new Date(sY, sM - 1, sD, 0, 0, 0);
+        const end = new Date(eY, eM - 1, eD, 23, 59, 59);
+        
+        let cells = '';
+        years.forEach(year => {
+            for (let month = 0; month < 12; month++) {
+                const monthStart = new Date(year, month, 1, 0, 0, 0);
+                const monthEnd = new Date(year, month + 1, 0, 23, 59, 59); 
+                
+                let cellHtml = '';
+                
+                if (end >= monthStart && start <= monthEnd) {
+                    const barStart = start > monthStart ? start : monthStart;
+                    const barEnd = end < monthEnd ? end : monthEnd;
+                    
+                    const monthTotalMs = monthEnd - monthStart;
+                    const leftMs = barStart - monthStart;
+                    const widthMs = barEnd - barStart;
+                    
+                    const leftPct = (leftMs / monthTotalMs) * 100;
+                    let widthPct = (widthMs / monthTotalMs) * 100;
+                    
+                    if (barEnd.getTime() === monthEnd.getTime()) widthPct += 2; 
+
+                    let radiusStyle = '';
+                    if (start >= monthStart) radiusStyle += 'border-top-left-radius: 4px; border-bottom-left-radius: 4px; ';
+                    if (end <= monthEnd) radiusStyle += 'border-top-right-radius: 4px; border-bottom-right-radius: 4px; ';
+                    
+                    const title = `${act.descripcion} (${act.fecha_inicio} a ${act.fecha_final})`;
+                    cellHtml = `<div class="bg-primary shadow-sm" title="${title}" style="position: absolute; top: 12px; bottom: 12px; left: ${leftPct}%; width: ${widthPct}%; ${radiusStyle} z-index: 1;"></div>`;
+                }
+                
+                let borderClass = month === 0 ? 'border-left border-dark' : 'border-left';
+                cells += `<td class="p-0 position-relative ${borderClass}" style="height: 40px; width: 50px; min-width: 50px; background-color: #fbfbfc;">${cellHtml}</td>`;
+            }
+        });
+        return cells;
+    }
+
+    function loadActividades() {
+        if(!currentProyectoId) return;
+
+        const totalCols = 9 + (planYearsRange.length * 12);
+        $('#actividades-tbody').html(`<tr><td colspan="${totalCols}" class="text-center text-muted p-4"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando actividades...</td></tr>`);
+
+        fetch(`/estrategico/api/actividades-poa/?proyecto_id=${currentProyectoId}`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = $('#actividades-tbody');
+            tbody.empty();
+            
+            if(data.length === 0) {
+                tbody.html(`<tr><td colspan="${totalCols}" class="text-center text-muted p-4">No hay actividades registradas en este proyecto.</td></tr>`);
+                return;
+            }
+
+            data.forEach(a => {
+                const tr = $('<tr>').css('cursor', 'pointer');
+                tr.attr('data-id', a.id);
+                tr.click(function() {
+                    $('#actividades-tbody tr').removeClass('table-primary');
+                    $(this).addClass('table-primary');
+                });
+
+                tr.append(`
+                    <td class="align-middle text-center">${a.numero}</td>
+                    <td class="align-middle">${a.descripcion}</td>
+                    <td class="align-middle">${a.fecha_inicio}</td>
+                    <td class="align-middle">${a.fecha_final}</td>
+                    <td class="align-middle text-center">${a.duracion} días</td>
+                    <td class="align-middle text-center">${a.predecesora || ''}</td>
+                    <td class="align-middle">${a.responsable || ''}</td>
+                    <td class="align-middle">${a.medio_verificacion || ''}</td>
+                    <td class="align-middle border-right">S/ ${parseFloat(a.costo).toLocaleString('es-PE', {minimumFractionDigits: 2})}</td>
+                    ${getGanttCellsHtml(a, planYearsRange)}
+                `);
+                tbody.append(tr);
+            });
+        })
+        .catch(error => {
+            console.error("Error loading actividades:", error);
+            $('#actividades-tbody').html('<tr><td colspan="21" class="text-center text-danger p-4"><i class="fas fa-exclamation-circle mr-2"></i>Error al cargar las actividades.</td></tr>');
+        });
+    }
+
+    // Top action buttons handlers
+    // Assuming edit/delete work on selected row
+    function getSelectedActividadId() {
+        const selected = $('#actividades-tbody tr.table-primary');
+        if (selected.length > 0) {
+            return selected.data('id');
+        }
+        return null;
+    }
+
+    // To link top buttons to actions:
+    $(document).ready(function() {
+        // Find buttons by their icon
+        $('button[title="Editar"]').click(function() {
+            const id = getSelectedActividadId();
+            if(id) {
+                editActividad(id);
+            } else {
+                Swal.fire('Atención', 'Debe seleccionar una actividad de la tabla.', 'info');
+            }
+        });
+
+        $('button[title="Eliminar"]').click(function() {
+            const id = getSelectedActividadId();
+            if(id) {
+                deleteActividad(id);
+            } else {
+                Swal.fire('Atención', 'Debe seleccionar una actividad de la tabla.', 'info');
+            }
+        });
+    });
+
+    function calculateDuration() {
+        const inicioStr = $('#actividadFechaInicio').val();
+        const finStr = $('#actividadFechaFinal').val();
+        
+        if (inicioStr && finStr) {
+            const inicio = new Date(inicioStr);
+            const fin = new Date(finStr);
+            const diffTime = Math.abs(fin - inicio);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
+            if (diffDays > 0) {
+                $('#actividadDuracion').val(diffDays);
+            } else {
+                $('#actividadDuracion').val(0);
+            }
+        }
+    }
+
+    function openActividadModal() {
+        if(!currentProyectoId) {
+            Swal.fire('Atención', 'Debe seleccionar un proyecto primero.', 'warning');
+            return;
+        }
+        $('#actividadId').val('');
+        
+        // Auto-increment No.
+        const rowCount = $('#actividades-tbody tr').length;
+        // Basic guess for next number
+        $('#actividadNumero').val(rowCount + 1);
+        
+        $('#actividadDescripcion').val('');
+        $('#actividadFechaInicio').val('');
+        $('#actividadFechaFinal').val('');
+        $('#actividadDuracion').val('');
+        $('#actividadPredecesora').val('');
+        $('#actividadResponsable').val('');
+        $('#actividadMedioVerificacion').val('');
+        $('#actividadCosto').val('0.00');
+        
+        $('#actividadModal').modal('show');
+    }
+
+    function editActividad(id) {
+        fetch(`/estrategico/api/actividades-poa/${id}/`)
+        .then(response => response.json())
+        .then(data => {
+            $('#actividadId').val(data.id);
+            $('#actividadNumero').val(data.numero);
+            $('#actividadDescripcion').val(data.descripcion);
+            $('#actividadFechaInicio').val(data.fecha_inicio);
+            $('#actividadFechaFinal').val(data.fecha_final);
+            $('#actividadDuracion').val(data.duracion);
+            $('#actividadPredecesora').val(data.predecesora);
+            $('#actividadResponsable').val(data.responsable);
+            $('#actividadMedioVerificacion').val(data.medio_verificacion);
+            $('#actividadCosto').val(data.costo);
+            $('#actividadModal').modal('show');
+        });
+    }
+
+    function saveActividad() {
+        const id = $('#actividadId').val();
+        const data = {
+            proyecto: currentProyectoId,
+            numero: $('#actividadNumero').val(),
+            descripcion: $('#actividadDescripcion').val(),
+            fecha_inicio: $('#actividadFechaInicio').val(),
+            fecha_final: $('#actividadFechaFinal').val(),
+            duracion: $('#actividadDuracion').val(),
+            predecesora: $('#actividadPredecesora').val(),
+            responsable: $('#actividadResponsable').val(),
+            medio_verificacion: $('#actividadMedioVerificacion').val(),
+            costo: $('#actividadCosto').val()
+        };
+
+        if(!data.descripcion || !data.fecha_inicio || !data.fecha_final) {
+            Swal.fire('Error', 'La descripción y fechas son obligatorias.', 'error');
+            return;
+        }
+
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `/estrategico/api/actividades-poa/${id}/` : '/estrategico/api/actividades-poa/';
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if(response.ok) return response.json();
+            throw new Error('Error al guardar la actividad');
+        })
+        .then(data => {
+            $('#actividadModal').modal('hide');
+            Swal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'Actividad guardada correctamente.',
+                timer: 1500,
+                showConfirmButton: false
+            });
+            loadActividades();
+        })
+        .catch(error => {
+            Swal.fire('Error', error.message, 'error');
+        });
+    }
+
+    function deleteActividad(id) {
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch(`/estrategico/api/actividades-poa/${id}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                }).then(response => {
+                    if(response.ok) {
+                        Swal.fire('Eliminado!', 'La actividad ha sido eliminada.', 'success');
+                        loadActividades();
+                    } else {
+                        throw new Error('Error al eliminar');
+                    }
+                }).catch(error => Swal.fire('Error', error.message, 'error'));
+            }
+        });
+    }
+
+    function confirmarGuardadoPOA() {
+        Swal.fire({
+            title: '¿Confirmar guardado?',
+            text: "Se guardarán los ajustes realizados en las actividades y el cronograma del Portafolio POA.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4f46e5',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check mr-1"></i> Sí, guardar',
+            cancelButtonText: '<i class="fas fa-times mr-1"></i> Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Guardado Exitoso!',
+                    text: 'Los datos del POA han sido consolidados correctamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                loadActividades(); // Refrescar los datos por precaución
+            }
+        });
+    }
+</script>
+
+<style>
+    .btn-indigo {
+        background-color: #4f46e5;
+        border-color: #4f46e5;
+        color: white;
+    }
+    .btn-indigo:hover {
+        background-color: #4338ca;
+        border-color: #4338ca;
+        color: white;
+    }
+    .btn-outline-indigo {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .btn-outline-indigo:hover {
+        background-color: #4f46e5;
+        color: white;
+    }
+</style>
+{% endblock %}

@@ -9,9 +9,12 @@ class PerspectivaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # El TenantMiddleware ya debería estar filtrando, pero DRF recomienda usar explícitamente
-        if hasattr(self.request.user, 'organization'):
-            return Perspectiva.objects.filter(organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            return Perspectiva.objects.filter(organization=user_org)
         return Perspectiva.objects.none()
 
 class ObjetivoEstrategicoViewSet(viewsets.ModelViewSet):
@@ -19,8 +22,12 @@ class ObjetivoEstrategicoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return ObjetivoEstrategico.objects.filter(organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            return ObjetivoEstrategico.objects.filter(organization=user_org)
         return ObjetivoEstrategico.objects.none()
 
 class IndicadorViewSet(viewsets.ModelViewSet):
@@ -28,8 +35,12 @@ class IndicadorViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return Indicador.objects.filter(organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            return Indicador.objects.filter(organization=user_org)
         return Indicador.objects.none()
 
 class MetaPeriodoViewSet(viewsets.ModelViewSet):
@@ -37,8 +48,12 @@ class MetaPeriodoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return MetaPeriodo.objects.filter(indicador__organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            return MetaPeriodo.objects.filter(indicador__organization=user_org)
         return MetaPeriodo.objects.none()
 
     def perform_create(self, serializer):
@@ -141,27 +156,146 @@ class BulkMetasPlaneadasView(APIView):
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from .models import ProyectoIniciativa, EjecucionPresupuestaria, HitoProyecto
-from .serializers import ProyectoIniciativaSerializer, EjecucionPresupuestariaSerializer, HitoProyectoSerializer
+from .models import ProyectoIniciativa, EjecucionPresupuestaria, HitoProyecto, PortafolioPOA, ActividadPOA
+from .serializers import ProyectoIniciativaSerializer, EjecucionPresupuestariaSerializer, HitoProyectoSerializer, PortafolioPOASerializer, ActividadPOASerializer
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.exceptions import ValidationError as DRFValidationError
+
+class PortafolioPOAViewSet(viewsets.ModelViewSet):
+    serializer_class = PortafolioPOASerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+            
+        if user_org:
+            queryset = PortafolioPOA.objects.filter(organization=user_org)
+            plan_id = self.request.query_params.get('plan_id')
+            if plan_id:
+                queryset = queryset.filter(estrategia__plan_id=plan_id)
+            elif 'active_strategic_plan_id' in self.request.session:
+                queryset = queryset.filter(estrategia__plan_id=self.request.session.get('active_strategic_plan_id'))
+                
+            anio = self.request.query_params.get('anio')
+            if anio:
+                queryset = queryset.filter(anio=anio)
+                
+            return queryset
+        return PortafolioPOA.objects.none()
+
+    def perform_create(self, serializer):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if not user_org:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"detail": "El usuario no tiene una organización asignada. No se puede crear el registro."})
+            
+        nombre_proyecto = serializer.validated_data.get('nombre_proyecto')
+        anio = serializer.validated_data.get('anio')
+        
+        if PortafolioPOA.objects.filter(organization=user_org, nombre_proyecto=nombre_proyecto, anio=anio).exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"detail": f"Ya existe un proyecto con el nombre '{nombre_proyecto}' para el año {anio}."})
+            
+        serializer.save(organization=user_org)
+
+    def perform_update(self, serializer):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+            
+        nombre_proyecto = serializer.validated_data.get('nombre_proyecto', serializer.instance.nombre_proyecto)
+        anio = serializer.validated_data.get('anio', serializer.instance.anio)
+        
+        if PortafolioPOA.objects.exclude(pk=serializer.instance.pk).filter(organization=user_org, nombre_proyecto=nombre_proyecto, anio=anio).exists():
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"detail": f"Ya existe un proyecto con el nombre '{nombre_proyecto}' para el año {anio}."})
+            
+        serializer.save()
+
+class ActividadPOAViewSet(viewsets.ModelViewSet):
+    serializer_class = ActividadPOASerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+            
+        if user_org:
+            queryset = ActividadPOA.objects.filter(organization=user_org)
+            proyecto_id = self.request.query_params.get('proyecto_id')
+            if proyecto_id:
+                queryset = queryset.filter(proyecto_id=proyecto_id)
+            else:
+                plan_id = self.request.query_params.get('plan_id')
+                if plan_id:
+                    queryset = queryset.filter(proyecto__estrategia__plan_id=plan_id)
+                elif 'active_strategic_plan_id' in self.request.session:
+                    queryset = queryset.filter(proyecto__estrategia__plan_id=self.request.session.get('active_strategic_plan_id'))
+            return queryset
+        return ActividadPOA.objects.none()
+
+    def perform_create(self, serializer):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        serializer.save(organization=user_org)
 
 class ProyectoIniciativaViewSet(viewsets.ModelViewSet):
     serializer_class = ProyectoIniciativaSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return ProyectoIniciativa.objects.filter(organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            queryset = ProyectoIniciativa.objects.filter(organization=user_org)
+            plan_id = self.request.query_params.get('plan_id')
+            if plan_id:
+                queryset = queryset.filter(indicador__objetivo__perspectiva__plan_id=plan_id)
+            elif 'active_strategic_plan_id' in self.request.session:
+                queryset = queryset.filter(indicador__objetivo__perspectiva__plan_id=self.request.session.get('active_strategic_plan_id'))
+            return queryset
         return ProyectoIniciativa.objects.none()
+
+    def perform_create(self, serializer):
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if not user_org:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"detail": "El usuario no tiene una organización asignada."})
+        serializer.save(organization=user_org)
 
 class EjecucionPresupuestariaViewSet(viewsets.ModelViewSet):
     serializer_class = EjecucionPresupuestariaSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return EjecucionPresupuestaria.objects.filter(proyecto__organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            queryset = EjecucionPresupuestaria.objects.filter(proyecto__organization=user_org)
+            plan_id = self.request.query_params.get('plan_id')
+            if plan_id:
+                queryset = queryset.filter(proyecto__indicador__objetivo__perspectiva__plan_id=plan_id)
+            elif 'active_strategic_plan_id' in self.request.session:
+                queryset = queryset.filter(proyecto__indicador__objetivo__perspectiva__plan_id=self.request.session.get('active_strategic_plan_id'))
+            return queryset
         return EjecucionPresupuestaria.objects.none()
 
     def _handle_save(self, serializer):
@@ -182,8 +316,18 @@ class HitoProyectoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        if hasattr(self.request.user, 'organization'):
-            return HitoProyecto.objects.filter(proyecto__organization=self.request.user.organization)
+        user_org = getattr(self.request.user, 'organization', None)
+        if not user_org:
+            from users.models import Organization
+            user_org = Organization.objects.first()
+        if user_org:
+            queryset = HitoProyecto.objects.filter(proyecto__organization=user_org)
+            plan_id = self.request.query_params.get('plan_id')
+            if plan_id:
+                queryset = queryset.filter(proyecto__indicador__objetivo__perspectiva__plan_id=plan_id)
+            elif 'active_strategic_plan_id' in self.request.session:
+                queryset = queryset.filter(proyecto__indicador__objetivo__perspectiva__plan_id=self.request.session.get('active_strategic_plan_id'))
+            return queryset
         return HitoProyecto.objects.none()
 
     def _handle_save(self, serializer):

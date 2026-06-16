@@ -5,7 +5,7 @@ from .api_views import (
     PerspectivaViewSet, ObjetivoEstrategicoViewSet, IndicadorViewSet, 
     MetaPeriodoViewSet, BulkMetasPlaneadasView,
     ProyectoIniciativaViewSet, EjecucionPresupuestariaViewSet, HitoProyectoViewSet,
-    DashboardSummaryView
+    DashboardSummaryView, PortafolioPOAViewSet, ActividadPOAViewSet
 )
 app_name = 'strategic_risk'
 
@@ -14,6 +14,8 @@ urlpatterns = [
     path('datos/', views.strat_data, name='strat_data'),
     path('metodologias/', views.methodologies, name='methodologies'),
     path('controles/', views.controls, name='controls'),
+    path('estrategias/', views.estrategias, name='estrategias'),
+    path('elaboracion-poa/', views.elaboracion_poa, name='elaboracion_poa'),
     path('graficos/', views.dashboard, name='dashboard'),
     path('graficos/crear-plan/', views.plan_create, name='plan_create'),
     path('graficos/editar-plan/<int:pk>/', views.plan_update, name='plan_update'),
@@ -38,6 +40,7 @@ urlpatterns = [
     path('ajax/save-metas-planeadas/', views.save_metas_planeadas, name='save_metas_planeadas'),
     path('ajax/get-kpi-metas/<int:pk>/', views.get_kpi_metas, name='get_kpi_metas'),
     path('ajax/save-kpi-metas/<int:pk>/', views.save_kpi_metas, name='save_kpi_metas'),
+    path('estrategias/save-imported/', views.save_imported_strategies, name='save_imported_strategies'),
 ]
 
 # API Router Setup
@@ -51,6 +54,8 @@ router.register(r'metas', MetaPeriodoViewSet, basename='api-meta')
 router.register(r'proyectos', ProyectoIniciativaViewSet, basename='api-proyecto')
 router.register(r'ejecuciones', EjecucionPresupuestariaViewSet, basename='api-ejecucion')
 router.register(r'hitos', HitoProyectoViewSet, basename='api-hito')
+router.register(r'portafolio-poa', PortafolioPOAViewSet, basename='api-portafolio-poa')
+router.register(r'actividades-poa', ActividadPOAViewSet, basename='api-actividades-poa')
 
 from django.urls import include
 urlpatterns += [
