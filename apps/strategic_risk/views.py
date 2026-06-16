@@ -704,6 +704,25 @@ def elaboracion_poa(request):
     return render(request, 'strategic_risk/elaboracion_poa.html', context)
 
 @login_required
+@check_module_access('Estrategia y Objetivos')
+def ponderacion_poa(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+    estrategias_list = []
+    if plan:
+        estrategias_list = Estrategia.objects.filter(plan=plan).select_related('objetivo', 'perspectiva')
+
+    context = {
+        'page_title': 'Planificación Estratégica - Ponderación POA / Proyectos',
+        'plan': plan,
+        'estrategias_list': estrategias_list,
+    }
+    return render(request, 'strategic_risk/ponderacion_poa.html', context)
+
+@login_required
 def add_objective(request):
     if request.method == 'POST':
         try:
@@ -754,6 +773,37 @@ def add_objective(request):
                 obj_id = obj.id
             
             return JsonResponse({'status': 'success', 'message': message, 'id': obj_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+@login_required
+def save_ponderacion_poa(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            ponderaciones = data.get('ponderaciones', [])
+            total_peso = sum(float(p.get('peso', 0)) for p in ponderaciones)
+            
+            # Allow a small margin of error for floating point arithmetic, but strict for 100
+            if not (99.9 <= total_peso <= 100.1):
+                return JsonResponse({'status': 'error', 'message': f'La suma de las ponderaciones debe ser 100%. Actualmente es {total_peso}%.'})
+                
+            organization = getattr(request.user, 'organization', None)
+            if not organization:
+                from users.models import Organization
+                organization = Organization.objects.first()
+                
+            for item in ponderaciones:
+                project_id = item.get('id')
+                peso = item.get('peso')
+                
+                proyecto = PortafolioPOA.objects.filter(id=project_id, organization=organization).first()
+                if proyecto:
+                    proyecto.peso = peso
+                    proyecto.save()
+                    
+            return JsonResponse({'status': 'success', 'message': 'Ponderaciones guardadas correctamente.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
