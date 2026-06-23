@@ -629,19 +629,6 @@
                 </a>
               </li>
 
-
-              <li class="nav-item">
-                <a href="{% url 'financial_planning:trial_balance_viewer_no_id' %}" class="nav-link {% if request.resolver_match.url_name == 'trial_balance_viewer' or request.resolver_match.url_name == 'trial_balance_viewer_no_id' %}active{% endif %}">
-                  <i class="fas fa-sitemap nav-icon small text-success"></i>
-                  <p>Balance de Comprobación</p>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="{% url 'financial_planning:budget_wizard_new' %}" class="nav-link {% if 'budget-wizard' in request.path %}active{% endif %}">
-                  <i class="fas fa-magic nav-icon small text-info"></i>
-                  <p>Asistente Presupuesto</p>
-                </a>
-              </li>
             </ul>
           </li>
           {% endif %}
@@ -712,15 +699,15 @@
                   </li>
                 </ul>
               </li>
-              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'elaboracion_poa' %}menu-open{% endif %}">
-                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'elaboracion_poa' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
+              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'elaboracion_poa,ponderacion_poa' %}menu-open{% endif %}">
+                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'elaboracion_poa,ponderacion_poa' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
                   <i class="nav-icon fas fa-cogs text-info"></i>
                   <p>
                     FASE OPERATIVA
                     <i class="right fas fa-angle-left"></i>
                   </p>
                 </a>
-                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'elaboracion_poa' %}block{% else %}none{% endif %};">
+                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'elaboracion_poa,ponderacion_poa' %}block{% else %}none{% endif %};">
                   <li class="nav-item">
                     <a href="{% url 'strategic_risk:elaboracion_poa' %}" class="nav-link {% if request.resolver_match.url_name == 'elaboracion_poa' %}active{% endif %}">
                       <i class="fas fa-project-diagram nav-icon small"></i>
@@ -728,9 +715,38 @@
                     </a>
                   </li>
                   <li class="nav-item">
-                    <a href="#" class="nav-link">
+                    <a href="{% url 'strategic_risk:ponderacion_poa' %}" class="nav-link {% if request.resolver_match.url_name == 'ponderacion_poa' %}active{% endif %}">
                       <i class="fas fa-weight nav-icon small"></i>
                       <p>Ponderación POA / Proyectos</p>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'ejecucion_metas,avance_ejecucion_metas_fechas,avance_ejecucion_poa_proyectos' %}menu-open{% endif %}">
+                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'ejecucion_metas,avance_ejecucion_metas_fechas,avance_ejecucion_poa_proyectos' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
+                  <i class="nav-icon fas fa-chart-line text-success"></i>
+                  <p>
+                    SEGUIMIENTO
+                    <i class="right fas fa-angle-left"></i>
+                  </p>
+                </a>
+                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'ejecucion_metas,avance_ejecucion_metas_fechas,avance_ejecucion_poa_proyectos' %}block{% else %}none{% endif %};">
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:ejecucion_metas' %}" class="nav-link {% if request.resolver_match.url_name == 'ejecucion_metas' %}active{% endif %}">
+                      <i class="far fa-circle nav-icon small"></i>
+                      <p>Ejecución Metas</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:avance_ejecucion_metas_fechas' %}" class="nav-link {% if request.resolver_match.url_name == 'avance_ejecucion_metas_fechas' %}active{% endif %}">
+                      <i class="far fa-circle nav-icon small"></i>
+                      <p>Avance Ejecución Metas Fechas</p>
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="{% url 'strategic_risk:avance_ejecucion_poa_proyectos' %}" class="nav-link {% if request.resolver_match.url_name == 'avance_ejecucion_poa_proyectos' %}active{% endif %}">
+                      <i class="far fa-circle nav-icon small"></i>
+                      <p>Avance Ejecución POA / Proyectos</p>
                     </a>
                   </li>
                 </ul>

@@ -176,6 +176,7 @@ class PortafolioPOA(TenantAwareModel):
     descripcion = models.TextField(verbose_name="Descripción")
     presupuesto = models.DecimalField(max_digits=15, decimal_places=2, default=0, verbose_name="Presupuesto")
     lider_proyecto = models.CharField(max_length=255, blank=True, null=True, verbose_name="Líder de Proyecto")
+    peso = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, verbose_name="Peso (%)")
 
     class Meta:
         verbose_name = "Portafolio POA"

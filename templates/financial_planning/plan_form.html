@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Nuevo Plan Financiero{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0" style="border-top: 4px solid #161065 !important;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-magic mr-2 text-indigo"></i>Crear Nuevo Plan Financiero
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'financial_planning:plan_wizard_new' %}">
+                    {% csrf_token %}
+                    <div class="form-group mb-3">
+                        <label for="nombre" class="font-weight-bold">Nombre del Plan <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej. Plan Financiero Estratégico 2026-2028" value="{{ nombre|default:'' }}" required>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label for="descripcion" class="font-weight-bold">Descripción</label>
+                        <textarea class="form-control" id="descripcion" name="descripcion" rows="3" placeholder="Opcional. Breve descripción del objetivo o alcance del plan.">{{ descripcion|default:'' }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="anio_base" class="font-weight-bold">Año Base <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="anio_base" name="anio_base" value="{{ anio_base|default:'2026' }}" min="2020" max="2100" required>
+                                <small class="text-muted">El año a partir del cual se realizarán las proyecciones.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group mb-3">
+                                <label for="horizonte_anios" class="font-weight-bold">Horizonte (Años) <span class="text-danger">*</span></label>
+                                <select class="form-control" id="horizonte_anios" name="horizonte_anios" required>
+                                    <option value="1" {% if horizonte_anios == '1' %}selected{% endif %}>1 Año</option>
+                                    <option value="3" {% if horizonte_anios == '3' or not horizonte_anios %}selected{% endif %}>3 Años</option>
+                                    <option value="5" {% if horizonte_anios == '5' %}selected{% endif %}>5 Años</option>
+                                    <option value="10" {% if horizonte_anios == '10' %}selected{% endif %}>10 Años</option>
+                                </select>
+                                <small class="text-muted">La cantidad de años hacia el futuro a proyectar.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-light shadow-sm">
+                            <i class="fas fa-times mr-1"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-indigo shadow-sm font-weight-bold">
+                            <i class="fas fa-save mr-1"></i> Guardar y Continuar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

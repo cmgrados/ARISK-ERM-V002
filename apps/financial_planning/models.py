@@ -76,3 +76,20 @@ class BalanceDetalle(TenantAwareModel):
 
     def __str__(self):
         return f"{self.cuenta.codigo} | {self.periodo} | {self.monto}"
+
+class PlanFinanciero(TenantAwareModel):
+    nombre = models.CharField(max_length=255, verbose_name="Nombre del Plan")
+    descripcion = models.TextField(verbose_name="Descripción", blank=True, null=True)
+    anio_base = models.PositiveIntegerField(verbose_name="Año Base")
+    horizonte_anios = models.PositiveIntegerField(verbose_name="Horizonte (Años)", default=3)
+    historical_data = models.JSONField(verbose_name="Data Histórica", blank=True, null=True, default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Plan Financiero"
+        verbose_name_plural = "Planes Financieros"
+        unique_together = ('organization', 'nombre')
+
+    def __str__(self):
+        return f"{self.nombre} ({self.anio_base})"

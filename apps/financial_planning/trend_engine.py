@@ -103,6 +103,7 @@ class TrendAnalyzer:
         base = np.array(base_projections)
         optimistic = base * (1 + volatility * np.arange(1, len(base) + 1))
         pessimistic = base * (1 - volatility * np.arange(1, len(base) + 1))
+        return list(pessimistic), list(base), list(optimistic)
     @classmethod
     def apply_montecarlo(cls, series, periods_to_project, iterations=1000, base_annual_rate=None):
         s = pd.to_numeric(pd.Series(series), errors='coerce').dropna()
@@ -125,19 +126,9 @@ class TrendAnalyzer:
         
         last_val = float(s.iloc[-1])
         
-        # Initialize simulation array: shape (iterations, periods_to_project)
-        simulations = np.zeros((iterations, periods_to_project))
-        
-        for i in range(iterations):
-            # Generate random shocks from normal distribution
-            shocks = np.random.normal(mu, sigma, periods_to_project)
-            
-            # Calculate price path
-            path = [last_val]
-            for shock in shocks:
-                path.append(path[-1] * (1 + shock))
-            
-            simulations[i, :] = path[1:]
+        # Vectorized calculation for Monte Carlo simulations
+        shocks = np.random.normal(mu, sigma, (iterations, periods_to_project))
+        simulations = last_val * np.cumprod(1 + shocks, axis=1)
             
         # Calculate percentiles for Pessimistic (10%), Base (50%), Optimistic (90%)
         pesimista = np.percentile(simulations, 10, axis=0)

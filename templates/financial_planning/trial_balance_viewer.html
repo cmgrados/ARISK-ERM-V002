@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title_header %}
+    {% if plan %}Seleccionar Periodos para: {{ plan.nombre }}{% else %}Balance de Comprobación{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">
+                <i class="fas fa-list-alt text-primary mr-2"></i> 
+                Periodos Cargados
+            </h4>
+            {% if plan %}
+                <div>
+                    <a href="{% url 'financial_planning:plan_wizard' plan.id %}?step=2" class="btn btn-secondary rounded-pill mr-2">Cancelar</a>
+                    <button id="btnSavePeriods" class="btn btn-success rounded-pill font-weight-bold">
+                        <i class="fas fa-save mr-1"></i> Asignar Seleccionados
+                    </button>
+                </div>
+            {% else %}
+                <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-secondary rounded-pill">Volver</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0" style="border-radius: 12px;">
+            <div class="card-body">
+                {% if periodos %}
+                    <form id="periodsForm">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="thead-light">
+                                    <tr>
+                                        {% if plan %}
+                                        <th style="width: 50px;" class="text-center">
+                                            <input type="checkbox" id="selectAll">
+                                        </th>
+                                        {% endif %}
+                                        <th>Periodo</th>
+                                        <th>Estado</th>
+                                        <th>Fecha de Carga</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in periodos %}
+                                        <tr>
+                                            {% if plan %}
+                                            <td class="text-center">
+                                                <input type="checkbox" name="selected_periods" value="{{ p.anio }}-{{ p.mes|stringformat:'02d' }}" class="period-checkbox">
+                                            </td>
+                                            {% endif %}
+                                            <td>
+                                                <span class="badge badge-primary" style="font-size: 0.9rem;">
+                                                    <i class="fas fa-calendar-alt mr-1"></i> {{ p.anio }}-{{ p.mes|stringformat:"02d" }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if p.estado == 'FINAL' %}
+                                                    <span class="badge badge-success">Definitivo</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">Borrador</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ p.fecha_carga|date:"d M Y H:i" }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">No se encontraron periodos cargados.</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="alert alert-info text-center m-3">
+                        No hay periodos financieros cargados en el sistema actualmente.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if plan %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle pre-selection if plan already has periods selected
+        let existingPeriods = [];
+        try {
+            const historicalData = {{ plan.historical_data|safe|default:"{}" }};
+            if (historicalData.selected_periods) {
+                existingPeriods = historicalData.selected_periods;
+            }
+        } catch(e) {}
+        
+        document.querySelectorAll('.period-checkbox').forEach(chk => {
+            if (existingPeriods.includes(chk.value)) {
+                chk.checked = true;
+            }
+        });
+
+        // Select All toggle
+        const selectAllBtn = document.getElementById('selectAll');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('change', function() {
+                document.querySelectorAll('.period-checkbox').forEach(chk => {
+                    chk.checked = this.checked;
+                });
+            });
+        }
+
+        document.getElementById('btnSavePeriods').addEventListener('click', function() {
+            const selected = Array.from(document.querySelectorAll('.period-checkbox:checked')).map(cb => cb.value);
+            
+            // Send selected periods via AJAX
+            $.ajax({
+                url: "{% url 'financial_planning:api_save_step_periods' plan.id %}",
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    periods: JSON.stringify(selected)
+                },
+                success: function(resp) {
+                    if (resp.status === 'success') {
+                        window.location.href = "{% url 'financial_planning:plan_wizard' plan.id %}?step=2";
+                    } else {
+                        alert("Error: " + resp.msg);
+                    }
+                },
+                error: function() {
+                    alert("Error de conexión al guardar.");
+                }
+            });
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -63,23 +63,33 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 7 %}active bg-indigo text-white{% elif step > 7 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=7{% else %}#{% endif %}" title="Estado de Resultados Proyectado">
-                            <i class="fas {% if step > 7 %}fa-check-circle{% else %}fa-7{% endif %} mr-1"></i>7. E.R Proyectado
+                        <a class="nav-link {% if step == 7 %}active bg-indigo text-white{% elif step > 7 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=7{% else %}#{% endif %}" title="Presupuesto">
+                            <i class="fas {% if step > 7 %}fa-check-circle{% else %}fa-7{% endif %} mr-1"></i>7. Presupuesto
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if step == 8 %}active bg-indigo text-white{% elif step > 8 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=8{% else %}#{% endif %}" title="Balance General Proyectado">
-                            <i class="fas {% if step > 8 %}fa-check-circle{% else %}fa-8{% endif %} mr-1"></i>8. B.G Proyectado
+                            <i class="fas {% if step > 8 %}fa-check-circle{% else %}fa-8{% endif %} mr-1"></i>8. BG Proyectado
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Flujo de Caja Proyectado">
-                            <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-9{% endif %} mr-1"></i>9. Flujo de Caja
+                        <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Estado de Resultados Proyectado">
+                            <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-9{% endif %} mr-1"></i>9. ER Proyectado
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 10 %}active bg-indigo text-white{% elif step > 10 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=10{% else %}#{% endif %}" title="Informe de Planeamiento Financiero">
-                            <i class="fas {% if step > 10 %}fa-check-circle{% else %}fa-10{% endif %} mr-1"></i>10. Informe de Planeamiento
+                        <a class="nav-link {% if step == 10 %}active bg-indigo text-white{% elif step > 10 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=10{% else %}#{% endif %}" title="Flujo de Caja">
+                            <i class="fas {% if step > 10 %}fa-check-circle{% else %}fa-list{% endif %} mr-1"></i>10. Flujo Caja
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 11 %}active bg-indigo text-white{% elif step > 11 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=11{% else %}#{% endif %}" title="Flujo de Efectivo">
+                            <i class="fas {% if step > 11 %}fa-check-circle{% else %}fa-table{% endif %} mr-1"></i>11. Flujo Efectivo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 12 %}active bg-indigo text-white{% elif step > 12 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=12{% else %}#{% endif %}" title="Reportes">
+                            <i class="fas {% if step > 12 %}fa-check-circle{% else %}fa-chart-bar{% endif %} mr-1"></i>12. Reportes
                         </a>
                     </li>
                 </ul>
@@ -102,21 +112,21 @@
                                     <div class="row">
                                         <div class="col-md-6 form-group">
                                             <label class="font-weight-bold">Nombre del Plan</label>
-                                            {{ form.name }}
+                                            <input type="text" name="nombre" class="form-control" value="{{ plan.nombre|default:'' }}" required>
                                         </div>
                                         <div class="col-md-6 form-group">
                                             <label class="font-weight-bold">Descripción</label>
-                                            {{ form.description }}
+                                            <input type="text" name="descripcion" class="form-control" value="{{ plan.descripcion|default:'' }}">
                                         </div>
                                     </div>
                                     <div class="row">
                                         <div class="col-md-6 form-group">
                                             <label class="font-weight-bold">Año de Inicio (Proyección)</label>
-                                            {{ form.projection_start_year }}
+                                            <input type="number" name="anio_base" class="form-control" value="{{ plan.anio_base|default:2026 }}" required>
                                         </div>
                                         <div class="col-md-6 form-group">
                                             <label class="font-weight-bold">Años a Proyectar</label>
-                                            {{ form.projection_years }}
+                                            <input type="number" name="horizonte_anios" class="form-control" value="{{ plan.horizonte_anios|default:3 }}" required>
                                         </div>
                                     </div>
                                     <div class="text-center mt-4">
@@ -137,35 +147,41 @@
                 </div>
                 <div class="row">
                     <div class="col-12">
+                        <!-- ===== MULTI-PERIOD SELECTOR PANEL (BASE HISTÓRICA) ===== -->
+                        <div class="card shadow border-0 mb-3 p-3" id="hist-period-selector-wrapper" style="border-radius: 12px;">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                <div class="d-flex align-items-center flex-wrap">
+                                    <i class="fas fa-calendar-alt text-success mr-2"></i>
+                                    <strong class="mr-2" style="font-size: 0.9rem;">Períodos históricos seleccionados:</strong>
+                                    <span id="hist-period-badges" class="d-flex flex-wrap gap-1"></span>
+                                </div>
+                                <button id="toggle-hist-period-selector-btn" class="btn btn-sm btn-outline-primary rounded-pill mt-2 mt-md-0" onclick="toggleHistSelector()">
+                                    <i class="fas fa-edit mr-1"></i> Seleccionar Períodos
+                                </button>
+                            </div>
+                            
+                            <!-- Expandable selector -->
+                            <div id="hist-period-selector-active" style="display:none; margin-top:15px; border-top:1px solid rgba(0,0,0,0.08); padding-top:15px;">
+                                <div id="hist-period-selector-container"></div>
+                                <div class="text-right mt-3">
+                                    <button class="btn btn-primary rounded-pill px-4 shadow-sm" onclick="confirmHistSelection()">
+                                        <i class="fas fa-check mr-1"></i> Confirmar Selección
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- Alerta cuando no hay base histórica asignada -->
                         <div id="no-historical-warning" class="alert alert-warning text-center p-5 shadow border-0" style="display: none; border-radius: 20px; background-color: rgba(255, 193, 7, 0.08); border-left: 6px solid #ffc107 !important;">
                             <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
                             <h4 class="font-weight-bold text-dark mb-2">No se ha asignado base histórica</h4>
                             <p class="text-secondary mx-auto mb-4" style="max-width: 600px;">
-                                Este plan financiero no tiene asignada una base histórica. Debe ir al módulo de Balance de Comprobación, seleccionar los períodos correspondientes y asignarlos a este plan.
+                                Utilice el botón <strong>"Seleccionar Períodos"</strong> de arriba para asignar los períodos del Balance de Comprobación a este plan.
                             </p>
-                            <a href="{% url 'financial_planning:trial_balance_viewer_no_id' %}" class="btn btn-info px-5 py-2 rounded-pill text-white font-weight-bold shadow">
-                                <i class="fas fa-arrow-right mr-2"></i> Ir a Balance de Comprobación
-                            </a>
                         </div>
 
-                        <!-- Period badges + content (only when periods exist) -->
+                        <!-- Content (only when periods exist) -->
                         <div id="hist-content-wrapper" style="display:none;">
-                            <!-- Period badges bar -->
-                            <div class="card shadow border-0 mb-3 p-2" style="border-radius: 12px;">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap px-2">
-                                    <div class="d-flex align-items-center flex-wrap">
-                                        <i class="fas fa-calendar-alt text-success mr-2"></i>
-                                        <strong class="mr-2" style="font-size:0.85rem;">Períodos asignados:</strong>
-                                        <span id="hist-period-badges" class="d-flex flex-wrap gap-1"></span>
-                                    </div>
-                                    <div class="mt-2 mt-md-0">
-                                        <a href="{% if plan %}{% url 'financial_planning:trial_balance_viewer' plan.id %}{% else %}{% url 'financial_planning:trial_balance_viewer_no_id' %}{% endif %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 font-weight-bold" title="Modificar selección de periodos">
-                                            <i class="fas fa-edit mr-1"></i> Modificar
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
 
                             <!-- Toolbar -->
                             <div class="card shadow-sm border-0 mb-3 p-2" style="border-radius: 12px;">
@@ -227,7 +243,7 @@
                             </div>
                         </div>
 
-                        
+                        <script>
                             document.addEventListener('DOMContentLoaded', function() {
                             const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
                             const historicalDataJson = '{{ historical_data_json|escapejs }}';
@@ -246,24 +262,139 @@
                                 }
                             } catch(e) { console.error("Error parsing historical_data", e); }
 
-                            if (!histSavedPeriods.length) {
-                                document.getElementById('no-historical-warning').style.display = 'block';
-                                document.getElementById('hist-content-wrapper').style.display = 'none';
-                                return;
-                            }
+                            let histAllPeriods = [];
 
-                            document.getElementById('no-historical-warning').style.display = 'none';
-                            document.getElementById('hist-content-wrapper').style.display = 'block';
+                            // 1. Fetch available dates
+                            fetch("{% url 'financial_planning:api_available_historical_dates' %}")
+                                .then(r => r.json())
+                                .then(data => {
+                                    if(data.status === 'success' && data.dates && data.dates.length > 0) {
+                                        histAllPeriods = data.dates;
+                                        buildHistSelectorUI();
+                                        updateHistSummaryBadges();
+                                        
+                                        if (histSavedPeriods.length > 0) {
+                                            document.getElementById('no-historical-warning').style.display = 'none';
+                                            document.getElementById('hist-content-wrapper').style.display = 'block';
+                                            histFetchData();
+                                        } else {
+                                            document.getElementById('no-historical-warning').style.display = 'block';
+                                            document.getElementById('hist-content-wrapper').style.display = 'none';
+                                        }
+                                    }
+                                })
+                                .catch(err => console.error("Error fetching available historical dates:", err));
 
-                            // Render period badges
-                            const badgesHtml = histSavedPeriods.map(p => {
-                                const [y,m] = p.split('-');
-                                return `<span class="badge badge-primary mr-1 mb-1" style="font-size:0.78rem;border-radius:20px;padding:4px 10px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
-                            }).join('');
-                            document.getElementById('hist-period-badges').innerHTML = badgesHtml;
+                            window.toggleHistSelector = function() {
+                                const activeDiv = document.getElementById('hist-period-selector-active');
+                                const btn = document.getElementById('toggle-hist-period-selector-btn');
+                                if (activeDiv.style.display === 'none') {
+                                    activeDiv.style.display = 'block';
+                                    btn.innerHTML = '<i class="fas fa-times mr-1"></i> Ocultar Edición';
+                                    
+                                    // Sync checkboxes
+                                    document.querySelectorAll('.hist-period-cb').forEach(cb => {
+                                        cb.checked = histSavedPeriods.includes(cb.value);
+                                    });
+                                } else {
+                                    activeDiv.style.display = 'none';
+                                    btn.innerHTML = '<i class="fas fa-edit mr-1"></i> Seleccionar Períodos';
+                                }
+                            };
+                            
+                            window.buildHistSelectorUI = function() {
+                                const byYear = {};
+                                histAllPeriods.forEach(p => {
+                                    const [y, m] = p.split('-');
+                                    if (!byYear[y]) byYear[y] = [];
+                                    byYear[y].push({ period: p, month: parseInt(m) });
+                                });
 
-                            // Fetch from API
-                            histFetchData();
+                                const container = document.getElementById('hist-period-selector-container');
+                                container.innerHTML = '';
+
+                                Object.keys(byYear).sort().reverse().forEach(year => {
+                                    const months = byYear[year];
+                                    const yearDiv = document.createElement('div');
+                                    yearDiv.className = 'mb-3 pb-2 border-bottom';
+
+                                    const monthChecks = months.map(({ period, month }) => `
+                                        <div class="custom-control custom-checkbox custom-control-inline mb-1 mr-3">
+                                            <input type="checkbox" class="custom-control-input hist-period-cb"
+                                                id="hist-pcb-${period}" value="${period}">
+                                            <label class="custom-control-label small text-secondary" for="hist-pcb-${period}">
+                                                ${MONTH_NAMES[month - 1]}
+                                            </label>
+                                        </div>`).join('');
+
+                                    yearDiv.innerHTML = `
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong class="text-primary" style="font-size:0.9rem;">
+                                                <i class="fas fa-calendar-check mr-1 text-success"></i> AÑO ${year}
+                                            </strong>
+                                            <div>
+                                                <button class="btn btn-xs btn-outline-success mr-1 bg-white" onclick="histYearAction('${year}','all')">
+                                                    <i class="fas fa-check-square mr-1"></i>Todo
+                                                </button>
+                                                <button class="btn btn-xs btn-outline-secondary bg-white" onclick="histYearAction('${year}','none')">
+                                                    <i class="fas fa-square mr-1"></i>Limpiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-wrap">${monthChecks}</div>`;
+                                    container.appendChild(yearDiv);
+                                });
+                            };
+                            
+                            window.histYearAction = function(year, action) {
+                                document.querySelectorAll('.hist-period-cb').forEach(cb => {
+                                    if (cb.value.startsWith(year + '-')) cb.checked = (action === 'all');
+                                });
+                            };
+                            
+                            window.updateHistSummaryBadges = function() {
+                                const badges = histSavedPeriods.map(p => {
+                                    const [y, m] = p.split('-');
+                                    return `<span class="badge badge-success mr-1 mb-1" style="font-size:0.78rem;border-radius:20px;padding:4px 10px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
+                                }).join('');
+                                document.getElementById('hist-period-badges').innerHTML = badges || '<span class="text-muted small">Ninguno</span>';
+                            };
+                            
+                            window.confirmHistSelection = function() {
+                                const checked = Array.from(document.querySelectorAll('.hist-period-cb:checked'))
+                                                     .map(cb => cb.value).sort();
+                                if (checked.length === 0) {
+                                    toastr.warning('Seleccione al menos un período.');
+                                    return;
+                                }
+                                histSavedPeriods = checked;
+                                toggleHistSelector(); // close
+                                updateHistSummaryBadges();
+                                
+                                document.getElementById('no-historical-warning').style.display = 'none';
+                                document.getElementById('hist-content-wrapper').style.display = 'block';
+                                histFetchData();
+                                
+                                {% if plan %}
+                                // Save to backend
+                                fetch("{% url 'financial_planning:api_save_step_periods' plan.id %}", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : ''
+                                    },
+                                    body: JSON.stringify({ step: '2', periods: histSavedPeriods })
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.status === 'success') {
+                                        toastr.success('Períodos históricos guardados.');
+                                    } else {
+                                        console.error('Error saving historical periods:', data.msg);
+                                    }
+                                });
+                                {% endif %}
+                            };
 
                             function histFetchData() {
                                 $.ajax({
@@ -1243,7 +1374,7 @@
                 </div>
                 {% endif %}
 
-                <!-- STEP 7: Estado de Resultados Proyectado -->
+                <!-- STEP 7: Presupuesto -->
                 {% if step == 7 %}
                 <style>
                     tbody.hide-zeros tr[data-has-budget="false"] {
@@ -1251,8 +1382,8 @@
                     }
                 </style>
                 <div class="text-center mb-4">
-                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">ESTADO DE RESULTADOS PROYECTADO (<span id="active-year-display">{{ plan.start_date.year }}</span> - <span id="end-year-display"></span>)</h4>
-                    <p class="text-muted">Proyecciones del estado de resultados mensual basado en los supuestos.</p>
+                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">PRESUPUESTO (<span id="active-year-display">{{ plan.start_date.year }}</span> - <span id="end-year-display"></span>)</h4>
+                    <p class="text-muted">Presupuesto mensual y anual basado en los supuestos.</p>
                 </div>
                 
                 <!-- Tabs removed: showing all years sequentially -->
@@ -2716,28 +2847,58 @@ function recalculateStep7() {
                     <div class="col-lg-8 text-center">
                         <i class="fas fa-balance-scale fa-5x text-secondary mb-4 opacity-50"></i>
                         <p class="mb-4">Módulo en construcción. Aquí se visualizará el Balance General Proyectado detallado.</p>
-                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=9')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Flujo de Caja <i class="fas fa-arrow-right ml-2"></i></a>
+                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=9')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: ER Proyectado <i class="fas fa-arrow-right ml-2"></i></a>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- STEP 9: Flujo de Caja proyectado -->
+                <!-- STEP 9: Estado de Resultados Proyectado -->
                 {% if step == 9 %}
                 <div class="text-center mb-4">
-                    <h4 class="font-weight-bold">Flujo de Caja Proyectado</h4>
-                    <p class="text-muted">Proyección detallada de ingresos y salidas de efectivo operativos, de inversión y financieros.</p>
+                    <h4 class="font-weight-bold">Estado de Resultados Proyectado</h4>
+                    <p class="text-muted">Estado de resultados basado en las proyecciones y el presupuesto.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-chart-line fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Estado de Resultados Proyectado.</p>
+                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=10')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Flujo Caja <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 10: Flujo de Caja -->
+                {% if step == 10 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Flujo de Caja</h4>
+                    <p class="text-muted">Proyecciones del flujo de caja mensual y anual.</p>
                 </div>
                 <div class="row justify-content-center">
                     <div class="col-lg-8 text-center">
                         <i class="fas fa-money-bill-wave fa-5x text-secondary mb-4 opacity-50"></i>
                         <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Caja Proyectado.</p>
-                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=10')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Informe <i class="fas fa-arrow-right ml-2"></i></a>
+                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=11')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Flujo Efectivo <i class="fas fa-arrow-right ml-2"></i></a>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- STEP 10: Informe de Planeamiento Financiero -->
-                {% if step == 10 %}
+                <!-- STEP 11: Flujo de Efectivo -->
+                {% if step == 11 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Flujo de Efectivo</h4>
+                    <p class="text-muted">Análisis del flujo de efectivo operativo, de inversión y financiamiento.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-coins fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Efectivo.</p>
+                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=12')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Reportes <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 12: Reportes -->
+                {% if step == 12 %}
                 <div class="text-center mb-4">
                     <h4 class="font-weight-bold">Informe de Planeamiento Financiero</h4>
                     <p class="text-muted">Los resultados han sido procesados exitosamente y están listos para la generación del informe.</p>

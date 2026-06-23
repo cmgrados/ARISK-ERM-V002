@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods, require_POST
 import json
-from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy, TipoObjetivo, AreaResponsable, ResponsablePlan
+from .models import StrategicPlan, ExternalEnvironment, FinancialEnvironment, InternalDiagnosis, Perspectiva, ObjetivoEstrategico, Indicador, MetaPeriodo, StrategicMatrix, BusinessModelCanvas, CorporatePhilosophy, TipoObjetivo, AreaResponsable, ResponsablePlan, Estrategia, PortafolioPOA, ActividadPOA
 from .forms import StrategicPlanForm, ExternalEnvironmentForm, FinancialEnvironmentForm, InternalDiagnosisForm
 
 def check_module_access(module_name):
@@ -721,6 +721,51 @@ def ponderacion_poa(request):
         'estrategias_list': estrategias_list,
     }
     return render(request, 'strategic_risk/ponderacion_poa.html', context)
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def ejecucion_metas(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+
+    context = {
+        'page_title': 'Planificación Estratégica - Ejecución Metas',
+        'plan': plan,
+    }
+    return render(request, 'strategic_risk/ejecucion_metas.html', context)
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def avance_ejecucion_metas_fechas(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+
+    context = {
+        'page_title': 'Planificación Estratégica - Avance Ejecución Metas Fechas',
+        'plan': plan,
+    }
+    return render(request, 'strategic_risk/avance_ejecucion_metas_fechas.html', context)
+
+@login_required
+@check_module_access('Estrategia y Objetivos')
+def avance_ejecucion_poa_proyectos(request):
+    plan_id = request.session.get('active_strategic_plan_id')
+    if plan_id:
+        plan = StrategicPlan.objects.filter(id=plan_id).first()
+    else:
+        plan = StrategicPlan.objects.order_by('-start_year').first()
+
+    context = {
+        'page_title': 'Planificación Estratégica - Avance Ejecución POA / Proyectos',
+        'plan': plan,
+    }
+    return render(request, 'strategic_risk/avance_ejecucion_poa_proyectos.html', context)
 
 @login_required
 def add_objective(request):
