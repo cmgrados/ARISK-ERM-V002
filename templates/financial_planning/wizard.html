@@ -6,6 +6,7 @@
 
 {% block content %}
 <style>
+        .force-hide-zero { display: none !important; }
     /* Styling for dynamic accounts hierarchy in Handsontable */
     .bg-light-blue {
         background-color: #e0f2fe !important;
@@ -143,7 +144,7 @@
                 {% if step == 2 %}
                 <div class="text-center mb-4">
                     <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">Base Histórica</h4>
-                    <p class="text-muted">Vista del Estado de Situación Financiera y Estado de Resultados de años anteriores.</p>
+                    <p class="text-muted">Vista del Balance de Comprobación (Cuentas 1, 2 y 3) de años anteriores.</p>
                 </div>
                 <div class="row">
                     <div class="col-12">
@@ -189,57 +190,76 @@
                                     <div class="col-lg-3 col-md-4 col-12 mb-2 mb-md-0">
 
                                     </div>
-                                    <div class="col-lg-4 col-md-5 col-12 mb-2 mb-md-0">
+                                    <div class="col-lg-3 col-md-4 col-12 mb-2 mb-md-0">
                                         <div class="input-group input-group-sm">
                                             <div class="input-group-prepend"><span class="input-group-text bg-transparent border-right-0"><i class="fas fa-search text-muted"></i></span></div>
                                             <input type="text" id="hist-accountSearch" class="form-control border-left-0" placeholder="Buscar por código o nombre..." onkeyup="histFilterAccounts()">
                                         </div>
                                     </div>
-                                    <div class="col-lg-5 col-md-3 col-12 text-md-right text-center">
+                                    <div class="col-lg-6 col-md-4 col-12 text-md-right text-center">
+                                        <button class="btn btn-sm btn-outline-info mr-1" id="hist-btn-toggle-zeros" onclick="histToggleZeros()"><i class="fas fa-eye-slash mr-1"></i>Ocultar Ceros</button>
                                         <button class="btn btn-sm btn-outline-primary mr-1" onclick="histExpandAll()"><i class="fas fa-expand-arrows-alt mr-1"></i>Expandir</button>
                                         <button class="btn btn-sm btn-outline-secondary mr-1" onclick="histCollapseAll()"><i class="fas fa-compress-arrows-alt mr-1"></i>Contraer</button>
+                                        <div class="btn-group ml-1">
+                                            <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <i class="fas fa-download mr-1"></i> Exportar
+                                            </button>
+                                            <div class="dropdown-menu dropdown-menu-right">
+                                                <a class="dropdown-item" href="javascript:void(0)" onclick="exportWizardData('excel')"><i class="fas fa-file-excel mr-2 text-success"></i>Excel</a>
+                                                <a class="dropdown-item" href="javascript:void(0)" onclick="exportWizardData('word')"><i class="fas fa-file-word mr-2 text-primary"></i>Word</a>
+                                                <a class="dropdown-item" href="javascript:void(0)" onclick="exportWizardData('pdf')"><i class="fas fa-file-pdf mr-2 text-danger"></i>PDF</a>
+                                                <a class="dropdown-item" href="javascript:void(0)" onclick="exportWizardData('jpg')"><i class="fas fa-file-image mr-2 text-info"></i>JPG</a>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Tabs + Tables -->
                             <div class="card shadow border-0 mb-3" style="border-radius: 12px;">
-                                <div class="card-header p-2 d-flex justify-content-between align-items-center flex-wrap bg-white" style="border-radius:12px 12px 0 0;">
-                                    <ul class="nav nav-pills" id="histTabs" role="tablist">
-                                        <li class="nav-item"><a class="nav-link active" id="hist-bs-tab" data-toggle="pill" href="#hist-bs-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-balance-scale mr-1"></i>Balance General</a></li>
-                                        <li class="nav-item"><a class="nav-link" id="hist-is-tab" data-toggle="pill" href="#hist-is-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-chart-line mr-1"></i>Estado de Resultados</a></li>
-                                        <li class="nav-item"><a class="nav-link" id="hist-mis-tab" data-toggle="pill" href="#hist-mis-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-calendar-alt mr-1"></i>ER (Mensual)</a></li>
+                                <div class="card-header p-0 bg-white" style="border-radius:12px 12px 0 0;">
+                                    <ul class="nav nav-tabs border-0 mt-2 ml-2" id="hist-tabs" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active font-weight-bold border-0" id="hist-bs-tab" data-toggle="tab" href="#hist-bs-panel" role="tab" style="color: #4e73df; border-bottom: 3px solid #4e73df !important;"><i class="fas fa-balance-scale mr-1"></i>Balance General</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link font-weight-bold border-0" id="hist-is-tab" data-toggle="tab" href="#hist-is-panel" role="tab" style="color: #858796;"><i class="fas fa-chart-line mr-1"></i>Estado de Resultados Acumulado</a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link font-weight-bold border-0" id="hist-mis-tab" data-toggle="tab" href="#hist-mis-panel" role="tab" style="color: #858796;"><i class="fas fa-chart-bar mr-1"></i>Estado de Resultados Mensual</a>
+                                        </li>
+                                        <li class="nav-item ml-auto mr-3 mt-1" id="hist-cuadratura">
+                                            <span class="badge badge-success px-3 py-1" id="hist-squareBadge" style="font-size:0.8rem;border-radius:20px;"><i class="fas fa-check-circle mr-1"></i>Balance Cuadrado</span>
+                                        </li>
                                     </ul>
-                                    <div class="ml-auto mt-1 mt-md-0" id="hist-cuadratura">
-                                        <span class="badge badge-success px-3 py-1" id="hist-squareBadge" style="font-size:0.8rem;border-radius:20px;"><i class="fas fa-check-circle mr-1"></i>Balance Cuadrado</span>
-                                    </div>
                                 </div>
                                 <div class="card-body p-0">
-                                    <div class="tab-content">
-                                        <!-- BS Panel -->
+                                    <div class="tab-content" id="hist-tabs-content">
+                                        <!-- Panel Balance General -->
                                         <div class="tab-pane fade show active" id="hist-bs-panel" role="tabpanel">
                                             <div class="table-responsive"><table class="accounting-table"><thead id="hist-bs-thead"></thead><tbody id="hist-bs-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
                                             <div id="hist-summary-bs" class="mt-2 px-2 pb-2">
-                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-balance-scale mr-1"></i>Resumen Balance General</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-bs-thead"></thead><tbody id="hist-sum-bs-tbody"></tbody></table></div></div></div>
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-balance-scale mr-1"></i>Resumen Balance General</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="accounting-table mb-0"><thead id="hist-sum-bs-thead"></thead><tbody id="hist-sum-bs-tbody"></tbody></table></div></div></div>
                                             </div>
                                         </div>
-                                        <!-- IS Panel -->
+                                        
+                                        <!-- Panel Estado de Resultados Acumulado -->
                                         <div class="tab-pane fade" id="hist-is-panel" role="tabpanel">
                                             <div class="table-responsive"><table class="accounting-table"><thead id="hist-is-thead"></thead><tbody id="hist-is-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
                                             <div id="hist-summary-is" class="mt-2 px-2 pb-2">
-                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-success mb-0"><i class="fas fa-chart-line mr-1"></i>Resumen Estado de Resultados</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-is-thead"></thead><tbody id="hist-sum-is-tbody"></tbody></table></div></div></div>
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-success mb-0"><i class="fas fa-chart-line mr-1"></i>Resumen E.R. Acumulado</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="accounting-table mb-0"><thead id="hist-sum-is-thead"></thead><tbody id="hist-sum-is-tbody"></tbody></table></div></div></div>
                                             </div>
                                         </div>
-                                        <!-- Monthly IS Panel -->
+                                        
+                                        <!-- Panel Estado de Resultados Mensual -->
                                         <div class="tab-pane fade" id="hist-mis-panel" role="tabpanel">
                                             <div class="table-responsive"><table class="accounting-table"><thead id="hist-mis-thead"></thead><tbody id="hist-mis-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
                                             <div id="hist-summary-mis" class="mt-2 px-2 pb-2">
-                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-info mb-0"><i class="fas fa-calendar-alt mr-1"></i>Resumen Estado de Resultados (Mensual)</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-mis-thead"></thead><tbody id="hist-sum-mis-tbody"></tbody></table></div></div></div>
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-info mb-0"><i class="fas fa-chart-bar mr-1"></i>Resumen E.R. Mensual</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="accounting-table mb-0"><thead id="hist-sum-mis-thead"></thead><tbody id="hist-sum-mis-tbody"></tbody></table></div></div></div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
 
@@ -247,7 +267,7 @@
                             document.addEventListener('DOMContentLoaded', function() {
                             const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
                             const historicalDataJson = '{{ historical_data_json|escapejs }}';
-                            let histSavedPeriods = [];
+                            window.histSavedPeriods = [];
                             let histBalanceData = null;
                             let histMode = 'accum';
 
@@ -258,7 +278,7 @@
                             try {
                                 const parsed = JSON.parse(historicalDataJson);
                                 if (parsed && parsed.selected_periods && parsed.selected_periods.length > 0) {
-                                    histSavedPeriods = parsed.selected_periods;
+                                    window.histSavedPeriods = parsed.selected_periods;
                                 }
                             } catch(e) { console.error("Error parsing historical_data", e); }
 
@@ -273,7 +293,7 @@
                                         buildHistSelectorUI();
                                         updateHistSummaryBadges();
                                         
-                                        if (histSavedPeriods.length > 0) {
+                                        if (window.histSavedPeriods.length > 0) {
                                             document.getElementById('no-historical-warning').style.display = 'none';
                                             document.getElementById('hist-content-wrapper').style.display = 'block';
                                             histFetchData();
@@ -281,9 +301,25 @@
                                             document.getElementById('no-historical-warning').style.display = 'block';
                                             document.getElementById('hist-content-wrapper').style.display = 'none';
                                         }
+                                    } else {
+                                        console.error("No se encontraron fechas históricas disponibles.");
+                                        const warningEl = document.getElementById('no-historical-warning');
+                                        warningEl.style.display = 'block';
+                                        warningEl.innerHTML = `
+                                            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                                            <h4 class="font-weight-bold text-dark mb-2">No se encontró base histórica</h4>
+                                            <p class="text-secondary mx-auto mb-4" style="max-width: 600px;">
+                                                No existen periodos financieros cargados con estado <strong>Definitivo</strong>. 
+                                                Por favor, asegúrese de cargar y cerrar los periodos contables antes de proceder.
+                                            </p>`;
+                                        document.getElementById('hist-content-wrapper').style.display = 'none';
+                                        document.getElementById('toggle-hist-period-selector-btn').disabled = true;
                                     }
                                 })
-                                .catch(err => console.error("Error fetching available historical dates:", err));
+                                .catch(err => {
+                                    console.error("Error fetching available historical dates:", err);
+                                    document.getElementById('no-historical-warning').style.display = 'block';
+                                });
 
                             window.toggleHistSelector = function() {
                                 const activeDiv = document.getElementById('hist-period-selector-active');
@@ -294,7 +330,7 @@
                                     
                                     // Sync checkboxes
                                     document.querySelectorAll('.hist-period-cb').forEach(cb => {
-                                        cb.checked = histSavedPeriods.includes(cb.value);
+                                        cb.checked = window.histSavedPeriods.includes(cb.value);
                                     });
                                 } else {
                                     activeDiv.style.display = 'none';
@@ -353,7 +389,7 @@
                             };
                             
                             window.updateHistSummaryBadges = function() {
-                                const badges = histSavedPeriods.map(p => {
+                                const badges = window.histSavedPeriods.map(p => {
                                     const [y, m] = p.split('-');
                                     return `<span class="badge badge-success mr-1 mb-1" style="font-size:0.78rem;border-radius:20px;padding:4px 10px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
                                 }).join('');
@@ -367,7 +403,7 @@
                                     toastr.warning('Seleccione al menos un período.');
                                     return;
                                 }
-                                histSavedPeriods = checked;
+                                window.histSavedPeriods = checked;
                                 toggleHistSelector(); // close
                                 updateHistSummaryBadges();
                                 
@@ -383,7 +419,7 @@
                                         "Content-Type": "application/json",
                                         "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : ''
                                     },
-                                    body: JSON.stringify({ step: '2', periods: histSavedPeriods })
+                                    body: JSON.stringify({ step: '2', periods: window.histSavedPeriods })
                                 })
                                 .then(res => res.json())
                                 .then(data => {
@@ -399,7 +435,7 @@
                             function histFetchData() {
                                 $.ajax({
                                     url: "{% url 'financial_planning:api_trial_balance_data' %}",
-                                    data: { periods: JSON.stringify(histSavedPeriods), currency: 'MN' },
+                                    data: { periods: JSON.stringify(window.histSavedPeriods), currency: 'MN' },
                                     success: function(resp) {
                                         if (resp.status === 'success') {
                                             histBalanceData = resp;
@@ -434,19 +470,26 @@
                                 const theadHtml = `<tr><th style="width:90px;min-width:90px;text-align:left;">Código</th><th class="col-desc" style="width:260px;min-width:260px;text-align:left;">Descripción</th>${pHeaders}</tr>`;
                                 
                                 $('#hist-bs-thead').html(theadHtml);
-                                $('#hist-is-thead').html(theadHtml);
-                                $('#hist-mis-thead').html(theadHtml);
-
                                 $('#hist-bs-body').html(histBuildRows(histBalanceData.balance_sheet, periods, 'bs') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
-                                $('#hist-is-body').html(histBuildRows(histBalanceData.income_statement, periods, 'bis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
-                                $('#hist-mis-body').html(histBuildRows(histBalanceData.income_statement, periods, 'bmis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+
+                                $('#hist-is-thead').html(theadHtml);
+                                $('#hist-is-body').html(histBuildRows(histBalanceData.income_statement, periods, 'is') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+                                
+                                $('#hist-mis-thead').html(theadHtml);
+                                $('#hist-mis-body').html(histBuildRows(histBalanceData.income_statement, periods, 'mis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
 
                                 if (histBalanceData.totals) histRenderSummary(histBalanceData.totals, periods);
+                                
+                                // Tab styling handlers
+                                $('.nav-link', '#hist-tabs').on('click', function() {
+                                    $('.nav-link', '#hist-tabs').css({'color': '#858796', 'border-bottom': 'none'});
+                                    $(this).css({'color': '#4e73df', 'border-bottom': '3px solid #4e73df'});
+                                });
                             }
 
                             function histBuildRows(items, periods, prefix) {
                                 let sortedItems = items;
-                                if (prefix === 'bis' || prefix === 'bmis') {
+                                if (prefix === 'is' || prefix === 'mis') {
                                     sortedItems = [
                                         ...items.filter(a => a.code.toString().startsWith('5')),
                                         ...items.filter(a => a.code.toString().startsWith('4')),
@@ -458,12 +501,14 @@
                                     const hasChildren = item.children_codes && item.children_codes.length > 0;
                                     const lvl = histGetLevelClass(item.level);
                                     const isRoot = !item.parent_code;
-                                    const bDict = (prefix==='bmis') ? item.monthly_balances : item.balances;
+                                    const bDict = (prefix==='mis') ? item.monthly_balances : item.balances;
+                                    let isAllZero = true;
                                     const cells = periods.map(p => {
                                         const val = (bDict && bDict[p]!=null) ? bDict[p] : 0;
+                                        if (Math.round(val) !== 0) isAllZero = false;
                                         return `<td class="text-right text-monospace px-2">${histFmtAmt(val)}</td>`;
                                     }).join('');
-                                    html += `<tr class="accounting-row level-${lvl} ${hasChildren?'':'level-leaf'} node-collapsed" style="${isRoot?'':'display:none;'}" data-code="${item.code}" data-parent="${item.parent_code||''}" data-prefix="${prefix}" data-depth="${item.depth}" id="${prefix}-row-${item.code}" onclick="histToggleRow('${item.code}','${prefix}')">
+                                    html += `<tr class="accounting-row level-${lvl} ${hasChildren?'':'level-leaf'} node-collapsed" style="${isRoot?'':'display:none;'}" data-code="${item.code}" data-parent="${item.parent_code||''}" data-prefix="${prefix}" data-depth="${item.depth}" data-all-zeros="${isAllZero}" id="${prefix}-row-${item.code}" onclick="histToggleRow('${item.code}','${prefix}')">
                                         <td style="padding-left:${item.depth*14}px;">${hasChildren?'<span class="node-expander"><i class="fas fa-chevron-down"></i></span>':'<span style="display:inline-block;width:26px;"></span>'}<span class="badge badge-light border text-monospace text-dark">${item.code}</span></td>
                                         <td class="col-desc">${item.name}${item.has_discrepancy?'<i class="fas fa-exclamation-triangle text-warning ml-1" title="Discrepancia"></i>':''}</td>
                                         ${cells}</tr>`;
@@ -474,23 +519,31 @@
                             function histRenderSummary(totals, periods) {
                                 const numCols=periods.length;const colW=105;
                                 const fmt=v=>histFmtAmt(v);
-                                const mn=name=>`<th class="text-left font-weight-bold px-2" style="width:350px;min-width:350px;white-space:nowrap">${name}</th>`;
-                                const pH=p=>{const[y,m]=p.split('-');return`<th class="text-right px-2" style="min-width:${colW}px;width:${colW}px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;};
+                                const mn=name=>`<th style="width:90px;min-width:90px;border-right:none;background-color:#f8f9fc;"></th><th class="col-desc font-weight-bold px-2" style="width:260px;min-width:260px;text-align:left;border-left:none;background-color:#f8f9fc;">${name}</th>`;
+                                const pH=p=>{const[y,m]=p.split('-');return`<th class="text-right px-2" style="min-width:${colW}px;width:${colW}px;background-color:#f8f9fc;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;};
                                 const theadRow=`<tr>${mn('Concepto')}${periods.map(pH).join('')}</tr>`;
+
+                                const rowRenderer = row => {
+                                    const cells = periods.map(p => {
+                                        const val = totals[p] ? totals[p][row.key] : 0;
+                                        return `<td class="text-right text-monospace px-2 ${row.cls}">${fmt(val)}</td>`;
+                                    }).join('');
+                                    return `<tr><td style="border-right:none;"></td><td class="font-weight-bold col-desc px-2" style="border-left:none;white-space:nowrap">${row.label}</td>${cells}</tr>`;
+                                };
 
                                 // Balance General
                                 const bsRows=[{label:'Total Activos (1)',key:'total_activo',cls:'text-primary'},{label:'Total Pasivos (2)',key:'total_pasivo',cls:'text-danger'},{label:'Total Patrimonio (3)',key:'total_patrimonio',cls:'text-info'},{label:'Pasivo + Patrimonio',key:'total_pasivo_patrimonio',cls:'font-weight-bold text-dark'},{label:'Diferencia',key:'diferencia',cls:'font-italic text-secondary'}];
-                                let bsTbody=bsRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right px-2 ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr><td class="font-weight-bold px-2" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                let bsTbody=bsRows.map(rowRenderer).join('');
                                 $('#hist-sum-bs-thead').html(theadRow);$('#hist-sum-bs-tbody').html(bsTbody);
-
-                                // Estado de Resultados (Acumulado)
-                                const isRows=[{label:'Total Ingresos (5)',key:'total_ingresos',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta',cls:'table-warning font-weight-bold'}];
-                                let isTbody=isRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right px-2 ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold px-2" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                
+                                // Estado de Resultados Acumulado
+                                const isRows=[{label:'Total Ingresos (5)',key:'total_ingresos',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos',cls:'text-danger'},{label:'Utilidad Neta Acumulada',key:'utilidad_neta',cls:'font-weight-bold text-dark'}];
+                                let isTbody=isRows.map(rowRenderer).join('');
                                 $('#hist-sum-is-thead').html(theadRow);$('#hist-sum-is-tbody').html(isTbody);
-
-                                // Estado de Resultados (Mensual)
-                                const misRows=[{label:'Total Ingresos (5)',key:'total_ingresos_monthly',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos_monthly',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta_monthly',cls:'table-warning font-weight-bold'}];
-                                let misTbody=misRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right px-2 ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold px-2" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                
+                                // Estado de Resultados Mensual
+                                const misRows=[{label:'Ingresos Mensuales (5)',key:'total_ingresos_mensual',cls:'text-success'},{label:'Gastos Mensuales (4)',key:'total_gastos_mensual',cls:'text-danger'},{label:'Utilidad Neta Mensual',key:'utilidad_neta_mensual',cls:'font-weight-bold text-dark'}];
+                                let misTbody=misRows.map(rowRenderer).join('');
                                 $('#hist-sum-mis-thead').html(theadRow);$('#hist-sum-mis-tbody').html(misTbody);
 
                                 // Update cuadratura badge
@@ -498,6 +551,32 @@
                                 if(allSquared){$('#hist-squareBadge').removeClass('badge-danger').addClass('badge-success').html('<i class="fas fa-check-circle mr-1"></i>Balance Cuadrado');}
                                 else{$('#hist-squareBadge').removeClass('badge-success').addClass('badge-danger').html('<i class="fas fa-exclamation-triangle mr-1"></i>Descuadrado');}
                             }
+
+                            
+                            let histZerosHidden = false;
+                            window.histToggleZeros = function() {
+                                histZerosHidden = !histZerosHidden;
+                                const btn = $('#hist-btn-toggle-zeros');
+                                if (histZerosHidden) {
+                                    btn.html('<i class="fas fa-eye mr-1"></i>Mostrar Ceros');
+                                    btn.removeClass('btn-outline-info').addClass('btn-info');
+                                } else {
+                                    btn.html('<i class="fas fa-eye-slash mr-1"></i>Ocultar Ceros');
+                                    btn.removeClass('btn-info').addClass('btn-outline-info');
+                                }
+                                histApplyZeroFilter();
+                            };
+
+                            window.histApplyZeroFilter = function() {
+                                $('#hist-content-wrapper .accounting-row').each(function() {
+                                    const r = $(this);
+                                    if (histZerosHidden && r.data('all-zeros') === true) {
+                                        r.addClass('force-hide-zero');
+                                    } else {
+                                        r.removeClass('force-hide-zero');
+                                    }
+                                });
+                            };
 
                             // Tree interaction
                             window.histToggleRow = function(code, prefix) {
@@ -530,6 +609,7 @@
                         });
                         </script>
                         <div class="mt-4 text-right">
+                            <button type="button" onclick="saveHistoricalData()" class="btn btn-success px-5 py-2 font-weight-bold rounded-pill shadow mr-2"><i class="fas fa-save mr-2"></i>Fijar Data Histórica</button>
                             <a href="javascript:void(0);" onclick="handleWizardContinue('?step=3')" class="btn btn-primary px-5 py-2 font-weight-bold rounded-pill shadow">Continuar a Data Histórica <i class="fas fa-arrow-right ml-2"></i></a>
                         </div>
                     </div>
@@ -4772,6 +4852,162 @@ function exportAnalysisToPDFStep7() {
         pdf.save(`Proyeccion_PyL_${new Date().toISOString().slice(0,10)}.pdf`);
     });
 }
+
+window.exportWizardData = function(format) {
+    const activeTab = document.querySelector('#hist-tabs-content .tab-pane.active');
+    if (!activeTab) return;
+    
+    // Preparar el nombre del archivo
+    let tabId = activeTab.id;
+    let title = "Base Historica - ";
+    if (tabId === 'hist-bs-panel') title += "Balance General";
+    else if (tabId === 'hist-is-panel') title += "ER Acumulado";
+    else if (tabId === 'hist-mis-panel') title += "ER Mensual";
+    
+    // Función auxiliar para forzar la carga de un script
+    const loadScript = (src) => {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) return resolve();
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    };
+
+    if (format === 'excel') {
+        const table = activeTab.querySelector('table');
+        const summaryTable = activeTab.querySelectorAll('table')[1];
+        
+        if (typeof XLSX !== 'undefined') {
+            const wb = XLSX.utils.book_new();
+            const ws1 = XLSX.utils.table_to_sheet(table);
+            XLSX.utils.book_append_sheet(wb, ws1, "Tabla Principal");
+            if (summaryTable) {
+                const ws2 = XLSX.utils.table_to_sheet(summaryTable);
+                XLSX.utils.book_append_sheet(wb, ws2, "Resumen");
+            }
+            XLSX.writeFile(wb, `${title}.xlsx`);
+        } else {
+            let html = `<html><head><meta charset="utf-8"></head><body><h2>${title}</h2>`;
+            html += table.outerHTML;
+            if (summaryTable) {
+                html += '<br><br>';
+                html += summaryTable.outerHTML;
+            }
+            html += `</body></html>`;
+            
+            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${title}.xls`;
+            a.click();
+        }
+        
+    } else if (format === 'word') {
+        const table = activeTab.querySelector('table');
+        const summaryTable = activeTab.querySelectorAll('table')[1];
+        
+        let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>${title}</title></head><body><h2>${title}</h2>`;
+        html += table.outerHTML;
+        if (summaryTable) {
+            html += '<br><br>';
+            html += summaryTable.outerHTML;
+        }
+        html += `</body></html>`;
+        
+        const blob = new Blob([html], { type: 'application/msword' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${title}.doc`;
+        a.click();
+        
+    } else if (format === 'pdf') {
+        Swal.fire({title:'Generando PDF...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js').then(() => {
+            const element = activeTab.cloneNode(true);
+            // Hacer la tabla expandida temporalmente para el PDF si tiene scrolls
+            const tables = element.querySelectorAll('.table-responsive');
+            tables.forEach(t => {
+                t.style.overflow = 'visible';
+                t.style.width = 'auto';
+            });
+            
+            const opt = {
+                margin: 0.5,
+                filename: `${title}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            
+            html2pdf().set(opt).from(element).save().then(() => Swal.close());
+        }).catch(() => Swal.fire('Error', 'No se pudo cargar la librería para PDF.', 'error'));
+        
+    } else if (format === 'jpg') {
+        Swal.fire({title:'Generando JPG...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+        loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {
+            const origOverflow = activeTab.querySelector('.table-responsive').style.overflow;
+            activeTab.querySelector('.table-responsive').style.overflow = 'visible';
+            
+            html2canvas(activeTab, { scale: 2, useCORS: true }).then(canvas => {
+                activeTab.querySelector('.table-responsive').style.overflow = origOverflow;
+                const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                const a = document.createElement('a');
+                a.href = imgData;
+                a.download = `${title}.jpg`;
+                a.click();
+                Swal.close();
+            });
+        }).catch(() => Swal.fire('Error', 'No se pudo cargar la librería para JPG.', 'error'));
+    }
+};
+
+window.saveHistoricalData = function(callback) {
+    if (typeof window.histSavedPeriods === 'undefined' || window.histSavedPeriods.length === 0) {
+        Swal.fire('Advertencia', 'No hay periodos seleccionados para guardar. Seleccione los periodos primero.', 'warning');
+        return;
+    }
+    
+    Swal.fire({
+        title: 'Guardando...',
+        text: 'Fijando los datos históricos en el plan...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    fetch('{% url "financial_planning:assign_trial_balance_to_plan" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            plan_id: '{{ plan.id }}',
+            periods: window.histSavedPeriods
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            if (callback) {
+                callback();
+            } else {
+                Swal.fire('Guardado', 'Los periodos históricos han sido fijados exitosamente. Ahora sirven como base histórica del plan.', 'success');
+            }
+        } else {
+            Swal.fire('Error', data.msg || 'No se pudo guardar la data histórica.', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        Swal.fire('Error', 'Error de conexión al guardar la data histórica.', 'error');
+    });
+};
 
 window.handleWizardContinue = function(url) {
     const doContinue = () => {

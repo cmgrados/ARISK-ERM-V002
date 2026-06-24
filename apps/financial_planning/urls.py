@@ -29,4 +29,5 @@ urlpatterns = [
     path('plan/<int:plan_id>/api/ml_montecarlo_projection/', views.ml_montecarlo_projection, name='ml_montecarlo_projection'),
     path('plan/<int:plan_id>/api/api_lock_step6/', views.api_lock_step6, name='api_lock_step6'),
     path('plan/<int:plan_id>/api/projected_results/', views.projected_results, name='projected_results'),
+    path('api/assign_trial_balance_to_plan/', views.assign_trial_balance_to_plan, name='assign_trial_balance_to_plan'),
 ]

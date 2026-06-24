@@ -93,3 +93,81 @@ class PlanFinanciero(TenantAwareModel):
 
     def __str__(self):
         return f"{self.nombre} ({self.anio_base})"
+
+class FinancialPlan(TenantAwareModel):
+    STATUS_CHOICES = (
+        ('DRAFT', 'Draft'),
+        ('ACTIVE', 'Active'),
+        ('ARCHIVED', 'Archived'),
+    )
+    name = models.CharField(max_length=255, verbose_name="Nombre del Plan")
+    start_date = models.DateField(verbose_name="Fecha de Inicio")
+    end_date = models.DateField(verbose_name="Fecha Fin")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='DRAFT')
+
+    class Meta:
+        verbose_name = "Financial Plan"
+        verbose_name_plural = "Financial Plans"
+        unique_together = ('organization', 'name')
+
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+
+class MacroAssumption(TenantAwareModel):
+    plan = models.ForeignKey(FinancialPlan, on_delete=models.CASCADE, related_name='macro_assumptions')
+    month = models.PositiveIntegerField(verbose_name="Mes de Proyección")
+    inflation_rate = models.DecimalField(max_digits=7, decimal_places=4, default=Decimal('0.0000'))
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal('0.0000'))
+    
+    class Meta:
+        verbose_name = "Supuesto Macroeconómico"
+        verbose_name_plural = "Supuestos Macroeconómicos"
+        unique_together = ('organization', 'plan', 'month')
+
+class PlanAssumption(TenantAwareModel):
+    CATEGORY_CHOICES = (
+        ('CREDIT_PORTFOLIO', 'Cartera de Créditos'),
+        ('DELINQUENCY', 'Mora'),
+        ('SAVINGS', 'Ahorros'),
+        ('DPF', 'DPF'),
+        ('CONTRIBUTIONS', 'Aportes'),
+    )
+    plan = models.ForeignKey(FinancialPlan, on_delete=models.CASCADE, related_name='plan_assumptions')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    
+    trend_rate = models.DecimalField(max_digits=7, decimal_places=4, default=Decimal('0.0000'), verbose_name="Tasa de Tendencia")
+    optimistic_rate = models.DecimalField(max_digits=7, decimal_places=4, default=Decimal('0.0000'), verbose_name="Escenario Optimista")
+    pessimistic_rate = models.DecimalField(max_digits=7, decimal_places=4, default=Decimal('0.0000'), verbose_name="Escenario Pesimista")
+
+    class Meta:
+        verbose_name = "Supuesto de Plan"
+        verbose_name_plural = "Supuestos de Plan"
+        unique_together = ('organization', 'plan', 'category')
+
+class HistoricalData(TenantAwareModel):
+    plan = models.ForeignKey(FinancialPlan, on_delete=models.CASCADE, related_name='historical_data')
+    period = models.CharField(max_length=10, verbose_name="Periodo (YYYY-MM)")
+    account_name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        verbose_name = "Dato Histórico"
+        verbose_name_plural = "Datos Históricos"
+        unique_together = ('organization', 'plan', 'period', 'account_name')
+
+class ProjectedData(TenantAwareModel):
+    SCENARIO_CHOICES = (
+        ('BASE', 'Base (Tendencia)'),
+        ('OPTIMISTIC', 'Optimista'),
+        ('PESSIMISTIC', 'Pesimista'),
+    )
+    plan = models.ForeignKey(FinancialPlan, on_delete=models.CASCADE, related_name='projected_data')
+    month = models.PositiveIntegerField(verbose_name="Mes Proyectado (1 a N)")
+    scenario = models.CharField(max_length=20, choices=SCENARIO_CHOICES, default='BASE')
+    account_name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        verbose_name = "Dato Proyectado"
+        verbose_name_plural = "Datos Proyectados"
+        unique_together = ('organization', 'plan', 'month', 'scenario', 'account_name')

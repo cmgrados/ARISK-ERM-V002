@@ -250,14 +250,14 @@ def api_historical_passive_data(request, plan_id=None):
 
 @login_required
 def api_available_historical_dates(request, plan_id=None):
-    from .models import PeriodoFinanciero
-    from users.models import Organization
-    organization = request.user.organization
-    if not organization:
-        organization = Organization.objects.first()
-        
-    periodos = PeriodoFinanciero.objects.filter(organization=organization, estado='FINAL').order_by('-anio', '-mes')
-    dates = [f"{p.anio}-{p.mes:02d}" for p in periodos]
+    from liquidity_risk.models import LiqBalanceUpload
+    # The uploads have a `period` date field.
+    uploads = LiqBalanceUpload.objects.filter(status='SUCCESS').order_by('-period')
+    dates = []
+    for u in uploads:
+        d_str = f"{u.period.year}-{u.period.month:02d}"
+        if d_str not in dates:
+            dates.append(d_str)
     return JsonResponse({'status': 'success', 'dates': dates})
 
 from django.views.decorators.csrf import csrf_exempt
@@ -278,14 +278,18 @@ def toggle_step_lock(request, plan_id=None):
             if 'locked_steps' not in plan.historical_data:
                 plan.historical_data['locked_steps'] = {}
                 
-            plan.historical_data['locked_steps'][step] = (action == 'lock')
+            if action == 'lock':
+                plan.historical_data['locked_steps'][step] = True
+            elif action == 'unlock':
+                plan.historical_data['locked_steps'][step] = False
+                
             plan.save()
             
-            msg = 'Paso bloqueado correctamente.' if action == 'lock' else 'Paso desbloqueado.'
+            msg = f'Paso {step} {action}ed.'
             return JsonResponse({'status': 'success', 'msg': msg})
         except Exception as e:
             return JsonResponse({'status': 'error', 'msg': str(e)})
-    return JsonResponse({'status': 'error', 'msg': 'Método no permitido.'})
+    return JsonResponse({'status': 'error', 'msg': 'Invalid request.'})
 
 @login_required
 def ml_trend_projection(request, plan_id=None):
@@ -306,86 +310,133 @@ def api_trial_balance_data(request, plan_id=None):
         except Exception:
             pass
             
-    organization = request.user.organization
-    if not organization:
-        from users.models import Organization
-        organization = Organization.objects.first()
-
-    # Query the balances for the selected periods
-    from django.db.models import Sum
-    from .models import PeriodoFinanciero, CuentaContable, BalanceDetalle
+    from liquidity_risk.models import LiqBalanceDetail
     
-    # Filter periods
-    selected_period_objs = []
+    # Filter by period list
+    selected_details = []
     for p_str in periods:
         try:
             y, m = p_str.split('-')
-            y, m = int(y), int(m)
-            p_obj = PeriodoFinanciero.objects.filter(organization=organization, anio=y, mes=m).first()
-            if p_obj:
-                selected_period_objs.append(p_obj)
+            details = LiqBalanceDetail.objects.filter(period__year=y, period__month=m, upload__status='SUCCESS')
+            selected_details.extend(details)
         except Exception:
             pass
             
-    # Get all accounts that have balances in these periods, plus their parents
-    balances = BalanceDetalle.objects.filter(periodo__in=selected_period_objs)
-    
+    def get_parent_code(code):
+        if len(code) == 1: return None
+        if len(code) == 2: return code[0]
+        if len(code) % 2 == 0: return code[:-2]
+        return code[:-1] # fallback
+
     account_dict = {}
-    for b in balances:
-        c = b.cuenta
-        p_str = f"{b.periodo.anio}-{b.periodo.mes:02d}"
+    
+    for d in selected_details:
+        c_code = str(d.account_code)
+        c_name = d.account_name
+        p_str = f"{d.period.year}-{d.period.month:02d}"
         
-        # Build path to root to ensure all parents exist
-        path = []
-        curr = c
-        while curr:
-            path.append(curr)
-            curr = curr.parent
+        # Reverse sign for Pasivo and Patrimonio to show as positive numbers natively, 
+        # making debit results (like negative outcomes) show as negative.
+        val = float(d.balance)
+        if c_code.startswith('2') or c_code.startswith('3') or c_code.startswith('5'):
+            val = val * -1
             
-        for acc in path:
-            if acc.codigo not in account_dict:
-                account_dict[acc.codigo] = {
-                    'code': acc.codigo,
-                    'parent_code': acc.parent.codigo if acc.parent else None,
-                    'level': acc.nivel,
-                    'depth': acc.nivel,
-                    'name': acc.nombre,
-                    'tipo': acc.tipo,
+        # Ensure all parents in the hierarchy exist
+        curr_code = c_code
+        curr_name = c_name
+        path = []
+        while curr_code:
+            path.append((curr_code, curr_name))
+            curr_code = get_parent_code(curr_code)
+            curr_name = f"Cuenta {curr_code}" if curr_code else "" # Default name for created parents
+            
+        for idx, (code, name) in enumerate(path):
+            if code not in account_dict:
+                if code.startswith('1'): tipo = 'ACTIVO'
+                elif code.startswith('2'): tipo = 'PASIVO'
+                elif code.startswith('3'): tipo = 'PATRIMONIO'
+                elif code.startswith('4'): tipo = 'GASTO'
+                elif code.startswith('5'): tipo = 'INGRESO'
+                else: tipo = 'OTRO'
+                
+                parent_code = get_parent_code(code)
+                account_dict[code] = {
+                    'code': code,
+                    'parent_code': parent_code,
+                    'level': len(code),
+                    'depth': len(code),
+                    'name': name if idx == 0 else account_dict.get(code, {}).get('name', name),
+                    'tipo': tipo,
                     'balances': {},
                     'monthly_balances': {},
                     'children_codes': []
                 }
                 
-        # Add the balance to the specific account
-        if p_str not in account_dict[c.codigo]['balances']:
-            account_dict[c.codigo]['balances'][p_str] = 0
-            account_dict[c.codigo]['monthly_balances'][p_str] = 0
+        # We only add the balance to the specific leaf account; we will roll up later
+        if p_str not in account_dict[c_code]['balances']:
+            account_dict[c_code]['balances'][p_str] = 0
+            account_dict[c_code]['monthly_balances'][p_str] = 0
             
-        account_dict[c.codigo]['balances'][p_str] += float(b.monto)
-        account_dict[c.codigo]['monthly_balances'][p_str] += float(b.monto)
+        account_dict[c_code]['balances'][p_str] += val
+        account_dict[c_code]['monthly_balances'][p_str] += val
         
-    # Populate children_codes and roll up balances
-    # Sort accounts by level (deepest first) to roll up
+    # Correct names for parents if they were already present in the DB
+    for d in selected_details:
+        c_code = str(d.account_code)
+        if c_code in account_dict:
+            account_dict[c_code]['name'] = d.account_name
+
+    # Roll up balances from deepest to top
     accounts_sorted = sorted(account_dict.values(), key=lambda x: x['level'], reverse=True)
     
-    # Identify parents to avoid double counting if the DB already stored aggregated values
-    parent_codes = set(acc['parent_code'] for acc in accounts_sorted if acc['parent_code'])
+    # Initialize 0 balances for all periods for all accounts
     for acc in accounts_sorted:
-        if acc['code'] in parent_codes:
-            for p_str in periods:
+        for p_str in periods:
+            if p_str not in acc['balances']:
                 acc['balances'][p_str] = 0
                 acc['monthly_balances'][p_str] = 0
                 
+    # Identify parents to avoid double counting if the DB already stored aggregated values
+    # In this logic, we assume we want to roll up leaf values manually
+    # But LiqBalanceDetail usually already contains level 1, 2, 3 values!
+    # If the real DB already has balances for "1", "11", we SHOULD NOT roll up!
+    # Let's check if the account has children in the DB. If it does, we don't roll up, we just use its own value!
+    # But wait, we just added all values. Let's just link children to parents.
     for acc in accounts_sorted:
         if acc['parent_code'] and acc['parent_code'] in account_dict:
             parent = account_dict[acc['parent_code']]
             if acc['code'] not in parent['children_codes']:
                 parent['children_codes'].append(acc['code'])
-                
-            # Roll up balance
-            for p_str, amt in acc['balances'].items():
-                parent['balances'][p_str] = parent['balances'].get(p_str, 0) + amt
-                parent['monthly_balances'][p_str] = parent['monthly_balances'].get(p_str, 0) + amt
+
+    # Identify required previous months for monthly balances
+    prev_months_needed = set()
+    for p_str in periods:
+        y, m = p_str.split('-')
+        m_int = int(m)
+        y_int = int(y)
+        if m_int > 1:
+            prev_months_needed.add((y_int, m_int - 1))
+            
+    # Fetch previous balances for accounts 4 and 5
+    from django.db.models import Q
+    prev_details_dict = {}
+    if prev_months_needed:
+        prev_q = Q()
+        for y, m in prev_months_needed:
+            prev_q |= Q(period__year=y, period__month=m)
+        
+        from liquidity_risk.models import LiqBalanceDetail
+        prev_details_qs = LiqBalanceDetail.objects.filter(
+            prev_q, 
+            upload__status='SUCCESS'
+        ).filter(Q(account_code__startswith='4') | Q(account_code__startswith='5'))
+        for d in prev_details_qs:
+            c_code = str(d.account_code)
+            p_str = f"{d.period.year}-{d.period.month:02d}"
+            val = float(d.balance)
+            if c_code.startswith('5'):
+                val *= -1
+            prev_details_dict[(c_code, p_str)] = val
 
     # Split into balance_sheet and income_statement
     balance_sheet = []
@@ -396,9 +447,30 @@ def api_trial_balance_data(request, plan_id=None):
             balance_sheet.append(acc)
         elif acc['tipo'] in ['INGRESO', 'GASTO']:
             income_statement.append(acc)
+
+    # Compute monthly balances for income statement
+    for acc in income_statement:
+        c_code = acc['code']
+        for p_str in periods:
+            y, m = p_str.split('-')
+            m_int = int(m)
+            y_int = int(y)
+            curr_ytd = acc['balances'].get(p_str, 0)
+            
+            if m_int == 1:
+                acc['monthly_balances'][p_str] = curr_ytd
+            else:
+                prev_p_str = f"{y_int}-{m_int - 1:02d}"
+                prev_val = 0
+                if prev_p_str in acc['balances']:
+                    prev_val = acc['balances'][prev_p_str]
+                else:
+                    prev_val = prev_details_dict.get((c_code, prev_p_str), 0)
+                
+                acc['monthly_balances'][p_str] = curr_ytd - prev_val
             
     # Calculate totals
-    totals = {p: {'A': 0, 'P': 0, 'PT': 0} for p in periods}
+    totals = {p: {'A': 0, 'P': 0, 'PT': 0, 'I_accum': 0, 'G_accum': 0, 'I_month': 0, 'G_month': 0} for p in periods}
     for acc in balance_sheet:
         if acc['level'] == 1:
             for p_str, amt in acc['balances'].items():
@@ -406,6 +478,37 @@ def api_trial_balance_data(request, plan_id=None):
                     if acc['tipo'] == 'ACTIVO': totals[p_str]['A'] += amt
                     elif acc['tipo'] == 'PASIVO': totals[p_str]['P'] += amt
                     elif acc['tipo'] == 'PATRIMONIO': totals[p_str]['PT'] += amt
+                    
+    for acc in income_statement:
+        if acc['level'] == 1:
+            for p_str in periods:
+                amt_accum = acc['balances'].get(p_str, 0)
+                amt_month = acc['monthly_balances'].get(p_str, 0)
+                if p_str in totals:
+                    if acc['tipo'] == 'INGRESO':
+                        totals[p_str]['I_accum'] += amt_accum
+                        totals[p_str]['I_month'] += amt_month
+                    elif acc['tipo'] == 'GASTO':
+                        totals[p_str]['G_accum'] += amt_accum
+                        totals[p_str]['G_month'] += amt_month
+                    
+    # Check cuadratura and set utilidades
+    for p_str in totals:
+        t = totals[p_str]
+        t['total_activo'] = t['A']
+        t['total_pasivo'] = t['P']
+        t['total_patrimonio'] = t['PT']
+        t['total_pasivo_patrimonio'] = t['P'] + t['PT']
+        t['diferencia'] = t['A'] - t['total_pasivo_patrimonio']
+        t['es_cuadrado'] = abs(t['diferencia']) < 2.0
+        
+        t['total_ingresos'] = t['I_accum']
+        t['total_gastos'] = t['G_accum']
+        t['utilidad_neta'] = t['I_accum'] - t['G_accum']
+        
+        t['total_ingresos_mensual'] = t['I_month']
+        t['total_gastos_mensual'] = t['G_month']
+        t['utilidad_neta_mensual'] = t['I_month'] - t['G_month']
                     
     return JsonResponse({
         'status': 'success',
@@ -427,3 +530,36 @@ def api_lock_step6(request, plan_id=None):
 @login_required
 def projected_results(request, plan_id=None):
     return JsonResponse({'status': 'success', 'msg': 'Endpoint en construccion: projected_results'})
+
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def assign_trial_balance_to_plan(request):
+    try:
+        body = json.loads(request.body)
+        plan_id = body.get('plan_id')
+        periods = body.get('periods', [])
+        currency = body.get('currency', 'MN')
+        
+        plan = get_object_or_404(PlanFinanciero, id=plan_id)
+        
+        # We need to make sure the user has access to this plan's organization
+        organization = request.user.organization
+        if not organization:
+            from users.models import Organization
+            organization = Organization.objects.first()
+            
+        if plan.organization != organization:
+            return JsonResponse({'status': 'error', 'msg': 'No tiene permisos para modificar este plan.'}, status=403)
+        
+        hist_data = plan.historical_data or {}
+        hist_data['selected_periods'] = periods
+        hist_data['currency'] = currency
+        
+        plan.historical_data = hist_data
+        plan.save()
+        
+        return JsonResponse({'status': 'success', 'msg': 'Balance histórico asignado correctamente al plan.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'msg': str(e)})
