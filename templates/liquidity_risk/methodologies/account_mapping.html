@@ -13,6 +13,9 @@
                     <i class="fas fa-sitemap mr-2 text-primary"></i>Gestión de Maestro de Cuentas
                 </h5>
                 <div class="card-tools">
+                    <a href="{% url 'utilities:export_account_mapping' %}?model={{ selected_model }}" class="btn btn-sm btn-success rounded-pill px-3 shadow-sm mr-2">
+                        <i class="fas fa-file-excel mr-1"></i> Exportar
+                    </a>
                     <button type="button" class="btn btn-sm btn-dark rounded-pill px-3" data-toggle="modal" data-target="#uploadModal">
                         <i class="fas fa-file-import mr-1"></i> Importar Plan
                     </button>

@@ -171,3 +171,46 @@ class ProjectedData(TenantAwareModel):
         verbose_name = "Dato Proyectado"
         verbose_name_plural = "Datos Proyectados"
         unique_together = ('organization', 'plan', 'month', 'scenario', 'account_name')
+
+class SimulacionEscenario(TenantAwareModel):
+    """Guarda la configuración de tasas y variables (tendencias y montecarlo) para la proyección de los E.F."""
+    plan = models.ForeignKey(PlanFinanciero, on_delete=models.CASCADE, related_name='escenarios')
+    agencia = models.CharField(max_length=100, default='Consolidado')
+    variable_id = models.CharField(max_length=100)
+    variable_name = models.CharField(max_length=255)
+    
+    tasa_tendencia = models.DecimalField(max_digits=10, decimal_places=4, default=0)
+    tasa_base = models.DecimalField(max_digits=10, decimal_places=4, default=0)
+    tasa_pesimista = models.DecimalField(max_digits=10, decimal_places=4, default=0)
+    tasa_optimista = models.DecimalField(max_digits=10, decimal_places=4, default=0)
+    
+    class Meta:
+        verbose_name = "Simulación Escenario"
+        verbose_name_plural = "Simulaciones Escenarios"
+        unique_together = ('organization', 'plan', 'agencia', 'variable_id')
+
+    def __str__(self):
+        return f"{self.plan.nombre} - {self.variable_name} ({self.agencia})"
+
+class ProyeccionMensual(TenantAwareModel):
+    """Guarda el valor de la proyección (tendencia y montecarlo) por mes para proyectar en los estados financieros"""
+    escenario = models.ForeignKey(SimulacionEscenario, on_delete=models.CASCADE, related_name='proyecciones')
+    mes_proyeccion = models.PositiveIntegerField() # 1 a N
+    
+    valor_tendencia = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    valor_base = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    valor_pesimista = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    valor_optimista = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    
+    mc_valor_base = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    mc_valor_pesimista = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    mc_valor_optimista = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Proyección Mensual"
+        verbose_name_plural = "Proyecciones Mensuales"
+        unique_together = ('organization', 'escenario', 'mes_proyeccion')
+        ordering = ['mes_proyeccion']
+
+    def __str__(self):
+        return f"{self.escenario.variable_name} - Mes {self.mes_proyeccion}"

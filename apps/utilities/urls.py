@@ -28,4 +28,5 @@ urlpatterns = [
     path('carga/balance/view/<int:upload_id>/', views.view_balance, name='view_balance'),
     path('carga/balance/delete/<int:upload_id>/', views.delete_balance, name='delete_balance'),
     path('maestro-cuentas/', views.account_mapping, name='account_mapping'),
+    path('maestro-cuentas/exportar/', views.export_account_mapping, name='export_account_mapping'),
 ]

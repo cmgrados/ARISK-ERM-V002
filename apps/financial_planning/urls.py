@@ -19,6 +19,8 @@ urlpatterns = [
     path('api/api_trial_balance_data/', views.api_trial_balance_data, name='api_trial_balance_data'),
     path('plan/<int:plan_id>/api/api_get_trend_data/', views.api_get_trend_data, name='api_get_trend_data'),
     path('plan/<int:plan_id>/api/manage_assumptions/', views.manage_assumptions, name='manage_assumptions'),
+    path('plan/<int:plan_id>/api/api_get_assumptions_product/', views.api_get_assumptions_product, name='api_get_assumptions_product'),
+    path('plan/<int:plan_id>/api/api_save_assumptions_product/', views.api_save_assumptions_product, name='api_save_assumptions_product'),
     path('plan/<int:plan_id>/api/api_save_step_periods/', views.api_save_step_periods, name='api_save_step_periods'),
     path('plan/<int:plan_id>/api/api_run_montecarlo/', views.api_run_montecarlo, name='api_run_montecarlo'),
     path('plan/<int:plan_id>/api/save_institutional_assumptions/', views.save_institutional_assumptions, name='save_institutional_assumptions'),
@@ -28,6 +30,7 @@ urlpatterns = [
     path('plan/<int:plan_id>/api/ml_trend_projection/', views.ml_trend_projection, name='ml_trend_projection'),
     path('plan/<int:plan_id>/api/ml_montecarlo_projection/', views.ml_montecarlo_projection, name='ml_montecarlo_projection'),
     path('plan/<int:plan_id>/api/api_lock_step6/', views.api_lock_step6, name='api_lock_step6'),
+    path('plan/<int:plan_id>/api/save_scenario_fragment/', views.save_scenario_fragment, name='save_scenario_fragment'),
     path('plan/<int:plan_id>/api/projected_results/', views.projected_results, name='projected_results'),
     path('api/assign_trial_balance_to_plan/', views.assign_trial_balance_to_plan, name='assign_trial_balance_to_plan'),
 ]

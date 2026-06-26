@@ -175,11 +175,106 @@ def download_liability_template(request):
 def download_liability_csv(request):
     return download_liability_template(request)
 
+import csv
+from django.http import StreamingHttpResponse
+from django.utils.timezone import now
+from credit_risk.models import CreditOperation
+
+class Echo:
+    """An object that implements just the write method of the file-like interface."""
+    def write(self, value):
+        return value
+
 def export_credit_data(request):
-    return HttpResponse("Exportación no disponible temporalmente.")
+    """
+    Exports all CreditOperations as a Streaming CSV so it can handle 300k+ rows 
+    without consuming all memory or timing out.
+    """
+    def generate_csv():
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        
+        # UTF-8 BOM for Excel to open it automatically with correct encoding
+        yield '\ufeff'
+        
+        # Header
+        yield writer.writerow([
+            'FECHA_CORTE', 'AGENCIA', 'DNI_RUC', 'SOCIO', 'NOMBRE', 'EDAD', 'GENERO',
+            'SEGMENTO', 'OP_REF', 'PRODUCTO', 'SALDO', 'TASA_PORCENTAJE', 
+            'FECHA_DESEMBOLSO', 'FECHA_VENCIMIENTO', 'TIPO_CREDITO', 'PROVISION_REQUERIDA'
+        ])
+        
+        # Querying data in chunks using iterator to save memory
+        qs = CreditOperation.objects.select_related('customer').all().order_by('-load_date').iterator(chunk_size=5000)
+        
+        for obj in qs:
+            yield writer.writerow([
+                obj.load_date,
+                obj.agency,
+                obj.customer.document_id if obj.customer else '',
+                obj.customer.external_id if obj.customer else '',
+                obj.customer.name if obj.customer else '',
+                obj.customer.age if obj.customer else '',
+                obj.customer.gender if obj.customer else '',
+                obj.customer.segment if obj.customer else '',
+                obj.operation_code,
+                obj.product_name,
+                obj.balance,
+                obj.rate,
+                obj.disbursement_date,
+                obj.maturity_date,
+                obj.credit_type,
+                obj.required_provision
+            ])
+            
+    response = StreamingHttpResponse(generate_csv(), content_type='text/csv; charset=utf-8')
+    filename = f'export_cartera_{now().strftime("%Y%m%d_%H%M")}.csv'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 def export_liability_data(request):
-    return HttpResponse("Exportación no disponible temporalmente.")
+    from liquidity_risk.models import LiqLiabilityDetail
+    
+    def generate_csv():
+        pseudo_buffer = Echo()
+        writer = csv.writer(pseudo_buffer)
+        
+        # UTF-8 BOM for Excel
+        yield '\ufeff'
+        
+        # Header
+        yield writer.writerow([
+            'PERIODO', 'AGENCIA', 'AG_APERTURA', 'SOCIO', 'NOMBRES', 'EDAD', 'SEXO',
+            'FECHA_NACIMIENTO', 'FECHA_APERTURA', 'FECHA_VENCIMIENTO', 'NRO_CUENTA',
+            'PRODUCTO', 'MONEDA', 'MONTO', 'SALDO', 'TEA', 'TEM'
+        ])
+        
+        qs = LiqLiabilityDetail.objects.all().order_by('-period').iterator(chunk_size=5000)
+        for obj in qs:
+            yield writer.writerow([
+                obj.period,
+                obj.agency,
+                obj.opening_agency,
+                obj.customer_id,
+                obj.customer_name,
+                obj.customer_age,
+                obj.customer_gender,
+                obj.customer_birth_date,
+                obj.opening_date,
+                obj.due_date,
+                obj.account_number,
+                obj.product,
+                obj.currency,
+                obj.amount,
+                obj.balance,
+                obj.rate,
+                obj.tem
+            ])
+            
+    response = StreamingHttpResponse(generate_csv(), content_type='text/csv; charset=utf-8')
+    filename = f'export_pasivos_{now().strftime("%Y%m%d_%H%M")}.csv'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 def parse_date(date_val):
     if pd.isna(date_val) or date_val == '': return None
@@ -641,8 +736,9 @@ def bulk_load_liability(request):
                             f_open = to_date_only(row.get(col_open, d))
                             f_birth = to_date_only(row.get(col_birth))
                             
-                            # Regla Crítica de Clasificación
-                            if f_venc:
+                            # Regla Crítica de Clasificación (basado en PRODUCTO)
+                            prod_name = str(row.get(col_prod, '')).strip().upper()
+                            if 'PLAZO' in prod_name:
                                 rubro = "Obligaciones por cuentas a plazo"
                                 tipo = "PLAZO"
                             else:
@@ -1014,6 +1110,48 @@ def account_mapping(request):
         'available_models': available_models,
         'model_stats': model_stats
     })
+
+@login_required
+def export_account_mapping(request):
+    selected_model_name = request.GET.get('model', '').strip()
+    
+    if not selected_model_name:
+        first_model = LiqAccountPlanModel.objects.first()
+        selected_model_name = first_model.name if first_model else 'ESTANDAR'
+        
+    mappings = LiqAccountMapping.objects.filter(plan_model__name=selected_model_name).order_by('account_code')
+    
+    data = []
+    for m in mappings:
+        data.append({
+            'CÓDIGO': m.account_code,
+            'DENOMINACIÓN': m.account_name,
+            'RUBRO LIQUIDEZ': m.liquidity_item,
+            'TIPO': m.get_account_type_display(),
+            'MONEDA': m.get_currency_display(),
+            'DISTRIBUCIÓN': m.get_distribution_rule_display(),
+            'ORIGEN': m.get_data_source_display(),
+        })
+        
+    df = pd.DataFrame(data)
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Maestro de Cuentas')
+        
+        # Ajustar ancho de columnas
+        worksheet = writer.sheets['Maestro de Cuentas']
+        for idx, col in enumerate(df.columns):
+            max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.column_dimensions[chr(65 + idx)].width = max_len
+    
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    filename = f'maestro_cuentas_{selected_model_name}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename={filename}'
+    return response
 
 @login_required
 def bulk_load_socios(request):

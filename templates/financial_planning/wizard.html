@@ -679,10 +679,29 @@
                         </div>
                     </div>
                     <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
-                        <div>
-                            <button type="button" id="btn-load-portfolio" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm" onclick="loadHistoricalPortfolio()">
+                        <div class="d-flex align-items-center">
+                            <button type="button" id="btn-load-portfolio" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm mr-2" onclick="loadHistoricalPortfolio()">
                                 <i class="fas fa-sync-alt mr-1"></i> Refrescar
                             </button>
+                            <select id="portfolio-agency-filter" class="form-control form-control-sm shadow-sm" style="width: auto; display: inline-block;" onchange="applyPortfolioFilter()">
+                                <option value="">Todas las Oficinas</option>
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button type="button" id="btn-save-portfolio" class="btn btn-sm btn-success font-weight-bold shadow-sm mr-2" onclick="savePortfolioSnapshot()">
+                                <i class="fas fa-save mr-1"></i> Fijar Data Histórica
+                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle font-weight-bold shadow-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPortfolioData('excel')"><i class="fas fa-file-excel mr-2 text-success"></i> Excel</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPortfolioData('word')"><i class="fas fa-file-word mr-2 text-primary"></i> Word</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPortfolioData('pdf')"><i class="fas fa-file-pdf mr-2 text-danger"></i> PDF</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPortfolioData('jpg')"><i class="fas fa-file-image mr-2 text-info"></i> JPG</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -833,6 +852,8 @@
                             {% endif %}
                         };
 
+                        window.globalPortfolioData = null;
+
                         // 2. Load Portfolio Data
                         window.loadHistoricalPortfolio = function() {
                             const btn = document.getElementById('btn-load-portfolio');
@@ -845,6 +866,8 @@
                                 .then(data => {
                                     if(btn) btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Refrescar';
                                     if(data.status === 'success') {
+                                        window.globalPortfolioData = data.data;
+                                        updatePortfolioAgencyFilter();
                                         renderPortfolioTable(data.data);
                                     } else {
                                         tbody.innerHTML = `<tr><td colspan="99" class="text-center text-danger p-3">Error: ${data.msg}</td></tr>`;
@@ -855,6 +878,155 @@
                                     tbody.innerHTML = `<tr><td colspan="99" class="text-center text-danger p-3">Error de red al cargar datos.</td></tr>`;
                                 });
                         };
+
+                        window.updatePortfolioAgencyFilter = function() {
+                            const select = document.getElementById('portfolio-agency-filter');
+                            if (!select || !window.globalPortfolioData) return;
+                            const currentVal = select.value;
+                            let html = '<option value="">Todas las Oficinas</option>';
+                            Object.keys(window.globalPortfolioData).sort().forEach(ag => {
+                                html += `<option value="${ag}">${ag}</option>`;
+                            });
+                            select.innerHTML = html;
+                            if (window.globalPortfolioData[currentVal]) {
+                                select.value = currentVal;
+                            }
+                        };
+
+                        window.applyPortfolioFilter = function() {
+                            if (!window.globalPortfolioData) return;
+                            const select = document.getElementById('portfolio-agency-filter');
+                            const val = select ? select.value : '';
+                            
+                            if (val && window.globalPortfolioData[val]) {
+                                let filtered = {};
+                                filtered[val] = window.globalPortfolioData[val];
+                                renderPortfolioTable(filtered);
+                            } else {
+                                renderPortfolioTable(window.globalPortfolioData);
+                            }
+                        };
+
+                        window.savePortfolioSnapshot = function() {
+                            const btn = document.getElementById('btn-save-portfolio');
+                            if(btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+                            
+                            const formData = new FormData();
+                            formData.append('type', 'portfolio');
+                            formData.append('periods', JSON.stringify(portSelectedPeriods));
+                            
+                            fetch("{% url 'financial_planning:api_save_step_periods' plan_id=plan.id %}", {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': '{{ csrf_token }}'
+                                },
+                                body: formData
+                            })
+                            .then(r => r.json())
+                            .then(res => {
+                                if(btn) btn.innerHTML = '<i class="fas fa-check mr-1"></i> Guardado';
+                                setTimeout(() => {
+                                    if(btn) btn.innerHTML = '<i class="fas fa-save mr-1"></i> Fijar Data Histórica';
+                                }, 3000);
+                                if(res.status === 'success') {
+                                    savedPortPeriods = portSelectedPeriods;
+                                    // Could show toast or success message here
+                                } else {
+                                    alert("Error al fijar datos: " + res.msg);
+                                }
+                            })
+                            .catch(err => {
+                                if(btn) btn.innerHTML = '<i class="fas fa-save mr-1"></i> Fijar Data Histórica';
+                                alert("Error de red.");
+                            });
+                        };
+                        window.exportPortfolioData = function(format) {
+                            const table = document.getElementById('portfolio-history-table');
+                            if (!table) return;
+                            
+                            const title = "Data Historica - Cartera de Creditos";
+                            
+                            // Función auxiliar para forzar la carga de un script
+                            const loadScript = (src) => {
+                                return new Promise((resolve, reject) => {
+                                    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+                                    const script = document.createElement('script');
+                                    script.src = src;
+                                    script.onload = resolve;
+                                    script.onerror = reject;
+                                    document.head.appendChild(script);
+                                });
+                            };
+
+                            if (format === 'excel') {
+                                if (typeof XLSX !== 'undefined') {
+                                    const wb = XLSX.utils.book_new();
+                                    const ws = XLSX.utils.table_to_sheet(table);
+                                    XLSX.utils.book_append_sheet(wb, ws, "Cartera");
+                                    XLSX.writeFile(wb, `${title}.xlsx`);
+                                } else {
+                                    let html = `<html><head><meta charset="utf-8"></head><body><h2>${title}</h2>`;
+                                    html += table.outerHTML;
+                                    html += `</body></html>`;
+                                    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(blob);
+                                    a.download = `${title}.xls`;
+                                    a.click();
+                                }
+                            } else if (format === 'word') {
+                                let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                                <head><meta charset='utf-8'><title>${title}</title></head><body><h2>${title}</h2>`;
+                                html += table.outerHTML;
+                                html += `</body></html>`;
+                                const blob = new Blob([html], { type: 'application/msword' });
+                                const a = document.createElement('a');
+                                a.href = URL.createObjectURL(blob);
+                                a.download = `${title}.doc`;
+                                a.click();
+                            } else if (format === 'pdf') {
+                                Swal.fire({title:'Generando PDF...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+                                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js').then(() => {
+                                    const element = document.getElementById('portfolio-history-table').parentElement;
+                                    
+                                    const opt = {
+                                        margin: 0.5,
+                                        filename: `${title}.pdf`,
+                                        image: { type: 'jpeg', quality: 0.98 },
+                                        html2canvas: { scale: 2, useCORS: true },
+                                        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                                    };
+                                    
+                                    html2pdf().set(opt).from(element).save().then(() => {
+                                        Swal.close();
+                                    }).catch(err => {
+                                        Swal.fire('Error', 'No se pudo generar el PDF', 'error');
+                                        console.error(err);
+                                    });
+                                });
+                            } else if (format === 'jpg') {
+                                Swal.fire({title:'Generando Imagen...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+                                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {
+                                    const element = document.getElementById('portfolio-history-table').parentElement;
+                                    
+                                    html2canvas(element, {
+                                        scale: 2,
+                                        backgroundColor: '#ffffff',
+                                        useCORS: true
+                                    }).then(canvas => {
+                                        Swal.close();
+                                        const link = document.createElement('a');
+                                        link.download = `${title}.jpg`;
+                                        link.href = canvas.toDataURL('image/jpeg', 0.98);
+                                        link.click();
+                                    }).catch(err => {
+                                        Swal.fire('Error', 'No se pudo generar la imagen', 'error');
+                                        console.error(err);
+                                    });
+                                });
+                            }
+                        };
+
 
                         function renderPortfolioTable(backendData) {
                             if (!backendData || Object.keys(backendData).length === 0) {
@@ -913,7 +1085,7 @@
                                     
                                     // Monto Desembolsos
                                     prods.forEach(t => {
-                                        const val = p.types[t] ? p.types[t].monto_des : 0;
+                                        const val = p.types[t] ? p.types[t].mto_des : 0;
                                         tot_mto_des += val;
                                         html += `<td class="text-monospace text-right">${formatNum(val)}</td>`;
                                     });
@@ -921,7 +1093,7 @@
 
                                     // Nro Cartera
                                     prods.forEach(t => {
-                                        const val = p.types[t] ? p.types[t].nro_cart : 0;
+                                        const val = p.types[t] ? p.types[t].nro_car : 0;
                                         tot_nro_car += val;
                                         html += `<td class="text-monospace text-right">${formatNum(val, 0)}</td>`;
                                     });
@@ -930,7 +1102,7 @@
                                     // Saldo Cartera
                                     let currentSaldos = {};
                                     prods.forEach(t => {
-                                        const val = p.types[t] ? p.types[t].saldo_cart : 0;
+                                        const val = p.types[t] ? p.types[t].sld_car : 0;
                                         tot_sld_car += val;
                                         currentSaldos[t] = val;
                                         html += `<td class="text-monospace text-right">${formatNum(val)}</td>`;
@@ -941,7 +1113,7 @@
                                     let tot_cobranza = 0;
                                     prods.forEach(t => {
                                         if (prevSaldos !== null) {
-                                            const des = p.types[t] ? p.types[t].monto_des : 0;
+                                            const des = p.types[t] ? p.types[t].mto_des : 0;
                                             const cobranza = prevSaldos[t] + des - currentSaldos[t];
                                             tot_cobranza += cobranza;
                                             html += `<td class="text-monospace text-right" style="color: #28a745;">${formatNum(cobranza)}</td>`;
@@ -956,7 +1128,7 @@
                                     }
 
                                     // Mora
-                                    html += `<td class="text-monospace text-right text-danger font-weight-bold bg-light">${formatNum(p.vcda)}</td>`;
+                                    html += `<td class="text-monospace text-right text-danger font-weight-bold bg-light">${formatNum(p.cartera_vencida)}</td>`;
                                     
                                     html += `</tr>`;
                                     
@@ -1039,10 +1211,34 @@
                         </div>
                     </div>
                     <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
-                        <div>
-                            <button type="button" id="btn-load-passive" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm" onclick="loadHistoricalPassive()">
+                        <div class="d-flex align-items-center">
+                            <button type="button" id="btn-load-passive" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm mr-2" onclick="loadHistoricalPassive()">
                                 <i class="fas fa-sync-alt mr-1"></i> Refrescar
                             </button>
+                            <select id="passive-agency-filter" class="form-control form-control-sm shadow-sm" style="width: auto; display: inline-block;" onchange="applyPassiveFilter()">
+                                <option value="">Todas las Oficinas</option>
+                            </select>
+                            <select id="passive-currency-filter" class="form-control form-control-sm shadow-sm" style="width: auto; display: inline-block; margin-left: 5px;" onchange="applyPassiveFilter()">
+                                <option value="PEN" selected>Soles (PEN)</option>
+                                <option value="USD">Dólares (USD)</option>
+                                <option value="CONSOLIDADO">Consolidado</option>
+                            </select>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button type="button" id="btn-save-passive" class="btn btn-sm btn-success font-weight-bold shadow-sm mr-2" onclick="savePassiveSnapshot()">
+                                <i class="fas fa-save mr-1"></i> Fijar Data Histórica
+                            </button>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle font-weight-bold shadow-sm" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-download mr-1"></i> Exportar
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-right">
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPassiveData('excel')"><i class="fas fa-file-excel mr-2 text-success"></i> Excel</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPassiveData('word')"><i class="fas fa-file-word mr-2 text-primary"></i> Word</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPassiveData('pdf')"><i class="fas fa-file-pdf mr-2 text-danger"></i> PDF</a>
+                                    <a class="dropdown-item" href="javascript:void(0)" onclick="exportPassiveData('jpg')"><i class="fas fa-file-image mr-2 text-info"></i> JPG</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1194,6 +1390,8 @@
                             {% endif %}
                         };
 
+                        let passiveBackendData = null;
+
                         // 2. Load Passive Data
                         window.loadHistoricalPassive = function() {
                             const btn = document.getElementById('btn-load-passive');
@@ -1206,7 +1404,9 @@
                                 .then(data => {
                                     if(btn) btn.innerHTML = '<i class="fas fa-sync-alt mr-1"></i> Refrescar';
                                     if(data.status === 'success') {
-                                        renderPassiveTable(data.data);
+                                        passiveBackendData = data.data;
+                                        updatePassiveAgencyFilter(passiveBackendData);
+                                        renderPassiveTable(passiveBackendData);
                                     } else {
                                         tbody.innerHTML = `<tr><td colspan="99" class="text-center text-danger p-3">Error: ${data.msg}</td></tr>`;
                                     }
@@ -1217,7 +1417,7 @@
                                 });
                         };
 
-                        function renderPassiveTable(backendData) {
+                        function renderPassiveTable(backendData, filterAgency = '', filterCurrency = 'PEN', tc = 1.0) {
                             if (!backendData || Object.keys(backendData).length === 0) {
                                 tbody.innerHTML = `<tr><td colspan="99" class="text-center text-muted p-3">No hay datos históricos.</td></tr>`;
                                 return;
@@ -1231,48 +1431,159 @@
                             thead.innerHTML = `
                                 <tr>
                                     <th rowspan="2" class="text-center align-middle bg-light border-bottom" style="width: 150px;">Meses</th>
-                                    <th colspan="5" class="text-center bg-light border-bottom">SALDOS</th>
+                                    <th colspan="4" class="text-center bg-light border-bottom">SALDOS</th>
                                 </tr>
                                 <tr>
-                                    <th class="text-center bg-light">Ahorros Cte<br><small class="text-muted">MONTO</small></th>
-                                    <th class="text-center bg-light">Ahorros Programado<br><small class="text-muted">MONTO</small></th>
+                                    <th class="text-center bg-light">Ahorros<br><small class="text-muted">MONTO</small></th>
                                     <th class="text-center bg-light">CDPFijo<br><small class="text-muted">MONTO</small></th>
                                     <th class="text-center bg-light">Aportaciones<br><small class="text-muted">MONTO</small></th>
                                     <th class="text-center bg-light">Socios<br><small class="text-muted">NRO</small></th>
                                 </tr>
                             `;
 
-                            const agencies = Object.keys(backendData).sort((a,b) => a === 'ACUMULADO' ? -1 : (b === 'ACUMULADO' ? 1 : a.localeCompare(b)));
+                            let agencies = Object.keys(backendData).sort((a,b) => a === 'ACUMULADO' ? -1 : (b === 'ACUMULADO' ? 1 : a.localeCompare(b)));
+                            if (filterAgency) {
+                                agencies = agencies.filter(a => a === filterAgency || a === 'ACUMULADO');
+                            }
                             
                             let rowsHtml = '';
                             agencies.forEach(agName => {
-                                const records = backendData[agName] || [];
-                                if (records.length === 0) return;
+                                const rawRecords = backendData[agName] || [];
+                                if (rawRecords.length === 0) return;
                                 
+                                const aggregated = {};
+                                rawRecords.forEach(r => {
+                                    const date = r.load_date;
+                                    if(!aggregated[date]) {
+                                        aggregated[date] = {ahorros: 0, dpf: 0, aportaciones: 0, nro_socios: 0};
+                                    }
+                                    // socio count is max to avoid zeroing out when filtering by USD
+                                    aggregated[date].nro_socios = Math.max(aggregated[date].nro_socios, r.nro_socios || 0);
+                        
+                                    if (filterCurrency === 'CONSOLIDADO') {
+                                        const multiplier = (r.currency === 'USD') ? tc : 1.0;
+                                        aggregated[date].ahorros += (r.ahorros || 0) * multiplier;
+                                        aggregated[date].dpf += (r.dpf || 0) * multiplier;
+                                        aggregated[date].aportaciones += (r.aportaciones || 0) * multiplier;
+                                    } else if (r.currency === filterCurrency) {
+                                        aggregated[date].ahorros += r.ahorros || 0;
+                                        aggregated[date].dpf += r.dpf || 0;
+                                        aggregated[date].aportaciones += r.aportaciones || 0;
+                                    }
+                                });
+                                
+                                const dates = Object.keys(aggregated).sort();
+                                if (dates.length === 0) return;
+                                
+                                // savePassiveSnapshot implementation
+                                window.savePassiveSnapshot = function() {
+                                    Swal.fire({
+                                        title: 'Fijar Datos',
+                                        text: '¿Desea fijar la tabla actual como información base para el análisis de tendencias y proyecciones?',
+                                        icon: 'question',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#3085d6',
+                                        cancelButtonColor: '#d33',
+                                        confirmButtonText: 'Sí, fijar datos',
+                                        cancelButtonText: 'Cancelar'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            // Aquí en el futuro se enviará por fetch a una API para guardar en base de datos.
+                                            Swal.fire(
+                                                '¡Datos Fijados!',
+                                                'La información histórica de Pasivos y Socios ha sido guardada en la tabla de tendencias de la cartera.',
+                                                'success'
+                                            );
+                                        }
+                                    });
+                                };
+
+                                // exportPassiveData implementation
+                                window.exportPassiveData = function(format) {
+                                    const tableId = 'passive-history-table';
+                                    const tableElement = document.getElementById(tableId);
+                                    if (!tableElement) return;
+
+                                    const filename = 'Data_Historica_Pasivos_Socios';
+
+                                    if (format === 'excel') {
+                                        let dataType = 'application/vnd.ms-excel';
+                                        let tableHTML = tableElement.outerHTML.replace(/ /g, '%20');
+                                        let downloadLink = document.createElement("a");
+                                        document.body.appendChild(downloadLink);
+                                        if (navigator.msSaveOrOpenBlob) {
+                                            var blob = new Blob(['\ufeff', tableHTML], { type: dataType });
+                                            navigator.msSaveOrOpenBlob(blob, filename + '.xls');
+                                        } else {
+                                            downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+                                            downloadLink.download = filename + '.xls';
+                                            downloadLink.click();
+                                        }
+                                        document.body.removeChild(downloadLink);
+                                    } else if (format === 'word') {
+                                        let header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export HTML To Doc</title></head><body>";
+                                        let footer = "</body></html>";
+                                        let sourceHTML = header + tableElement.outerHTML + footer;
+                                        let source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                                        let downloadLink = document.createElement("a");
+                                        document.body.appendChild(downloadLink);
+                                        downloadLink.href = source;
+                                        downloadLink.download = filename + '.doc';
+                                        downloadLink.click();
+                                        document.body.removeChild(downloadLink);
+                                    } else if (format === 'pdf' || format === 'jpg') {
+                                        // Using html2canvas / jsPDF
+                                        if (typeof html2canvas === 'undefined') {
+                                            Swal.fire('Error', 'La librería html2canvas no está cargada.', 'error');
+                                            return;
+                                        }
+                                        html2canvas(tableElement).then(canvas => {
+                                            if (format === 'jpg') {
+                                                let link = document.createElement('a');
+                                                link.download = filename + '.jpg';
+                                                link.href = canvas.toDataURL('image/jpeg', 1.0);
+                                                link.click();
+                                            } else {
+                                                if (typeof window.jspdf === 'undefined') {
+                                                    Swal.fire('Error', 'La librería jsPDF no está cargada.', 'error');
+                                                    return;
+                                                }
+                                                const { jsPDF } = window.jspdf;
+                                                let pdf = new jsPDF('l', 'pt', 'a4');
+                                                let imgData = canvas.toDataURL('image/png');
+                                                let pdfWidth = pdf.internal.pageSize.getWidth();
+                                                let pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                                                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                                                pdf.save(filename + '.pdf');
+                                            }
+                                        });
+                                    }
+                                };
+
                                 rowsHtml += `
                                     <tr>
-                                        <td colspan="6" class="text-left font-weight-bold text-white" style="background-color: #4a5568;">
+                                        <td colspan="5" class="text-left font-weight-bold text-white" style="background-color: #4a5568;">
                                             <i class="fas fa-building mr-2"></i> ${agName}
                                         </td>
                                     </tr>
                                 `;
                                 
-                                records.forEach(row => {
+                                dates.forEach(date => {
+                                    const row = aggregated[date];
                                     rowsHtml += `
                                         <tr>
-                                            <td class="text-center font-weight-bold" style="vertical-align: middle;">${row.period}</td>
-                                            <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.ahorros_cte)}</td>
-                                            <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.ahorros_prog)}</td>
+                                            <td class="text-center font-weight-bold" style="vertical-align: middle;">${date}</td>
+                                            <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.ahorros)}</td>
                                             <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.dpf)}</td>
-                                            <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.aportes)}</td>
-                                            <td class="text-center font-weight-bold" style="background-color: #ffffcc; color: #000; vertical-align: middle;">${fn(row.socios)}</td>
+                                            <td class="text-right text-monospace" style="vertical-align: middle;">${fm(row.aportaciones)}</td>
+                                            <td class="text-center font-weight-bold" style="background-color: #ffffcc; color: #000; vertical-align: middle;">${fn(row.nro_socios)}</td>
                                         </tr>
                                     `;
                                 });
                             });
-                            
+
                             if (rowsHtml === '') {
-                                tbody.innerHTML = `<tr><td colspan="99" class="text-center text-muted p-3">No hay datos históricos.</td></tr>`;
+                                tbody.innerHTML = `<tr><td colspan="99" class="text-center text-muted p-3">No hay datos históricos para la moneda seleccionada.</td></tr>`;
                             } else {
                                 tbody.innerHTML = rowsHtml;
                             }
@@ -1282,6 +1593,165 @@
                             if (!val || val === 0) return '<span class="text-muted">-</span>';
                             return val.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
                         }
+
+                        function updatePassiveAgencyFilter(data) {
+                            const select = document.getElementById('passive-agency-filter');
+                            if (!select) return;
+                            const currentVal = select.value;
+                            select.innerHTML = '<option value="">Todas las Oficinas</option>';
+                            const agencies = Object.keys(data).filter(k => k !== 'ACUMULADO').sort();
+                            agencies.forEach(ag => {
+                                const opt = document.createElement('option');
+                                opt.value = ag;
+                                opt.textContent = ag;
+                                select.appendChild(opt);
+                            });
+                            select.value = currentVal;
+                        }
+
+                        window.applyPassiveFilter = function() {
+                            const filterAgency = document.getElementById('passive-agency-filter').value;
+                            const filterCurrency = document.getElementById('passive-currency-filter').value;
+
+                            if (filterCurrency === 'CONSOLIDADO') {
+                                Swal.fire({
+                                    title: 'Tipo de Cambio',
+                                    text: 'Ingrese el tipo de cambio para consolidar Dólares a Soles:',
+                                    input: 'number',
+                                    inputValue: 3.75,
+                                    inputAttributes: {
+                                        step: '0.01',
+                                        min: '0'
+                                    },
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Consolidar',
+                                    cancelButtonText: 'Cancelar'
+                                }).then((result) => {
+                                    if (result.isConfirmed && result.value) {
+                                        const tc = parseFloat(result.value);
+                                        renderPassiveTable(passiveBackendData, filterAgency, 'CONSOLIDADO', tc);
+                                    } else {
+                                        document.getElementById('passive-currency-filter').value = 'PEN';
+                                        if (passiveBackendData) {
+                                            renderPassiveTable(passiveBackendData, filterAgency, 'PEN');
+                                        }
+                                    }
+                                });
+                            } else {
+                                if (passiveBackendData) {
+                                    renderPassiveTable(passiveBackendData, filterAgency, filterCurrency);
+                                }
+                            }
+                        };
+
+                        window.savePassiveSnapshot = function() {
+                            const btn = document.getElementById('btn-save-passive');
+                            if(btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+                            
+                            const payload = { step: '4', periods: passSelectedPeriods };
+                            
+                            fetch("{% url 'financial_planning:api_save_step_periods' plan.id %}", {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                                },
+                                body: JSON.stringify(payload)
+                            })
+                            .then(r => r.json())
+                            .then(res => {
+                                if(btn) btn.innerHTML = '<i class="fas fa-check mr-1"></i> ¡Fijado!';
+                                setTimeout(() => {
+                                    if(btn) btn.innerHTML = '<i class="fas fa-save mr-1"></i> Fijar Data Histórica';
+                                }, 3000);
+                                if(res.status === 'success') {
+                                    savedPassPeriods = passSelectedPeriods;
+                                } else {
+                                    alert("Error al fijar datos: " + res.msg);
+                                }
+                            })
+                            .catch(err => {
+                                if(btn) btn.innerHTML = '<i class="fas fa-save mr-1"></i> Fijar Data Histórica';
+                                alert("Error de red.");
+                            });
+                        };
+
+                        window.exportPassiveData = function(format) {
+                            const table = document.getElementById('passive-history-table');
+                            if (!table) return;
+                            
+                            const title = "Data Historica - Pasivos y Socios";
+                            
+                            const loadScript = (src) => {
+                                return new Promise((resolve, reject) => {
+                                    if (document.querySelector(`script[src="${src}"]`)) return resolve();
+                                    const script = document.createElement('script');
+                                    script.src = src;
+                                    script.onload = resolve;
+                                    script.onerror = reject;
+                                    document.head.appendChild(script);
+                                });
+                            };
+
+                            if (format === 'excel') {
+                                if (typeof XLSX !== 'undefined') {
+                                    const wb = XLSX.utils.book_new();
+                                    const ws = XLSX.utils.table_to_sheet(table);
+                                    XLSX.utils.book_append_sheet(wb, ws, "Pasivos y Socios");
+                                    XLSX.writeFile(wb, `${title}.xlsx`);
+                                } else {
+                                    let html = `<html><head><meta charset="utf-8"></head><body><h2>${title}</h2>`;
+                                    html += table.outerHTML;
+                                    html += `</body></html>`;
+                                    const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(blob);
+                                    a.download = `${title}.xls`;
+                                    a.click();
+                                }
+                            } else if (format === 'word') {
+                                let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                                <head><meta charset='utf-8'><title>${title}</title></head><body><h2>${title}</h2>`;
+                                html += table.outerHTML;
+                                html += `</body></html>`;
+                                const blob = new Blob([html], { type: 'application/msword' });
+                                const a = document.createElement('a');
+                                a.href = URL.createObjectURL(blob);
+                                a.download = `${title}.doc`;
+                                a.click();
+                            } else if (format === 'pdf') {
+                                Swal.fire({title:'Generando PDF...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+                                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js').then(() => {
+                                    const element = document.getElementById('passive-history-table').parentElement;
+                                    const opt = {
+                                        margin: 0.5,
+                                        filename: `${title}.pdf`,
+                                        image: { type: 'jpeg', quality: 0.98 },
+                                        html2canvas: { scale: 2, useCORS: true },
+                                        jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                                    };
+                                    html2pdf().set(opt).from(element).save().then(() => Swal.close()).catch(err => {
+                                        Swal.fire('Error', 'No se pudo generar el PDF', 'error');
+                                        console.error(err);
+                                    });
+                                });
+                            } else if (format === 'jpg') {
+                                Swal.fire({title:'Generando Imagen...', text:'Por favor espere.', allowOutsideClick: false, didOpen:()=>{Swal.showLoading()}});
+                                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {
+                                    const element = document.getElementById('passive-history-table').parentElement;
+                                    html2canvas(element, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(canvas => {
+                                        Swal.close();
+                                        const link = document.createElement('a');
+                                        link.download = `${title}.jpg`;
+                                        link.href = canvas.toDataURL('image/jpeg', 0.98);
+                                        link.click();
+                                    }).catch(err => {
+                                        Swal.fire('Error', 'No se pudo generar la imagen', 'error');
+                                        console.error(err);
+                                    });
+                                });
+                            }
+                        };
                     });
                 </script>
                 <div class="mt-4 text-right">
@@ -1309,9 +1779,18 @@
 
                 <!-- STEP 6: Analisis de tendencias -->
                 {% if step == 6 %}
-                <div class="text-center mb-4">
-                    <h4 class="font-weight-bold">Análisis de Tendencias</h4>
-                    <p class="text-muted">Proyección estadística y escenarios basados en datos históricos.</p>
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="font-weight-bold mb-0">Análisis de Tendencias</h4>
+                        <p class="text-muted mb-0">Proyección estadística y escenarios basados en datos históricos.</p>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportStep6PDF()" title="Exportar a PDF"><i class="fas fa-file-pdf text-danger"></i> PDF</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportStep6Excel()" title="Exportar a Excel"><i class="fas fa-file-excel text-success"></i> Excel</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportStep6Word()" title="Exportar a Word"><i class="fas fa-file-word text-primary"></i> Word</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportStep6Image()" title="Descargar Imagen"><i class="fas fa-image text-info"></i> JPG</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyStep6Analysis()" title="Copiar Análisis"><i class="fas fa-copy"></i> Copiar</button>
+                    </div>
                 </div>
                 
                 <div id="step6-export-area">
@@ -1400,11 +1879,21 @@
                                     </h6>
                                     <small class="text-muted">Detalle mensual para: <strong class="text-primary" id="proj-variable-label">Cartera de Créditos</strong></small>
                                 </div>
-                                <div>
+                                <div class="d-flex align-items-center flex-wrap justify-content-end">
                                     <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3 font-weight-bold shadow-sm mr-2 mb-2 mb-md-0" id="btn-apply-trend">
                                         <i class="fas fa-history mr-1"></i> Aplicar Tendencia Año Anterior
                                     </button>
                                     
+                                    <div class="input-group input-group-sm shadow-sm mr-2 mb-2 mb-md-0" style="width: 120px; border-radius: 20px; overflow: hidden;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text bg-white border-right-0 text-muted px-2" title="Iteraciones de simulación"><i class="fas fa-sync-alt"></i></span>
+                                        </div>
+                                        <input type="number" id="mc-iterations" class="form-control border-left-0 pl-0 font-weight-bold text-center" value="1000" min="100" max="10000" step="100" title="N° Iteraciones Montecarlo">
+                                    </div>
+                                    <button type="button" id="btn-run-mc" class="btn btn-sm btn-primary rounded-pill font-weight-bold shadow-sm mr-3 mb-2 mb-md-0 px-3">
+                                        <i class="fas fa-play mr-1"></i> Simular
+                                    </button>
+
                                     <div class="btn-group btn-group-sm rounded-pill shadow-sm mr-2 mb-2 mb-md-0" role="group" id="chart-mode-group">
                                         <button type="button" class="btn btn-outline-secondary active font-weight-bold px-3" data-mode="tendencia">Tendencia</button>
                                         <button type="button" class="btn btn-outline-secondary font-weight-bold px-3" data-mode="montecarlo">Montecarlo</button>
@@ -1418,11 +1907,18 @@
                                             <button class="dropdown-item text-success" type="button" id="btn-export-excel" onclick="window.exportAnalysisToExcel()">
                                                 <i class="fas fa-file-excel mr-2"></i> Exportar a Excel
                                             </button>
-                                            <button class="dropdown-item text-danger" type="button" id="btn-export-pdf" onclick="exportAnalysisToPDF()">
+                                            <button class="dropdown-item text-info" type="button" id="btn-export-word" onclick="window.exportAnalysisToWord()">
+                                                <i class="fas fa-file-word mr-2"></i> Exportar a Word
+                                            </button>
+                                            <button class="dropdown-item text-danger" type="button" id="btn-export-pdf" onclick="window.exportAnalysisToPDF()">
                                                 <i class="fas fa-file-pdf mr-2"></i> Exportar a PDF
                                             </button>
-                                            <button class="dropdown-item text-primary" type="button" id="btn-export-img" onclick="exportAnalysisToImage()">
+                                            <button class="dropdown-item text-primary" type="button" id="btn-export-img" onclick="window.exportAnalysisToImage()">
                                                 <i class="fas fa-image mr-2"></i> Exportar a Imagen
+                                            </button>
+                                            <div class="dropdown-divider"></div>
+                                            <button class="dropdown-item text-dark" type="button" id="btn-copy-analysis" onclick="window.copyAnalysisToClipboard()">
+                                                <i class="fas fa-copy mr-2"></i> Copiar Análisis al Portapapeles
                                             </button>
                                         </div>
                                     </div>
@@ -1445,10 +1941,11 @@
                 </div> <!-- End step6-export-area -->
 
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="?step=5" class="btn btn-outline-secondary px-5 rounded-pill shadow-sm"><i class="fas fa-arrow-left mr-2"></i> Paso Anterior</a>
+                    <a href="javascript:void(0);" onclick="handleWizardContinue('?step=5')" class="btn btn-outline-secondary px-5 rounded-pill shadow-sm"><i class="fas fa-arrow-left mr-2"></i> Paso Anterior</a>
                     <div>
                         <button id="btn-edit-step6" class="btn btn-warning rounded-pill shadow-sm mr-2" style="display: none;" onclick="unlockStep6()"><i class="fas fa-edit mr-2"></i>Editar Proyección</button>
-                        <button id="btn-save-step6" class="btn btn-success rounded-pill shadow-sm mr-2" onclick="lockStep6()"><i class="fas fa-save mr-2"></i>Guardar Proyección</button>
+                        <button id="btn-save-fragment" class="btn btn-info rounded-pill shadow-sm mr-2" onclick="saveFragment()"><i class="fas fa-save mr-2"></i>Guardar Parcialmente</button>
+                        <button id="btn-save-step6" class="btn btn-success rounded-pill shadow-sm mr-2" onclick="lockStep6()"><i class="fas fa-lock mr-2"></i>Bloquear Proyección</button>
                         <a href="javascript:void(0);" onclick="handleWizardContinue('?step=7')" class="btn btn-primary px-5 rounded-pill shadow-sm">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
                     </div>
                 </div>
@@ -1462,7 +1959,7 @@
                     }
                 </style>
                 <div class="text-center mb-4">
-                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">PRESUPUESTO (<span id="active-year-display">{{ plan.start_date.year }}</span> - <span id="end-year-display"></span>)</h4>
+                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">PRESUPUESTO (<span id="active-year-display">{{ plan.anio_base }}</span> - <span id="end-year-display"></span>)</h4>
                     <p class="text-muted">Presupuesto mensual y anual basado en los supuestos.</p>
                 </div>
                 
@@ -1491,19 +1988,19 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="m-0 font-weight-bold text-dark">Detalle de Proyecciones</h5>
                             
-                        div class="d-flex align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold shadow-sm mr-2" onclick="copyPreviousYearData()" title="Usar los montos exactos del año anterior (0% de variación global)">
-                                    <i class="fas fa-copy mr-1"></i> Copiar Datos Año Anterior
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+                                <button type="button" class="btn btn-sm btn-light border font-weight-bold shadow-sm rounded-pill px-3" onclick="copyPreviousYearData()" title="Usar los montos exactos del año anterior (0% de variación global)">
+                                    <i class="fas fa-copy text-secondary mr-1"></i> Copiar Año Anterior
                                 </button>
-                                <button type="button" id="btn-apply-trend" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm mr-3" onclick="applyHistoricalTrend()">
-                                    <i class="fas fa-history mr-1"></i> Aplicar Tendencia Año Anterior
+                                <button type="button" id="btn-apply-trend" class="btn btn-sm btn-info text-white font-weight-bold shadow-sm rounded-pill px-3" onclick="applyHistoricalTrend()">
+                                    <i class="fas fa-chart-line mr-1"></i> Aplicar Tendencia
                                 </button>
                                 
-                                <div class="input-group input-group-sm mr-3 shadow-sm" style="width: auto;">
+                                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border" style="width: auto;">
                                     <div class="input-group-prepend">
-                                        <span class="input-group-text bg-white font-weight-bold text-secondary">Var. desde:</span>
+                                        <span class="input-group-text bg-light font-weight-bold border-0 text-secondary">Var. desde:</span>
                                     </div>
-                                    <select class="custom-select font-weight-bold text-indigo" id="apply-var-month" onchange="recalculateStep7()">
+                                    <select class="custom-select font-weight-bold border-0 text-indigo" id="apply-var-month" onchange="recalculateStep7()" style="box-shadow: none;">
                                         <option value="0">Enero</option>
                                         <option value="1">Febrero</option>
                                         <option value="2">Marzo</option>
@@ -1518,28 +2015,30 @@
                                         <option value="11">Diciembre</option>
                                     </select>
                                 </div>
-                                <button type="button" class="btn btn-sm btn-primary mr-2 shadow-sm font-weight-bold" id="btnSaveAssumptionsTop" onclick="saveAssumptionsFromStep7(this)">
+                                
+                                <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3" id="btnSaveAssumptionsTop" onclick="saveAssumptionsFromStep7(this)">
                                     <i class="fas fa-save mr-1"></i> Guardar
                                 </button>
-                                <button type="button" class="btn btn-sm btn-success mr-2 shadow-sm font-weight-bold" data-toggle="modal" data-target="#exportModal">
-                                    <i class="fas fa-file-export mr-1"></i> Exportar
+                                <button type="button" class="btn btn-sm btn-success shadow-sm font-weight-bold rounded-pill px-3" data-toggle="modal" data-target="#exportModal">
+                                    <i class="fas fa-file-excel mr-1"></i> Exportar
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-primary mr-3 shadow-sm font-weight-bold" id="toggle-zero-accounts" onclick="toggleZeroAccounts()">
+                                <button type="button" class="btn btn-sm btn-dark shadow-sm font-weight-bold rounded-pill px-3" id="toggle-zero-accounts" onclick="toggleZeroAccounts()">
                                     <i class="fas fa-eye-slash mr-1"></i> Ocultar en Cero
                                 </button>
-                                <div class="btn-group btn-group-sm shadow-sm">
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(1)">1 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(2)">2 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(4)">4 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(6)">6 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(8)">8 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(10)">10 Dg</button>
-                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(99)">Todos</button>
+                                
+                                <div class="btn-group btn-group-sm shadow-sm ml-auto" style="border-radius: 20px; overflow: hidden;">
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(1)">1 Dg</button>
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(2)">2 Dg</button>
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(4)">4 Dg</button>
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(6)">6 Dg</button>
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(8)">8 Dg</button>
+                                    <button type="button" class="btn btn-light border-right font-weight-bold text-secondary" onclick="expandToDigits(10)">10 Dg</button>
+                                    <button type="button" class="btn btn-light font-weight-bold text-secondary" onclick="expandToDigits(99)">Todos</button>
                                 </div>
-                                <div class="btn-group btn-group-sm shadow-sm ml-3" id="step7-scenario-toggle">
-                                    <button type="button" id="btn-scenario-pesimista" class="btn btn-outline-danger font-weight-bold bg-white" onclick="window.switchStep7Scenario('pesimista')">Pesimista</button>
-                                    <button type="button" id="btn-scenario-base" class="btn btn-primary font-weight-bold active" onclick="window.switchStep7Scenario('base')">Base</button>
-                                    <button type="button" id="btn-scenario-optimista" class="btn btn-outline-success font-weight-bold bg-white" onclick="window.switchStep7Scenario('optimista')">Optimista</button>
+                                <div class="btn-group btn-group-sm shadow-sm" id="step7-scenario-toggle" style="border-radius: 20px; overflow: hidden;">
+                                    <button type="button" id="btn-scenario-pesimista" class="btn btn-light border-right font-weight-bold text-danger" onclick="window.switchStep7Scenario('pesimista')">Pesimista</button>
+                                    <button type="button" id="btn-scenario-base" class="btn btn-primary text-white border-right font-weight-bold active" onclick="window.switchStep7Scenario('base')">Base</button>
+                                    <button type="button" id="btn-scenario-optimista" class="btn btn-light font-weight-bold text-success" onclick="window.switchStep7Scenario('optimista')">Optimista</button>
                                 </div>
                             </div>
                         </div>
@@ -1613,8 +2112,8 @@
                 <script>
                     const budgetDataJson7 = '{{ budget_data_json|escapejs }}';
                     const histDataJson7 = '{{ historical_data_json|escapejs }}';
-                    const projectionYearsCount = parseInt('{{ plan.projection_years|default:"3" }}');
-                    const projectionStartYear = parseInt('{{ plan.start_date.year|default:"2026" }}'.replace(/,/g, ''));
+                    const projectionYearsCount = parseInt('{{ plan.horizonte_anios|default:"3" }}');
+                    const projectionStartYear = parseInt('{{ plan.anio_base|default:"2026" }}'.replace(/,/g, ''));
                     let activeYearIndex = 0;
                     window.activeStep7Scenario = 'base';
                     
@@ -1667,17 +2166,17 @@
         }
         
         // Update toggle buttons
-        $('#step7-scenario-toggle button').removeClass('active btn-primary btn-danger btn-success').addClass('bg-white');
+        $('#step7-scenario-toggle button').removeClass('active btn-primary btn-danger btn-success text-white').addClass('btn-light');
         
         let btn = $(`#btn-scenario-${newScenario}`);
-        if (newScenario === 'base') btn.addClass('active btn-primary').removeClass('bg-white btn-outline-primary');
-        else if (newScenario === 'pesimista') btn.addClass('active btn-danger').removeClass('bg-white btn-outline-danger');
-        else if (newScenario === 'optimista') btn.addClass('active btn-success').removeClass('bg-white btn-outline-success');
+        if (newScenario === 'base') btn.addClass('active btn-primary text-white').removeClass('btn-light text-primary');
+        else if (newScenario === 'pesimista') btn.addClass('active btn-danger text-white').removeClass('btn-light text-danger');
+        else if (newScenario === 'optimista') btn.addClass('active btn-success text-white').removeClass('btn-light text-success');
         
         // Fix classes on other buttons
-        if (newScenario !== 'base') $('#btn-scenario-base').addClass('btn-outline-primary');
-        if (newScenario !== 'pesimista') $('#btn-scenario-pesimista').addClass('btn-outline-danger');
-        if (newScenario !== 'optimista') $('#btn-scenario-optimista').addClass('btn-outline-success');
+        if (newScenario !== 'base') $('#btn-scenario-base').addClass('text-primary');
+        if (newScenario !== 'pesimista') $('#btn-scenario-pesimista').addClass('text-danger');
+        if (newScenario !== 'optimista') $('#btn-scenario-optimista').addClass('text-success');
     };
 
                     document.addEventListener('DOMContentLoaded', function() {
@@ -1691,61 +2190,67 @@
                         if (bData && bData.income_statement && bData.income_statement.length > 0) {
                             data = bData;
                         } else if (hData && hData.income_statement && hData.income_statement.length > 0) {
-                            // Convert hData (list of lists) to structured data
                             let parsedIncomeStatement = [];
                             let periods = hData.selected_periods || [];
                             
-                            // First pass: create node objects
-                            hData.income_statement.forEach(row => {
-                                let label = row[0];
-                                let parts = label.split(' - ');
-                                let code = parts[0].trim();
-                                let name = parts.slice(1).join(' - ').trim();
-                                
-                                let parent_code = null;
-                                let depth = 1;
-                                if (code.length === 2) {
-                                    parent_code = code.substring(0, 1);
-                                    depth = 2;
-                                } else if (code.length > 2) {
-                                    parent_code = code.substring(0, code.length - 2);
-                                    depth = (code.length - 2) / 2 + 2;
-                                }
-                                
-                                let balances = {};
-                                for (let i = 0; i < periods.length; i++) {
-                                    balances[periods[i]] = row[i + 1] || 0;
-                                }
-                                
-                                parsedIncomeStatement.push({
-                                    code: code,
-                                    name: name,
-                                    parent_code: parent_code,
-                                    children_codes: [],
-                                    depth: depth,
-                                    balances: balances
+                            // Check if the data is in the old list-of-lists format
+                            if (Array.isArray(hData.income_statement[0])) {
+                                // Convert hData (list of lists) to structured data
+                                // First pass: create node objects
+                                hData.income_statement.forEach(row => {
+                                    let label = row[0];
+                                    let parts = label.split(' - ');
+                                    let code = parts[0].trim();
+                                    let name = parts.slice(1).join(' - ').trim();
+                                    
+                                    let parent_code = null;
+                                    let depth = 1;
+                                    if (code.length === 2) {
+                                        parent_code = code.substring(0, 1);
+                                        depth = 2;
+                                    } else if (code.length > 2) {
+                                        parent_code = code.substring(0, code.length - 2);
+                                        depth = (code.length - 2) / 2 + 2;
+                                    }
+                                    
+                                    let balances = {};
+                                    for (let i = 0; i < periods.length; i++) {
+                                        balances[periods[i]] = row[i + 1] || 0;
+                                    }
+                                    
+                                    parsedIncomeStatement.push({
+                                        code: code,
+                                        name: name,
+                                        parent_code: parent_code,
+                                        children_codes: [],
+                                        depth: depth,
+                                        balances: balances
+                                    });
                                 });
-                            });
-                            
-                            // Second pass: link children
-                            let nodeMap = {};
-                            parsedIncomeStatement.forEach(node => {
-                                nodeMap[node.code] = node;
-                            });
-                            
-                            parsedIncomeStatement.forEach(node => {
-                                if (node.parent_code && nodeMap[node.parent_code]) {
-                                    nodeMap[node.parent_code].children_codes.push(node.code);
-                                }
-                            });
-                            
-                            // Filter out accounts with zero movement
-                            let hasMovement = function(node) {
-                                let hasBal = Object.values(node.balances).some(v => Math.abs(v) > 0.005);
-                                if (hasBal) return true;
-                                return node.children_codes.some(c => nodeMap[c] && hasMovement(nodeMap[c]));
-                            };
-                            parsedIncomeStatement = parsedIncomeStatement.filter(node => hasMovement(node));
+                                
+                                // Second pass: link children
+                                let nodeMap = {};
+                                parsedIncomeStatement.forEach(node => {
+                                    nodeMap[node.code] = node;
+                                });
+                                
+                                parsedIncomeStatement.forEach(node => {
+                                    if (node.parent_code && nodeMap[node.parent_code]) {
+                                        nodeMap[node.parent_code].children_codes.push(node.code);
+                                    }
+                                });
+                                
+                                // Filter out accounts with zero movement
+                                let hasMovement = function(node) {
+                                    let hasBal = Object.values(node.balances).some(v => Math.abs(v) > 0.005);
+                                    if (hasBal) return true;
+                                    return node.children_codes.some(c => nodeMap[c] && hasMovement(nodeMap[c]));
+                                };
+                                parsedIncomeStatement = parsedIncomeStatement.filter(node => hasMovement(node));
+                            } else {
+                                // Assume it's already in the structured object format
+                                parsedIncomeStatement = hData.income_statement;
+                            }
                             
                             data = {
                                 selected_periods: periods,
@@ -1758,9 +2263,16 @@
                             }
                         }
                         
-                        if (data && data.income_statement) {
+                        function finishStep7Init(data) {
+                            if (!data || !data.income_statement) {
+                                $('#step7-tbody').html('<tr><td colspan="99" class="text-center p-5"><div class="alert alert-warning d-inline-block shadow-sm"><i class="fas fa-exclamation-triangle fa-2x mb-3"></i><br>Aún no se ha calculado la base del presupuesto.<br>Por favor, regrese al Paso 4: Presupuesto Institucional y asigne los datos.</div></td></tr>');
+                                document.getElementById('btnSaveAssumptionsStep7').disabled = true;
+                                return;
+                            }
+                            
                             // Filter out accounts other than 4 and 5 (like 'cuenta de orden')
-                            data.income_statement = data.income_statement.filter(item => item.code.startsWith('4') || item.code.startsWith('5'));
+                            data.income_statement = data.income_statement.filter(item => item.code && (item.code.startsWith('4') || item.code.startsWith('5')));
+
                             
                             let decPeriods = (data.selected_periods || []).filter(p => p.endsWith('-12')).sort();
                             
@@ -1929,7 +2441,7 @@
                                 return `<span>${formatted}</span>`;
                             }
                             
-                            const projYearRaw = '{{ plan.start_date.year|default:"2026" }}'.replace(/,/g, '');
+                            const projYearRaw = '{{ plan.anio_base|default:"2026" }}'.replace(/,/g, '');
                             const projYearFull = parseInt(projYearRaw);
                             const projYearShort = String(projYearFull).slice(-2);
                             const prevYearFull = latestYear || (projYearFull - 1);
@@ -2067,9 +2579,8 @@
                             });
 
                             // Rollup and render engine v2
-                            // Rollup and render engine v2
-                            window.recalculateStep7 = 
-                    window.montecarloData = null;
+                            window.recalculateStep7 = recalculateStep7;
+                            window.montecarloData = null;
                     window.currentMcScenario = 'base';
                     
                     window.runMontecarloSimulation = function() {
@@ -2630,7 +3141,7 @@ function recalculateStep7() {
                                 const originalHtml = btn.html();
                                 const originalClasses = btn.attr('class');
                                 
-                                let reqData = {
+                                let account_assumptions = {
                                     _meta: {
                                         startMonth: parseInt($('#apply-var-month').val()) || 0
                                     }
@@ -2646,9 +3157,14 @@ function recalculateStep7() {
                                                 actYr.scenarios[window.activeStep7Scenario].monthlyOverrides = { ...(actYr.monthlyOverrides || {}) };
                                             }
                                         }
-                                        reqData[code] = { years: node.years };
+                                        account_assumptions[code] = { years: node.years };
                                     }
                                 });
+                                
+                                let reqData = {
+                                    account_assumptions: account_assumptions,
+                                    income_statement: data.income_statement
+                                };
                                 
                                 console.log("[DEBUG] Sending assumptions payload:", reqData);
                                 
@@ -2697,9 +3213,33 @@ function recalculateStep7() {
                                     }
                                 });
                             };
-                            
+                        }
+                        
+                        if (data && data.income_statement && data.income_statement.length > 0) {
+                            finishStep7Init(data);
                         } else {
-                            $('#budget-monthly-tbody').html('<tr><td colspan="16" class="text-center p-5 text-muted"><i class="fas fa-exclamation-triangle fa-2x mb-3 text-warning d-block"></i>Aún no se ha calculado la base del presupuesto.<br>Por favor, regrese al <b>Paso 4: Presupuesto Institucional</b> y asigne los datos.</td></tr>');
+                            if (typeof hData !== 'undefined' && hData && hData.selected_periods && hData.selected_periods.length > 0) {
+                                // Try to fetch it dynamically
+                                $('#step7-tbody').html('<tr><td colspan="99" class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary"></i><br>Cargando datos históricos base...</td></tr>');
+                                $.ajax({
+                                    url: "{% url 'financial_planning:api_trial_balance_data' %}",
+                                    data: { periods: JSON.stringify(hData.selected_periods), currency: 'MN' },
+                                    success: function(resp) {
+                                        if (resp.status === 'success' && resp.income_statement) {
+                                            if (!data) data = { selected_periods: hData.selected_periods, account_assumptions: hData.account_assumptions || {} };
+                                            data.income_statement = resp.income_statement;
+                                            finishStep7Init(data);
+                                        } else {
+                                            finishStep7Init(data);
+                                        }
+                                    },
+                                    error: function() {
+                                        finishStep7Init(data);
+                                    }
+                                });
+                            } else {
+                                finishStep7Init(data);
+                            }
                         }
                     });
                     
@@ -3103,6 +3643,68 @@ function recalculateStep7() {
         });
     }
 
+    window.exportAnalysisToPDF = exportAnalysisToPDF;
+    window.exportAnalysisToImage = exportAnalysisToImage;
+
+    window.exportAnalysisToWord = function() {
+        const container = document.getElementById('step6-export-area') || document.querySelector('.row.mb-4');
+        if (!container) return;
+        
+        let html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head><meta charset='utf-8'><title>Análisis de Tendencias</title></head><body><h2>Análisis de Tendencias y Simulaciones</h2>`;
+        
+        const tables = container.querySelectorAll('.table-responsive');
+        tables.forEach(t => {
+            html += t.innerHTML;
+            html += '<br><br>';
+        });
+        
+        html += `</body></html>`;
+        
+        const blob = new Blob([html], { type: 'application/msword' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Analisis_Tendencias_${new Date().toISOString().slice(0,10)}.doc`;
+        a.click();
+    };
+
+    window.copyAnalysisToClipboard = function() {
+        const container = document.getElementById('step6-export-area') || document.querySelector('.row.mb-4');
+        if (!container) return;
+        
+        let textContent = "ANÁLISIS DE TENDENCIAS Y SIMULACIONES\n\n";
+        const tables = container.querySelectorAll('table');
+        tables.forEach((table, index) => {
+            textContent += `--- TABLA ${index + 1} ---\n`;
+            const rows = table.querySelectorAll('tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                const rowData = Array.from(cells).map(c => c.innerText.trim()).join(' | ');
+                textContent += rowData + '\n';
+            });
+            textContent += '\n';
+        });
+        
+        navigator.clipboard.writeText(textContent).then(() => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Copiado!',
+                    text: 'El análisis ha sido copiado al portapapeles.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                alert('Análisis copiado al portapapeles.');
+            }
+        }).catch(err => {
+            console.error('Error al copiar: ', err);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire('Error', 'No se pudo copiar el análisis.', 'error');
+            }
+        });
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         const projStartYearInput = document.getElementById('{{ form.projection_start_year.id_for_label }}');
         const projYearsInput = document.getElementById('{{ form.projection_years.id_for_label }}');
@@ -3265,9 +3867,10 @@ function recalculateStep7() {
 
         window.costParams = {};
         window.yieldParams = {};
-        {% if institutional_assumptions_json and institutional_assumptions_json != '{}' %}
+        {% if historical_data_json and historical_data_json != '{}' %}
         try {
-            const instAssump = JSON.parse('{{ institutional_assumptions_json|escapejs }}');
+            const histData = JSON.parse('{{ historical_data_json|escapejs }}');
+            const instAssump = histData.institutional_assumptions || {};
             if (instAssump.costParams) {
                 window.costParams = instAssump.costParams;
             }
@@ -3275,7 +3878,7 @@ function recalculateStep7() {
                 window.yieldParams = instAssump.yieldParams;
             }
         } catch(e) {
-            console.error("Error parsing institutional_assumptions:", e);
+            console.error("Error parsing historical_data for assumptions:", e);
         }
         {% endif %}
 
@@ -3316,8 +3919,8 @@ function recalculateStep7() {
                     wsData[0].push('MC Pesimista', 'MC Base', 'MC Optimista');
                 }
                 
-                const numRows = Math.min(currentPeriod, v.base.length - 1);
-                const startIdx = 1;
+                const numRows = Math.min(currentPeriod, v.base.length);
+                const startIdx = 0;
                 for (let i = 0; i < numRows; i++) {
                     const idx = startIdx + i;
                     const lbl = trendLabels ? trendLabels[histMonthsCount + i] || `Mes ${i+1}` : `Mes ${i+1}`;
@@ -3482,45 +4085,50 @@ function recalculateStep7() {
                 addMontecarlo();
             }
 
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: displayLabels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let label = context.dataset.label || '';
-                                    if (label) {
-                                        label += ': ';
+            if (typeof Chart !== 'undefined') {
+                trendChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: displayLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(context.parsed.y);
+                                        }
+                                        return label;
                                     }
-                                    if (context.parsed.y !== null) {
-                                        label += new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(context.parsed.y);
-                                    }
-                                    return label;
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            ticks: {
-                                callback: function(value) {
-                                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                                    if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
-                                    return value;
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                        if (value >= 1000) return (value / 1000).toFixed(0) + 'k';
+                                        return value;
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                console.warn("Chart is not defined. Skipping chart rendering.");
+                $(ctx).replaceWith('<div class="alert alert-warning text-center mt-5">Gráfico no disponible por falta de conexión a internet para descargar Chart.js</div>');
+            }
         }
 
         function loadTrendData() {
@@ -3528,6 +4136,10 @@ function recalculateStep7() {
                 const script = document.createElement('script');
                 script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
                 script.onload = fetchTrendData;
+                script.onerror = function() {
+                    console.warn("No se pudo cargar Chart.js. Renderizando sin gráficos.");
+                    fetchTrendData();
+                };
                 document.head.appendChild(script);
             } else {
                 fetchTrendData();
@@ -3539,6 +4151,7 @@ function recalculateStep7() {
         function updateLockUI() {
             if (isStep6Locked) {
                 $('#btn-save-step6').hide();
+                $('#btn-save-fragment').hide();
                 $('#btn-edit-step6').show();
                 $('.trend-period-btn').prop('disabled', true);
                 $('#mc-iterations').prop('disabled', true);
@@ -3552,6 +4165,7 @@ function recalculateStep7() {
                 $('#cost-simulation-container button').prop('disabled', true);
             } else {
                 $('#btn-save-step6').show();
+                $('#btn-save-fragment').show();
                 $('#btn-edit-step6').hide();
                 $('.trend-period-btn').prop('disabled', false);
                 $('#mc-iterations').prop('disabled', false);
@@ -3563,6 +4177,72 @@ function recalculateStep7() {
                 $('#yield-simulation-container button').prop('disabled', false);
                 $('#cost-simulation-container input').prop('disabled', false);
                 $('#cost-simulation-container button').prop('disabled', false);
+            }
+        }
+
+        function saveFragment() {
+            Swal.fire({
+                title: 'Guardando Simulación Parcial',
+                text: 'Por favor espere...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            
+            const doSave = () => {
+                const payload = {
+                    status: "success",
+                    labels: trendLabels,
+                    hist_months: histMonthsCount,
+                    datasets_by_agency: trendDatasetsByAgency,
+                    ui_state: {
+                        chartMode: chartMode,
+                        showTrendCols: showTrendCols,
+                        showMCCols: showMCCols,
+                        currentAgency: currentAgency,
+                        currentVariable: currentVariable,
+                        currentPeriod: currentPeriod
+                    }
+                };
+
+                $.ajax({
+                    url: "{% url 'financial_planning:save_scenario_fragment' plan.id %}",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ full_payload: payload }),
+                    headers: { "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}' },
+                    success: function(resp) {
+                        Swal.close();
+                        if(resp.status === 'success') {
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Progreso guardado correctamente', showConfirmButton: false, timer: 2000 });
+                        } else {
+                            Swal.fire('Error', resp.msg, 'error');
+                        }
+                    },
+                    error: function(err) {
+                        Swal.close();
+                        Swal.fire('Error', 'No se pudo guardar parcialmente', 'error');
+                    }
+                });
+            };
+
+            if (typeof window.syncSimulationParamsFromDOM === 'function') window.syncSimulationParamsFromDOM();
+            if (window.costParams || window.yieldParams) {
+                const assumptionsPayload = {};
+                if (window.costParams) assumptionsPayload.costParams = window.costParams;
+                if (window.yieldParams) assumptionsPayload.yieldParams = window.yieldParams;
+                
+                fetch(`{% url 'financial_planning:save_institutional_assumptions' plan.id %}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify(assumptionsPayload)
+                }).then(res => res.json())
+                  .then(data => { doSave(); })
+                  .catch(err => { doSave(); });
+            } else {
+                doSave();
             }
         }
 
@@ -3613,6 +4293,7 @@ function recalculateStep7() {
                 });
             };
 
+            if (typeof window.syncSimulationParamsFromDOM === 'function') window.syncSimulationParamsFromDOM();
             if (window.costParams || window.yieldParams) {
                 const assumptionsPayload = {};
                 if (window.costParams) assumptionsPayload.costParams = window.costParams;
@@ -3682,6 +4363,8 @@ function recalculateStep7() {
                             }
                             if (response.ui_state.currentPeriod) {
                                 currentPeriod = response.ui_state.currentPeriod;
+                                $('.trend-period-btn').removeClass('active');
+                                $(`.trend-period-btn[data-months="${currentPeriod}"]`).addClass('active');
                             }
                         }
                         
@@ -3938,8 +4621,8 @@ function recalculateStep7() {
                                 </thead>
                                 <tbody>`;
 
-                            const startIdx = 1;
-                            const numRows = Math.min(period, v.base.length - 1);
+                            const startIdx = 0;
+                            const numRows = Math.min(period, v.base.length);
 
                             for (let i = 0; i < numRows; i++) {
                                 const idx = startIdx + i;
@@ -3971,7 +4654,65 @@ function recalculateStep7() {
                                 html += `</tr>`;
                             }
                             html += `</tbody></table>`;
-                            container.html(html);
+                            
+                            const finalOpt = v.optimista[startIdx + numRows - 1];
+                            const finalBase = v.base[startIdx + numRows - 1];
+                            const finalPes = v.pesimista[startIdx + numRows - 1];
+                            const varName = v.name || 'la variable';
+                            
+                            const isLoss = (varName.toLowerCase().includes('mora') || varName.toLowerCase().includes('gasto') || varName.toLowerCase().includes('riesgo'));
+                            
+                            const formatValForText = (val) => {
+                                if (val === null || val === undefined) return '-';
+                                if (isSocio) return Math.round(val).toLocaleString('en-US');
+                                return 'S/ ' + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                            };
+
+                            let topAnalysisHtml = '';
+                            
+                            topAnalysisHtml += `
+                                <div class="col-12 mb-3 px-0">
+                                    <div class="alert shadow-sm border-0 mb-0" style="background-color: #f8f9fa; font-size: 0.85rem; border-left: 4px solid #007bff !important;">
+                                        <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-chart-line mr-1"></i> Análisis de Tendencias de ${varName}</h6>
+                                        <p class="mb-2">En el horizonte de ${numRows} meses, los escenarios parametrizados estiman el siguiente estado final para la variable:</p>
+                                        <ul class="pl-3 mb-1" style="line-height: 1.5;">
+                                            <li class="mb-1"><strong class="${isLoss ? 'text-danger' : 'text-success'}">Escenario Optimista:</strong> Proyecta un nivel de <strong>${formatValForText(finalOpt)}</strong>.</li>
+                                            <li class="mb-1"><strong style="color: #e83e8c;">Escenario Base:</strong> El comportamiento estadístico central se ubica en <strong>${formatValForText(finalBase)}</strong>.</li>
+                                            <li class="mb-0"><strong class="${isLoss ? 'text-success' : 'text-danger'}">Escenario Pesimista:</strong> Marca un nivel crítico adverso de <strong>${formatValForText(finalPes)}</strong>.</li>
+                                        </ul>
+                                    </div>
+                                </div>`;
+                            
+                            if (showMCCols && mcDataObj) {
+                                const finalMcOpt = mcDataObj.optimista[numRows - 1];
+                                const finalMcPes = mcDataObj.pesimista[numRows - 1];
+                                const finalMcBase = mcDataObj.base[numRows - 1];
+                                topAnalysisHtml += `
+                                <div class="col-12 mb-3 px-0">
+                                    <div class="alert shadow-sm border-0 mb-0" style="background-color: #f8f9fa; font-size: 0.85rem; border-left: 4px solid #e83e8c !important;">
+                                        <h6 class="font-weight-bold mb-2" style="color: #e83e8c;"><i class="fas fa-dice mr-1"></i> Análisis de Simulación Montecarlo de ${varName}</h6>
+                                        <p class="mb-2">Basado en la tendencia estadística como media estocástica y la volatilidad intermensual deducida, las iteraciones proyectan una banda de distribución al mes ${numRows}:</p>
+                                        <ul class="pl-3 mb-0" style="line-height: 1.5;">
+                                            <li class="mb-1"><strong class="${isLoss ? 'text-danger' : 'text-success'}">Percentil Optimista (95% / 5%):</strong> Proyecta <strong>${formatValForText(finalMcOpt)}</strong> incorporando volatilidad.</li>
+                                            <li class="mb-1"><strong style="color: #007bff;">Media Estocástica (Base):</strong> El promedio esperado se ubica en <strong>${formatValForText(finalMcBase)}</strong>.</li>
+                                            <li class="mb-0"><strong class="${isLoss ? 'text-success' : 'text-danger'}">Percentil Pesimista (5% / 95%):</strong> Límite adverso de distribución de <strong>${formatValForText(finalMcPes)}</strong>.</li>
+                                        </ul>
+                                    </div>
+                                </div>`;
+                            }
+
+                            let finalContainerHtml = `
+                            <div class="row m-0">
+                                ${topAnalysisHtml}
+                                <div class="col-12 px-0">
+                                    <div class="table-responsive">
+                                        ${html}
+                                    </div>
+                                </div>
+                            </div>
+                            `;
+                            
+                            container.html(finalContainerHtml);
 
                             // Yield Simulation for Cartera
                             const yieldContainer = $('#yield-simulation-container');
@@ -4061,28 +4802,6 @@ function recalculateStep7() {
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-xl-8">
-                                            <div class="table-responsive">
-                                                <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
-                                                    <thead class="text-white" style="background-color: #6610f2;">
-                                                        <tr>
-                                                            <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
-                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (Base)</th>
-                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Separado (Base)</th>
-                                                            <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Total</th>
-                                                        </tr>
-                                                        <tr>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Cartera Año Base</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nueva Cartera</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Año Base</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Nueva</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Pesimista</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Base</th>
-                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Optimista</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
                                 `;
 
                                 const getSeparation = (total, monthIndex) => {
@@ -4120,8 +4839,6 @@ function recalculateStep7() {
 
                                 for (let i = 0; i < numRows; i++) {
                                     const idx = startIdx + i;
-                                    const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
-
                                     const sepBase = getSeparation(v.base[idx], i);
                                     const totalPes = getSeparation(v.pesimista[idx], i).totalYield;
                                     const totalOpt = getSeparation(v.optimista[idx], i).totalYield;
@@ -4131,6 +4848,58 @@ function recalculateStep7() {
                                     sumTotalPes += totalPes;
                                     sumTotalBase += sepBase.totalYield;
                                     sumTotalOpt += totalOpt;
+                                }
+
+                                yieldHtml += `
+                                <div class="row">
+                                    <div class="col-12 mb-3">
+                                        <div class="alert shadow-sm border-0 mb-0" style="font-size: 0.85rem; border-left: 4px solid #6610f2 !important; background-color: #f8f9fa;">
+                                            <h6 class="font-weight-bold mb-2" style="color: #6610f2;"><i class="fas fa-chart-line mr-1"></i> Análisis de Ingresos Proyectados (Tendencias)</h6>
+                                            <p class="mb-2">En base a la proyección de la Cartera, considerando una tasa histórica de <strong>${rateActual.toFixed(2)}%</strong> y una tasa marginal de <strong>${rateNew.toFixed(2)}%</strong>, el modelo estima los siguientes escenarios de recaudación para el horizonte de ${period} meses:</p>
+                                            <ul class="pl-3 mb-2" style="line-height: 1.5;">
+                                                <li class="mb-1"><strong class="text-success">Escenario Optimista:</strong> Generación proyectada de <strong>${formatVal(sumTotalOpt)}</strong>. Representa el límite superior estadístico de crecimiento y captación marginal.</li>
+                                                <li class="mb-1"><strong style="color: #6610f2;">Escenario Base:</strong> El desempeño central o más probable consolidaría ingresos por <strong>${formatVal(sumTotalBase)}</strong>, asumiendo la maduración esperada del portafolio actual.</li>
+                                                <li class="mb-0"><strong class="text-danger">Escenario Pesimista:</strong> En un entorno económico adverso o de baja originación, los ingresos financieros se comprimirían hasta <strong>${formatVal(sumTotalPes)}</strong>.</li>
+                                            </ul>
+                                            <div class="mt-2 pt-2 border-top" style="border-color: rgba(102, 16, 242, 0.2) !important;">
+                                                <p class="mb-0 text-muted small">
+                                                    <strong>Brecha de Riesgo:</strong> El modelo identifica una volatilidad tendencial de <strong>${formatVal(sumTotalOpt - sumTotalPes)}</strong> entre los escenarios extremos de ingresos proyectados.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
+                                                <thead class="text-white" style="background-color: #6610f2;">
+                                                    <tr>
+                                                        <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
+                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (Base)</th>
+                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Separado (Base)</th>
+                                                        <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Total</th>
+                                                    </tr>
+                                                    <tr>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Cartera Año Base</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nueva Cartera</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Año Base</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Nueva</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Pesimista</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Base</th>
+                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Optimista</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                `;
+
+                                for (let i = 0; i < numRows; i++) {
+                                    const idx = startIdx + i;
+                                    const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
+
+                                    const sepBase = getSeparation(v.base[idx], i);
+                                    const totalPes = getSeparation(v.pesimista[idx], i).totalYield;
+                                    const totalOpt = getSeparation(v.optimista[idx], i).totalYield;
 
                                     yieldHtml += `<tr>
                                         <td class="font-weight-bold text-dark bg-light">${lbl}</td>
@@ -4154,7 +4923,9 @@ function recalculateStep7() {
                                     </tr>
                                             </tbody>
                                         </table>
-                                    </div>`;
+                                    </div>
+                                </div>
+                                </div>`;
                                 
                                 if (showMCCols && mcDataObj) {
                                     let sumMcYieldOld = 0;
@@ -4163,34 +4934,7 @@ function recalculateStep7() {
                                     let sumMcTotalBase = 0;
                                     let sumMcTotalOpt = 0;
                                     
-                                    yieldHtml += `
-                                    <div class="mt-4">
-                                        <h6 class="font-weight-bold text-indigo mb-2" style="font-size: 0.85rem;"><i class="fas fa-dice mr-1"></i> Basado en Simulación Montecarlo</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
-                                                <thead class="text-white" style="background-color: #e83e8c;">
-                                                    <tr>
-                                                        <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
-                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (MC Base)</th>
-                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Separado (MC Base)</th>
-                                                        <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Total (Montecarlo)</th>
-                                                    </tr>
-                                                    <tr>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Cartera Año Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nueva Cartera</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Año Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Nueva</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Pesimista</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Optimista</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                    `;
-                                    
                                     for (let i = 0; i < numRows; i++) {
-                                        const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
-
                                         const sepBase = getSeparation(mcDataObj.base[i], i);
                                         const totalPes = getSeparation(mcDataObj.pesimista[i], i).totalYield;
                                         const totalOpt = getSeparation(mcDataObj.optimista[i], i).totalYield;
@@ -4200,6 +4944,52 @@ function recalculateStep7() {
                                         sumMcTotalPes += totalPes;
                                         sumMcTotalBase += sepBase.totalYield;
                                         sumMcTotalOpt += totalOpt;
+                                    }
+
+                                    yieldHtml += `
+                                    <div class="row mt-4">
+                                        <div class="col-12 mb-3">
+                                            <div class="alert shadow-sm border-0 mb-0" style="font-size: 0.85rem; border-left: 4px solid #e83e8c !important; background-color: #f8f9fa;">
+                                                <h6 class="font-weight-bold mb-2" style="color: #e83e8c;"><i class="fas fa-dice mr-1"></i> Análisis de Ingresos Proyectados (Simulación Montecarlo)</h6>
+                                                <p class="mb-2">La simulación Montecarlo itera miles de trayectorias posibles sobre los escenarios de tendencia generados, introduciendo la volatilidad inherente del mercado:</p>
+                                                <ul class="pl-3 mb-0" style="line-height: 1.5;">
+                                                    <li class="mb-1"><strong class="text-success">Extremo Optimista (P95):</strong> Los ingresos máximos probables podrían escalar hasta <strong>${formatVal(sumMcTotalOpt)}</strong> si las condiciones favorecen la nueva colocación.</li>
+                                                    <li class="mb-1"><strong style="color: #e83e8c;">Base Estocástica:</strong> El escenario central ajustado al riesgo converge en <strong>${formatVal(sumMcTotalBase)}</strong>, una visión más realista que la tendencia pura.</li>
+                                                    <li class="mb-0"><strong class="text-danger">Extremo Pesimista (P5):</strong> En el percentil inferior de riesgo, la captación se contraería a <strong>${formatVal(sumMcTotalPes)}</strong>.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
+                                                    <thead class="text-white" style="background-color: #e83e8c;">
+                                                        <tr>
+                                                            <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
+                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (MC Base)</th>
+                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Separado (MC Base)</th>
+                                                            <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Rendimiento Total (Montecarlo)</th>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Cartera Año Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nueva Cartera</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Año Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Rend. Nueva</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Pesimista</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Optimista</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                    `;
+                                    
+                                    for (let i = 0; i < numRows; i++) {
+                                        const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
+
+                                        const sepBase = getSeparation(mcDataObj.base[i], i);
+                                        const totalPes = getSeparation(mcDataObj.pesimista[i], i).totalYield;
+                                        const totalOpt = getSeparation(mcDataObj.optimista[i], i).totalYield;
 
                                         yieldHtml += `<tr>
                                             <td class="font-weight-bold text-dark bg-light">${lbl}</td>
@@ -4225,26 +5015,9 @@ function recalculateStep7() {
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
                                     </div>`;
                                 }
-                                
-                                yieldHtml += `
-                                    </div>
-                                </div>
-                                <div class="col-xl-4">
-                                    <div class="alert alert-info shadow-sm border-0 h-100 mb-0" style="font-size: 0.85rem; border-left: 4px solid #17a2b8 !important;">
-                                        <h6 class="font-weight-bold text-info mb-3"><i class="fas fa-info-circle mr-1"></i> Metodología de Cálculo</h6>
-                                        <p class="mb-3">El modelo proyecta los ingresos financieros separando el portafolio proyectado en dos tramos para mayor precisión analítica:</p>
-                                        <ul class="pl-3 mb-3" style="line-height: 1.5;">
-                                            <li class="mb-2"><strong>Tramo Año Base:</strong> Se asume que el saldo vigente al cierre del año anterior se mantiene y rinde a la <span class="badge badge-light text-muted border border-secondary">Tasa Histórica</span> (derivada de la relación entre sus propios ingresos y saldo final).</li>
-                                            <li><strong>Tramo Nuevo:</strong> Todo saldo proyectado que <em>exceda</em> la Cartera del Año Base se considera como nueva colocación neta. Este diferencial genera ingresos bajo la <span class="badge badge-light text-muted border border-secondary">Tasa Nueva Cartera</span>.</li>
-                                        </ul>
-                                        <p class="mb-0 text-muted small">
-                                            <strong>Nota:</strong> Los rendimientos se calculan aplicando las tasas anualmente sobre las porciones de saldo correspondientes, las cuales se ajustan primero descontando la mora proyectada definida en <em>% Vigente s/ Total</em>.
-                                        </p>
-                                    </div>
-                                </div>
-                                </div>`;
                                 yieldContainer.html(yieldHtml);
 
                             } else {
@@ -4304,6 +5077,52 @@ function recalculateStep7() {
                                 const fmtInp = (v) => v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                                 const onBlurFmt = "this.value = parseFloat(this.value.replace(/,/g, '') || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})";
                                 
+                                const getCostSeparation = (total, monthIndex) => {
+                                    const vigente = (total || 0) * (pctCostVigente / 100);
+                                    let currentOldVigente = oldVigenteCostVal * Math.pow(1 - (amortCostRate / 100), monthIndex);
+                                    
+                                    let oldPort = 0;
+                                    let newPort = 0;
+                                    let costOld = 0;
+                                    let costNew = 0;
+                                    
+                                    if (vigente > currentOldVigente) {
+                                        oldPort = currentOldVigente;
+                                        newPort = vigente - currentOldVigente;
+                                    } else {
+                                        oldPort = vigente;
+                                        newPort = 0;
+                                    }
+                                    
+                                    costOld = oldPort * (rateCostActual / 100) / 12;
+                                    costNew = newPort * (rateCostNew / 100) / 12;
+                                    
+                                    return { oldPort, newPort, costOld, costNew, totalCost: costOld + costNew };
+                                };
+
+                                let sumCostOld = 0;
+                                let sumCostNew = 0;
+                                let sumTotalPes = 0;
+                                let sumTotalBase = 0;
+                                let sumTotalOpt = 0;
+
+                                const formatVal = (val) => {
+                                    return 'S/ ' + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                };
+
+                                for (let i = 0; i < numRows; i++) {
+                                    const idx = startIdx + i;
+                                    const sepBase = getCostSeparation(v.base[idx], i);
+                                    const totalPes = getCostSeparation(v.pesimista[idx], i).totalCost;
+                                    const totalOpt = getCostSeparation(v.optimista[idx], i).totalCost;
+
+                                    sumCostOld += sepBase.costOld;
+                                    sumCostNew += sepBase.costNew;
+                                    sumTotalPes += totalPes;
+                                    sumTotalBase += sepBase.totalCost;
+                                    sumTotalOpt += totalOpt;
+                                }
+
                                 let costHtml = `
                                     <h6 class="font-weight-bold text-danger text-uppercase mb-3">
                                         <i class="fas fa-file-invoice-dollar mr-2"></i> Simulación de Gastos Financieros (Obligaciones)
@@ -4353,7 +5172,25 @@ function recalculateStep7() {
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-xl-8">
+                                        <div class="col-12 mb-3">
+                                            <div class="alert shadow-sm border-0 mb-0" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important; background-color: #f8f9fa;">
+                                                <h6 class="font-weight-bold text-danger mb-2"><i class="fas fa-file-invoice-dollar mr-1"></i> Análisis de Gastos Proyectados (Tendencias)</h6>
+                                                <p class="mb-2">En base a la proyección de obligaciones, con un costo histórico del <strong>${(rateCostActual).toFixed(2)}%</strong> y una tasa de captación nueva de <strong>${(rateCostNew).toFixed(2)}%</strong>, se estiman los siguientes gastos financieros para los próximos ${period} meses:</p>
+                                                <ul class="pl-3 mb-2" style="line-height: 1.5;">
+                                                    <li class="mb-1"><strong class="text-success">Escenario Optimista:</strong> Generaría un gasto de <strong>${formatVal(sumTotalOpt)}</strong>, asumiendo un escenario de alta captación de pasivos fondeados a la tasa nueva.</li>
+                                                    <li class="mb-1"><strong style="color: #dc3545;">Escenario Base:</strong> El costo central esperado ascendería a <strong>${formatVal(sumTotalBase)}</strong>, combinando la amortización histórica y el fondeo tendencial.</li>
+                                                    <li class="mb-0"><strong class="text-danger">Escenario Pesimista:</strong> En el límite inferior de captación, los gastos se reducirían a <strong>${formatVal(sumTotalPes)}</strong>, reflejando principalmente el costo del portafolio remanente.</li>
+                                                </ul>
+                                                <div class="mt-2 pt-2 border-top" style="border-color: rgba(220, 53, 69, 0.2) !important;">
+                                                    <p class="mb-0 text-muted small">
+                                                        <strong>Brecha de Riesgo:</strong> La fluctuación esperada de los gastos financieros es de <strong>${formatVal(sumTotalOpt - sumTotalPes)}</strong> entre escenarios, directamente ligada a la agresividad de la captación proyectada.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
                                                     <thead class="text-white" style="background-color: #dc3545;">
@@ -4376,39 +5213,6 @@ function recalculateStep7() {
                                                     <tbody>
                                 `;
 
-                                const getCostSeparation = (total, monthIndex) => {
-                                    const vigente = (total || 0) * (pctCostVigente / 100);
-                                    let currentOldVigente = oldVigenteCostVal * Math.pow(1 - (amortCostRate / 100), monthIndex);
-                                    
-                                    let oldPort = 0;
-                                    let newPort = 0;
-                                    let costOld = 0;
-                                    let costNew = 0;
-                                    
-                                    if (vigente > currentOldVigente) {
-                                        oldPort = currentOldVigente;
-                                        newPort = vigente - currentOldVigente;
-                                    } else {
-                                        oldPort = vigente;
-                                        newPort = 0;
-                                    }
-                                    
-                                    costOld = oldPort * (rateCostActual / 100) / 12;
-                                    costNew = newPort * (rateCostNew / 100) / 12;
-                                    
-                                    return { oldPort, newPort, costOld, costNew, totalCost: costOld + costNew };
-                                };
-
-                                let sumCostOld = 0;
-                                let sumCostNew = 0;
-                                let sumTotalPes = 0;
-                                let sumTotalBase = 0;
-                                let sumTotalOpt = 0;
-
-                                const formatVal = (val) => {
-                                    return 'S/ ' + val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                                };
-
                                 for (let i = 0; i < numRows; i++) {
                                     const idx = startIdx + i;
                                     const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
@@ -4416,12 +5220,6 @@ function recalculateStep7() {
                                     const sepBase = getCostSeparation(v.base[idx], i);
                                     const totalPes = getCostSeparation(v.pesimista[idx], i).totalCost;
                                     const totalOpt = getCostSeparation(v.optimista[idx], i).totalCost;
-
-                                    sumCostOld += sepBase.costOld;
-                                    sumCostNew += sepBase.costNew;
-                                    sumTotalPes += totalPes;
-                                    sumTotalBase += sepBase.totalCost;
-                                    sumTotalOpt += totalOpt;
 
                                     costHtml += `<tr>
                                         <td class="font-weight-bold text-dark bg-light">${lbl}</td>
@@ -4445,7 +5243,9 @@ function recalculateStep7() {
                                     </tr>
                                             </tbody>
                                         </table>
-                                    </div>`;
+                                    </div>
+                                </div>
+                                </div>`;
                                 
                                 if (showMCCols && mcDataObj) {
                                     let sumMcCostOld = 0;
@@ -4454,34 +5254,7 @@ function recalculateStep7() {
                                     let sumMcTotalBase = 0;
                                     let sumMcTotalOpt = 0;
                                     
-                                    costHtml += `
-                                    <div class="mt-4">
-                                        <h6 class="font-weight-bold text-danger mb-2" style="font-size: 0.85rem;"><i class="fas fa-dice mr-1"></i> Basado en Simulación Montecarlo</h6>
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
-                                                <thead class="text-white" style="background-color: #e83e8c;">
-                                                    <tr>
-                                                        <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
-                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (MC Base)</th>
-                                                        <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Gasto Separado (MC Base)</th>
-                                                        <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Gasto Total (Montecarlo)</th>
-                                                    </tr>
-                                                    <tr>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Obli. Año Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nuevas Obli.</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Gasto Año Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Gasto Nuevas</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Pesimista</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Base</th>
-                                                        <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Optimista</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                    `;
-                                    
                                     for (let i = 0; i < numRows; i++) {
-                                        const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
-
                                         const sepBase = getCostSeparation(mcDataObj.base[i], i);
                                         const totalPes = getCostSeparation(mcDataObj.pesimista[i], i).totalCost;
                                         const totalOpt = getCostSeparation(mcDataObj.optimista[i], i).totalCost;
@@ -4491,6 +5264,52 @@ function recalculateStep7() {
                                         sumMcTotalPes += totalPes;
                                         sumMcTotalBase += sepBase.totalCost;
                                         sumMcTotalOpt += totalOpt;
+                                    }
+
+                                    costHtml += `
+                                    <div class="row mt-4">
+                                        <div class="col-12 mb-3">
+                                            <div class="alert shadow-sm border-0 mb-0" style="font-size: 0.85rem; border-left: 4px solid #e83e8c !important; background-color: #f8f9fa;">
+                                                <h6 class="font-weight-bold mb-2" style="color: #e83e8c;"><i class="fas fa-dice mr-1"></i> Análisis de Gastos Proyectados (Simulación Montecarlo)</h6>
+                                                <p class="mb-2">La simulación Montecarlo itera miles de trayectorias posibles sobre los escenarios de tendencia generados, introduciendo la volatilidad inherente del mercado:</p>
+                                                <ul class="pl-3 mb-0" style="line-height: 1.5;">
+                                                    <li class="mb-1"><strong class="text-success">Extremo Optimista (P95):</strong> Los gastos máximos probables podrían escalar hasta <strong>${formatVal(sumMcTotalOpt)}</strong> si las condiciones del fondeo suben.</li>
+                                                    <li class="mb-1"><strong style="color: #e83e8c;">Base Estocástica:</strong> El escenario central ajustado al riesgo converge en <strong>${formatVal(sumMcTotalBase)}</strong>, una visión más realista que la tendencia pura.</li>
+                                                    <li class="mb-0"><strong class="text-danger">Extremo Pesimista (P5):</strong> En el percentil inferior de riesgo, el costo se reduciría a <strong>${formatVal(sumMcTotalPes)}</strong>.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-sm m-0 w-100" style="font-size: 0.8rem;">
+                                                    <thead class="text-white" style="background-color: #e83e8c;">
+                                                        <tr>
+                                                            <th class="font-weight-bold align-middle" rowspan="2" style="min-width: 120px;">Mes</th>
+                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Saldos Vigentes (MC Base)</th>
+                                                            <th class="text-center font-weight-bold" colspan="2" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Gasto Separado (MC Base)</th>
+                                                            <th class="text-center font-weight-bold" colspan="3" style="border-bottom: 1px solid rgba(255,255,255,0.2);">Gasto Total (Montecarlo)</th>
+                                                        </tr>
+                                                        <tr>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Obli. Año Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Nuevas Obli.</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Gasto Año Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">Gasto Nuevas</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Pesimista</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Base</th>
+                                                            <th class="text-right font-weight-bold" style="min-width: 120px; background-color: rgba(0,0,0,0.1);">MC Optimista</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                    `;
+                                    
+                                    for (let i = 0; i < numRows; i++) {
+                                        const lbl = trendLabels[histMonthsCount + i] || `Mes ${i+1}`;
+
+                                        const sepBase = getCostSeparation(mcDataObj.base[i], i);
+                                        const totalPes = getCostSeparation(mcDataObj.pesimista[i], i).totalCost;
+                                        const totalOpt = getCostSeparation(mcDataObj.optimista[i], i).totalCost;
 
                                         costHtml += `<tr>
                                             <td class="font-weight-bold text-dark bg-light">${lbl}</td>
@@ -4516,26 +5335,9 @@ function recalculateStep7() {
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
                                     </div>`;
                                 }
-                                
-                                costHtml += `
-                                    </div>
-                                </div>
-                                <div class="col-xl-4">
-                                    <div class="alert alert-danger shadow-sm border-0 h-100 mb-0" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important;">
-                                        <h6 class="font-weight-bold text-danger mb-3"><i class="fas fa-info-circle mr-1"></i> Metodología de Cálculo</h6>
-                                        <p class="mb-3">El modelo proyecta los gastos financieros por obligaciones separando el saldo proyectado en dos tramos:</p>
-                                        <ul class="pl-3 mb-3" style="line-height: 1.5;">
-                                            <li class="mb-2"><strong>Tramo Año Base:</strong> Se asume que el saldo de obligaciones al cierre del año anterior se amortiza gradualmente (según el <span class="badge badge-light text-muted border border-secondary">% Retiros Mensual</span>) y cuesta a la <span class="badge badge-light text-muted border border-secondary">Tasa Histórica</span> (derivada de la relación entre sus propios gastos y saldo final).</li>
-                                            <li><strong>Tramo Nuevo:</strong> Todo saldo proyectado que <em>exceda</em> las Obligaciones del Año Base se considera nueva captación. Este diferencial genera gastos bajo la <span class="badge badge-light text-muted border border-secondary">Tasa Nuevas Obli.</span></li>
-                                        </ul>
-                                        <p class="mb-0 text-muted small">
-                                            <strong>Nota:</strong> Los gastos se calculan aplicando las tasas anualmente sobre las porciones de saldo correspondientes.
-                                        </p>
-                                    </div>
-                                </div>
-                                </div>`;
                                 costContainer.html(costHtml);
                                 
                             } else {
@@ -4631,31 +5433,6 @@ function recalculateStep7() {
                         showMCCols = true;
                     }
                     
-                    // Start Animation Interval (20 FPS)
-                    let animationInterval = setInterval(() => {
-                        let fakeObj = { pesimista: [], base: [], optimista: [] };
-                        const startIdx = 1;
-                        for (let i = 0; i < period; i++) {
-                            const idx = startIdx + i;
-                            let baseVal = v.base[idx] || 0; 
-                            let noiseP = baseVal * (0.85 + Math.random() * 0.10); // 85%-95%
-                            let noiseB = baseVal * (0.95 + Math.random() * 0.10); // 95%-105%
-                            let noiseO = baseVal * (1.05 + Math.random() * 0.10); // 105%-115%
-                            
-                            if (variableId.toLowerCase().includes('mora')) {
-                                let tmp = noiseP;
-                                noiseP = noiseO;
-                                noiseO = tmp;
-                            }
-                            
-                            fakeObj.pesimista.push(noiseP);
-                            fakeObj.base.push(noiseB);
-                            fakeObj.optimista.push(noiseO);
-                        }
-                        mcDataObj = fakeObj;
-                        renderMonthlyTable(agencyId, variableId, period);
-                    }, 50);
-                    
                     $.ajax({
                         url: "{% url 'financial_planning:api_run_montecarlo' plan.id %}",
                         type: 'POST',
@@ -4665,13 +5442,14 @@ function recalculateStep7() {
                             proj_months: period,
                             iterations: parseInt(iterations),
                             variable_id: v.id,
-                            base_rate: v.rates && v.rates.base ? parseFloat(v.rates.base) / 100.0 : null
+                            base_rate: v.rates && v.rates.base != null ? parseFloat(v.rates.base) / 100.0 : null,
+                            pesimista_rate: v.rates && v.rates.pesimista != null ? parseFloat(v.rates.pesimista) / 100.0 : null,
+                            optimista_rate: v.rates && v.rates.optimista != null ? parseFloat(v.rates.optimista) / 100.0 : null
                         }),
                         headers: {
                             'X-CSRFToken': '{{ csrf_token }}'
                         },
                         success: function(res) {
-                            clearInterval(animationInterval);
                             if(res.status === 'success') {
                                 mcDataObj = res.data;
                                 const vars = trendDatasetsByAgency[currentAgency].variables;
@@ -4683,7 +5461,6 @@ function recalculateStep7() {
                             }
                         },
                         error: function() {
-                            clearInterval(animationInterval);
                             alert("Error de conexión al generar Montecarlo");
                         },
                         complete: function() {
@@ -4988,7 +5765,9 @@ window.saveHistoricalData = function(callback) {
         },
         body: JSON.stringify({
             plan_id: '{{ plan.id }}',
-            periods: window.histSavedPeriods
+            periods: window.histSavedPeriods,
+            income_statement: (typeof histBalanceData !== 'undefined' && histBalanceData) ? histBalanceData.income_statement : null,
+            balance_sheet: (typeof histBalanceData !== 'undefined' && histBalanceData) ? histBalanceData.balance_sheet : null
         })
     })
     .then(r => r.json())
@@ -5009,7 +5788,34 @@ window.saveHistoricalData = function(callback) {
     });
 };
 
+window.syncSimulationParamsFromDOM = function() {
+    if (typeof $ === 'undefined') return;
+    if ($('#yield-simulation-container').length && $('#yield-simulation-container').is(':visible') && window.currentVariable) {
+        if (!window.yieldParams) window.yieldParams = {};
+        if (!window.yieldParams[window.currentVariable]) window.yieldParams[window.currentVariable] = {};
+        ['#yield-old-vigente', '#yield-old-ingresos', '#yield-amort-rate', '#yield-pct-vigente', '#yield-rate-new'].forEach(id => {
+            let input = $(id);
+            if (input.length) {
+                let val = parseFloat(input.val()?.toString().replace(/,/g, ''));
+                if (!isNaN(val)) window.yieldParams[window.currentVariable][id] = val;
+            }
+        });
+    }
+    if ($('#cost-simulation-container').length && $('#cost-simulation-container').is(':visible') && window.currentVariable) {
+        if (!window.costParams) window.costParams = {};
+        if (!window.costParams[window.currentVariable]) window.costParams[window.currentVariable] = {};
+        ['#cost-old-vigente', '#cost-old-gastos', '#cost-amort-rate', '#cost-pct-vigente', '#cost-rate-new'].forEach(id => {
+            let input = $(id);
+            if (input.length) {
+                let val = parseFloat(input.val()?.toString().replace(/,/g, ''));
+                if (!isNaN(val)) window.costParams[window.currentVariable][id] = val;
+            }
+        });
+    }
+};
+
 window.handleWizardContinue = function(url) {
+    if (typeof window.syncSimulationParamsFromDOM === 'function') window.syncSimulationParamsFromDOM();
     const doContinue = () => {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
@@ -5029,9 +5835,39 @@ window.handleWizardContinue = function(url) {
 
     {% if plan and plan.id %}
     const saveAssumptionsUrl = "{% url 'financial_planning:save_institutional_assumptions' plan.id %}";
+    const saveFragmentUrl = "{% url 'financial_planning:save_scenario_fragment' plan.id %}";
     {% else %}
     const saveAssumptionsUrl = "";
+    const saveFragmentUrl = "";
     {% endif %}
+
+    const saveStep6State = () => {
+        if (typeof trendLabels !== 'undefined' && saveFragmentUrl) {
+            const payload = {
+                status: "success",
+                labels: typeof trendLabels !== 'undefined' ? trendLabels : [],
+                hist_months: typeof histMonthsCount !== 'undefined' ? histMonthsCount : 12,
+                datasets_by_agency: typeof trendDatasetsByAgency !== 'undefined' ? trendDatasetsByAgency : {},
+                ui_state: {
+                    chartMode: typeof chartMode !== 'undefined' ? chartMode : 'line',
+                    showTrendCols: typeof showTrendCols !== 'undefined' ? showTrendCols : false,
+                    showMCCols: typeof showMCCols !== 'undefined' ? showMCCols : false,
+                    currentAgency: typeof currentAgency !== 'undefined' ? currentAgency : 'Consolidado',
+                    currentVariable: typeof currentVariable !== 'undefined' ? currentVariable : 'cartera',
+                    currentPeriod: typeof currentPeriod !== 'undefined' ? currentPeriod : 36
+                }
+            };
+            return fetch(saveFragmentUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ full_payload: payload })
+            });
+        }
+        return Promise.resolve();
+    };
 
     if ((window.costParams || window.yieldParams) && saveAssumptionsUrl) {
         const payload = {};
@@ -5051,20 +5887,116 @@ window.handleWizardContinue = function(url) {
             body: JSON.stringify(payload)
         }).then(res => res.json())
           .then(data => {
-              if (data.status === 'success') {
-                  doContinue();
-              } else {
-                  console.error('Error saving assumptions:', data.message);
-                  doContinue(); // continue anyway
-              }
+              return saveStep6State();
           })
+          .then(() => doContinue())
           .catch(err => {
               console.error('Fetch error:', err);
-              doContinue(); // continue anyway
+              saveStep6State().then(() => doContinue()).catch(() => doContinue());
           });
     } else {
-        doContinue();
+        saveStep6State().then(() => doContinue()).catch(() => doContinue());
     }
+};
+
+window.exportStep6PDF = function() {
+    if (typeof jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+        Swal.fire('Error', 'Librerías de exportación no cargadas', 'error');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'pt', 'a4');
+    
+    html2canvas(document.querySelector('#step6-export-area'), { scale: 1.5 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        doc.save('Analisis_Tendencias.pdf');
+    });
+};
+
+window.exportStep6Image = function() {
+    if (typeof html2canvas === 'undefined') {
+        Swal.fire('Error', 'Librerías de exportación no cargadas', 'error');
+        return;
+    }
+    html2canvas(document.querySelector('#step6-export-area'), { scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'Analisis_Tendencias.jpg';
+        link.href = canvas.toDataURL('image/jpeg', 0.9);
+        link.click();
+    });
+};
+
+window.exportStep6Excel = function() {
+    if (typeof XLSX === 'undefined') {
+        Swal.fire('Error', 'Librerías de exportación no cargadas', 'error');
+        return;
+    }
+    const table = document.querySelector('#step6-export-area table');
+    if (!table) {
+        Swal.fire('Error', 'No hay tabla para exportar', 'error');
+        return;
+    }
+    const wb = XLSX.utils.table_to_book(table, {sheet:"Tendencias"});
+    XLSX.writeFile(wb, 'Analisis_Tendencias.xlsx');
+};
+
+window.exportStep6Word = function() {
+    const area = document.querySelector('#step6-export-area');
+    if (!area) return;
+    
+    const html = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head><meta charset='utf-8'><title>Análisis de Tendencias</title></head>
+    <body>
+        <h2>Análisis de Tendencias y Simulaciones</h2>
+        ${area.innerHTML}
+    </body>
+    </html>`;
+    
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Analisis_Tendencias.doc';
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
+window.copyStep6Analysis = function() {
+    const area = document.querySelector('#step6-export-area');
+    if (!area) return;
+    
+    // Extract text recursively from elements to preserve some structure
+    let textContent = "ANÁLISIS DE TENDENCIAS Y SIMULACIONES\n\n";
+    
+    // Get all alerts (Analysis boxes)
+    const alerts = area.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        const title = alert.querySelector('h6');
+        if (title) textContent += title.innerText.toUpperCase() + "\n";
+        
+        const pars = alert.querySelectorAll('p, li');
+        pars.forEach(p => {
+            textContent += "- " + p.innerText + "\n";
+        });
+        textContent += "\n";
+    });
+    
+    navigator.clipboard.writeText(textContent).then(() => {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Análisis copiado al portapapeles', showConfirmButton: false, timer: 2000 });
+        } else {
+            alert('Análisis copiado al portapapeles');
+        }
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire('Error', 'No se pudo copiar el texto', 'error');
+        }
+    });
 };
 </script>
 {% endblock %}
