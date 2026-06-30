@@ -1,5 +1,6 @@
 from django.db import models
 from decimal import Decimal
+from django.conf import settings
 from users.models import TenantAwareModel
 
 class PeriodoFinanciero(TenantAwareModel):
@@ -214,3 +215,127 @@ class ProyeccionMensual(TenantAwareModel):
 
     def __str__(self):
         return f"{self.escenario.variable_name} - Mes {self.mes_proyeccion}"
+
+# ==========================================
+# MODELOS DEL PASO 7 (PRESUPUESTO)
+# ==========================================
+
+class BudgetVersion(TenantAwareModel):
+    STATUS_CHOICES = [
+        ('DRAFT', 'Borrador'),
+        ('APPROVED', 'Aprobado'),
+        ('CLOSED', 'Cerrado')
+    ]
+    SCENARIO_CHOICES = [
+        ('BASE', 'Base (Tendencia)'),
+        ('OPTIMISTIC', 'Optimista (Tendencia)'),
+        ('PESSIMISTIC', 'Pesimista (Tendencia)'),
+        ('MC_BASE', 'Base (Montecarlo)'),
+        ('MC_OPTIMISTIC', 'Optimista (Montecarlo)'),
+        ('MC_PESSIMISTIC', 'Pesimista (Montecarlo)'),
+    ]
+    
+    plan_financiero = models.ForeignKey('PlanFinanciero', on_delete=models.CASCADE, related_name='budget_versions')
+    version_number = models.PositiveIntegerField(default=1)
+    scenario = models.CharField(max_length=20, choices=SCENARIO_CHOICES, default='BASE')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DRAFT')
+    
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_budgets')
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='approved_budgets', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Versión de Presupuesto"
+        verbose_name_plural = "Versiones de Presupuesto"
+        unique_together = ('organization', 'plan_financiero', 'scenario', 'version_number')
+
+    def __str__(self):
+        return f"{self.plan_financiero.nombre} - V{self.version_number} ({self.get_scenario_display()})"
+
+
+class BudgetItem(TenantAwareModel):
+    CATEGORY_CHOICES = [
+        ('ING_FIN', 'Ingresos Financieros'),
+        ('ING_SERV', 'Ingresos por Servicios Financieros'),
+        ('OTROS_ING', 'Otros Ingresos'),
+        ('GAS_FIN', 'Gastos Financieros'),
+        ('GAS_SERV', 'Gastos por Servicios Financieros'),
+        ('PROV', 'Provisiones'),
+        ('DEP_AMORT', 'Depreciación y Amortización'),
+        ('GAS_ADMIN', 'Gastos Administrativos'),
+        ('OTROS_EG', 'Otros Egresos'),
+    ]
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+    account_mapping = models.ManyToManyField(CuentaContable, blank=True, related_name='budget_items')
+
+    class Meta:
+        verbose_name = "Rubro Presupuestal"
+        verbose_name_plural = "Rubros Presupuestales"
+        ordering = ['category', 'code']
+
+    def __str__(self):
+        return f"[{self.get_category_display()}] {self.name}"
+
+
+class BudgetCalculationRule(TenantAwareModel):
+    CALCULATION_TYPE_CHOICES = [
+        ('MANUAL', 'Ingreso Manual'),
+        ('TREND', 'Tendencia Histórica'),
+        ('DRIVER', 'Basado en Driver/Tasa'),
+        ('COPY', 'Copia Año Anterior')
+    ]
+    item = models.ForeignKey(BudgetItem, on_delete=models.CASCADE, related_name='rules')
+    calculation_type = models.CharField(max_length=20, choices=CALCULATION_TYPE_CHOICES, default='MANUAL')
+    # Refers to Paso 6 variables, e.g. "cartera_creditos"
+    source_trend_variable = models.CharField(max_length=100, blank=True, null=True)
+    # Refers to Paso 5 variables, e.g. "tasa_activa"
+    assumption_driver = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Regla de Cálculo Presupuestal"
+        verbose_name_plural = "Reglas de Cálculo Presupuestal"
+        unique_together = ('organization', 'item')
+
+    def __str__(self):
+        return f"Regla para {self.item.name} - {self.get_calculation_type_display()}"
+
+
+class BudgetLine(TenantAwareModel):
+    version = models.ForeignKey(BudgetVersion, on_delete=models.CASCADE, related_name='lines')
+    item = models.ForeignKey(BudgetItem, on_delete=models.CASCADE, related_name='budget_lines')
+    applied_calculation_type = models.CharField(max_length=20) # Snapshot of what was used
+    
+    total_amount_y1 = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total_amount_y2 = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    total_amount_y3 = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Línea de Presupuesto"
+        verbose_name_plural = "Líneas de Presupuesto"
+        unique_together = ('organization', 'version', 'item')
+
+    def __str__(self):
+        return f"{self.item.name} - {self.version}"
+
+
+class BudgetLineDetail(TenantAwareModel):
+    PERIOD_TYPE_CHOICES = [
+        ('MONTH', 'Mes'),
+        ('YEAR', 'Año')
+    ]
+    budget_line = models.ForeignKey(BudgetLine, on_delete=models.CASCADE, related_name='details')
+    period_type = models.CharField(max_length=10, choices=PERIOD_TYPE_CHOICES)
+    period_index = models.PositiveIntegerField() # 1-12 for MONTH, 2-3 for YEAR
+    amount = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Detalle de Línea Presupuestal"
+        verbose_name_plural = "Detalles de Línea Presupuestal"
+        unique_together = ('organization', 'budget_line', 'period_type', 'period_index')
+        ordering = ['period_type', 'period_index']
+
+    def __str__(self):
+        return f"{self.budget_line.item.name} - {self.period_type} {self.period_index}: {self.amount}"

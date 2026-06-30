@@ -1,0 +1,931 @@
+<div class="card shadow border-0 rounded-lg mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h4 class="m-0 font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">
+                    <i class="fas fa-file-invoice-dollar mr-2"></i>PRESUPUESTO (Paso 7)
+                </h4>
+                <p class="text-muted mt-1 mb-0">Construcción del presupuesto a partir del E.R. histórico y tendencias proyectadas.</p>
+            </div>
+            <div class="d-flex align-items-center mt-3 mt-md-0" style="gap: 15px;">
+                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border" style="width: auto;">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light font-weight-bold border-0 text-secondary">Escenario:</span>
+                    </div>
+                    <select class="custom-select font-weight-bold border-0 text-indigo" id="budget-scenario" onchange="loadBudgetData()" style="box-shadow: none;">
+                        <optgroup label="Tendencia (Determinístico)">
+                            <option value="BASE" selected>Base (Tendencia)</option>
+                            <option value="OPTIMISTIC">Optimista (Tendencia)</option>
+                            <option value="PESSIMISTIC">Pesimista (Tendencia)</option>
+                        </optgroup>
+                        <optgroup label="Montecarlo (Estocástico)">
+                            <option value="MC_BASE">Base (Montecarlo)</option>
+                            <option value="MC_OPTIMISTIC">Optimista (Montecarlo)</option>
+                            <option value="MC_PESSIMISTIC">Pesimista (Montecarlo)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <span id="budget-status-badge" class="badge badge-warning px-3 py-2 rounded-pill shadow-sm"><i class="fas fa-pen mr-1"></i> Borrador</span>
+                <button type="button" id="btnEditApproved" class="btn btn-sm btn-outline-warning rounded-pill shadow-sm" style="display: none;" onclick="editApprovedBudget()">
+                    <i class="fas fa-edit mr-1"></i> Modificar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="card-body bg-light border-top border-bottom p-3">
+        <div class="d-flex align-items-center flex-wrap" style="gap: 10px;">
+            <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold shadow-sm rounded-pill px-3" onclick="seedAndSync()">
+                <i class="fas fa-database mr-1"></i> Inicializar Rubros
+            </button>
+            <button type="button" class="btn btn-sm btn-info text-white font-weight-bold shadow-sm rounded-pill px-3" onclick="syncWithTrends()">
+                <i class="fas fa-sync-alt mr-1"></i> Sincronizar con Tendencias
+            </button>
+            <button type="button" class="btn btn-sm btn-light border font-weight-bold shadow-sm rounded-pill px-3" onclick="toggleErPanel()">
+                <i class="fas fa-history text-secondary mr-1"></i> Ver E.R. Histórico
+            </button>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3 ml-auto" id="btnSaveBudget" onclick="saveBudgetVersion()">
+                <i class="fas fa-save mr-1"></i> Guardar
+            </button>
+            <button type="button" class="btn btn-sm btn-success shadow-sm font-weight-bold rounded-pill px-3" id="btnApproveBudget" onclick="approveBudgetVersion()">
+                <i class="fas fa-check-circle mr-1"></i> Aprobar
+            </button>
+        </div>
+    </div>
+
+    <!-- E.R. Histórico Panel (collapsible) -->
+    <div id="er-historico-panel" style="display:none;" class="border-bottom">
+        <div class="p-3 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="font-weight-bold text-success mb-0"><i class="fas fa-history mr-1"></i>Estado de Resultados Histórico (Base)</h6>
+                <span id="er-hist-year-badge" class="badge badge-success"></span>
+            </div>
+            <div id="er-historico-content">
+                <div class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i>Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Table -->
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered table-sm mb-0 text-nowrap" id="budget-table">
+                <thead class="bg-indigo text-white text-center">
+                    <tr>
+                        <th class="align-middle text-left" style="min-width: 260px;">Rubro Presupuestal</th>
+                        <th class="align-middle" style="min-width:140px;">Cálculo</th>
+                        <th class="align-middle" style="min-width:160px;">Fuente / Origen</th>
+                        <th class="align-middle" title="Enero">Ene</th>
+                        <th class="align-middle" title="Febrero">Feb</th>
+                        <th class="align-middle" title="Marzo">Mar</th>
+                        <th class="align-middle" title="Abril">Abr</th>
+                        <th class="align-middle" title="Mayo">May</th>
+                        <th class="align-middle" title="Junio">Jun</th>
+                        <th class="align-middle" title="Julio">Jul</th>
+                        <th class="align-middle" title="Agosto">Ago</th>
+                        <th class="align-middle" title="Septiembre">Sep</th>
+                        <th class="align-middle" title="Octubre">Oct</th>
+                        <th class="align-middle" title="Noviembre">Nov</th>
+                        <th class="align-middle" title="Diciembre">Dic</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold" style="min-width:110px;">Total Año 1</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold" style="min-width:100px;">Año 2</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold" style="min-width:100px;">Año 3</th>
+                    </tr>
+                </thead>
+                <tbody id="budget-table-body">
+                    <tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando presupuesto...</p></td></tr>
+                </tbody>
+                <tfoot class="font-weight-bold">
+                    <tr class="bg-light text-success">
+                        <td colspan="3" class="text-right border-right-0 pr-3">TOTAL INGRESOS</td>
+                        <td class="text-right text-monospace" id="footer-ing-m0">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m3">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m4">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m5">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m6">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m7">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m8">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m9">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m10">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-m11">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-y1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-y2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-ing-y3">0.00</td>
+                    </tr>
+                    <tr class="bg-light text-danger">
+                        <td colspan="3" class="text-right border-right-0 pr-3">TOTAL EGRESOS</td>
+                        <td class="text-right text-monospace" id="footer-eg-m0">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m3">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m4">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m5">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m6">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m7">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m8">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m9">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m10">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-m11">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-y1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-y2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-eg-y3">0.00</td>
+                    </tr>
+                    <tr class="bg-dark text-white">
+                        <td colspan="3" class="text-right border-right-0 pr-3">RESULTADO OPERATIVO PRESUPUESTADO</td>
+                        <td class="text-right text-monospace" id="footer-res-m0">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m3">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m4">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m5">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m6">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m7">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m8">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m9">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m10">0.00</td>
+                        <td class="text-right text-monospace" id="footer-res-m11">0.00</td>
+                        <td class="text-right text-monospace" id="footer-y1">0.00</td>
+                        <td class="text-right text-monospace" id="footer-y2">0.00</td>
+                        <td class="text-right text-monospace" id="footer-y3">0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+</div>
+</div>
+
+<script>
+(function() {
+    let currentBudgetData = [];
+    let currentVersionStatus = 'DRAFT';
+    const planId = '{{ plan.id }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    const CATEGORY_CONFIG = {
+        'ING_FIN':    { name: 'INGRESOS FINANCIEROS',           sign: 1,  color: 'text-success', icon: 'fa-plus-circle' },
+        'ING_SERV':   { name: 'INGRESOS POR SERVICIOS',         sign: 1,  color: 'text-success', icon: 'fa-plus-circle' },
+        'OTROS_ING':  { name: 'OTROS INGRESOS',                 sign: 1,  color: 'text-success', icon: 'fa-plus-circle' },
+        'GAS_FIN':    { name: 'GASTOS FINANCIEROS',             sign: -1, color: 'text-danger',  icon: 'fa-minus-circle' },
+        'GAS_SERV':   { name: 'GASTOS POR SERVICIOS FIN.',      sign: -1, color: 'text-danger',  icon: 'fa-minus-circle' },
+        'PROV':       { name: 'PROVISIONES',                    sign: -1, color: 'text-danger',  icon: 'fa-minus-circle' },
+        'DEP_AMORT':  { name: 'DEPRECIACIÓN Y AMORTIZACIÓN',    sign: -1, color: 'text-warning', icon: 'fa-minus-circle' },
+        'GAS_ADMIN':  { name: 'GASTOS ADMINISTRATIVOS',         sign: -1, color: 'text-danger',  icon: 'fa-minus-circle' },
+        'OTROS_EG':   { name: 'OTROS EGRESOS',                  sign: -1, color: 'text-secondary',icon: 'fa-minus-circle' },
+    };
+
+    function fmt(val) {
+        return parseFloat(val || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    // Strip commas before parsing (text inputs show "1,234.56")
+    function parseNum(val) {
+        return parseFloat(String(val || '0').replace(/,/g, '')) || 0;
+    }
+
+    function renderBudgetTable() {
+        const tbody = document.getElementById('budget-table-body');
+        if (currentBudgetData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="17" class="text-center py-5 text-muted">
+                <i class="fas fa-folder-open fa-3x mb-3 text-secondary d-block"></i>
+                No hay rubros presupuestales. Haz clic en <strong>"Inicializar Rubros"</strong> y luego <strong>"Sincronizar con Tendencias"</strong>.
+            </td></tr>`;
+            return;
+        }
+
+        let grouped = {};
+        currentBudgetData.forEach(item => {
+            const cat = CATEGORY_CONFIG[item.category] ? item.category : 'OTROS_EG';
+            if (!grouped[cat]) grouped[cat] = [];
+            grouped[cat].push(item);
+        });
+
+        let html = '';
+        let rY1 = 0, rY2 = 0, rY3 = 0;
+        let ingY1 = 0, ingY2 = 0, ingY3 = 0;
+        let egY1 = 0, egY2 = 0, egY3 = 0;
+        let resMonths = new Array(12).fill(0);
+        let ingMonths = new Array(12).fill(0);
+        let egMonths = new Array(12).fill(0);
+        const isApproved = currentVersionStatus === 'APPROVED';
+
+        for (const catKey of Object.keys(CATEGORY_CONFIG)) {
+            if (!grouped[catKey] || grouped[catKey].length === 0) continue;
+            const catInfo = CATEGORY_CONFIG[catKey];
+            
+            let catMonths = new Array(12).fill(0);
+            let catY1 = 0, catY2 = 0, catY3 = 0;
+            
+            grouped[catKey].forEach(item => {
+                catY1 += parseFloat(item.y1_total) || 0;
+                catY2 += parseFloat(item.y2_total) || 0;
+                catY3 += parseFloat(item.y3_total) || 0;
+                for (let i=0; i<12; i++) {
+                    catMonths[i] += parseFloat(item.monthly_values[i]) || 0;
+                }
+            });
+
+            let catHtml = `<tr class="bg-light font-weight-bold border-top">
+                <td class="${catInfo.color}" style="padding-left:10px;">
+                    <i class="fas ${catInfo.icon} mr-2"></i>${catInfo.name}
+                </td>
+                <td colspan="2"></td>`;
+                
+            for (let i = 0; i < 12; i++) {
+                catHtml += `<td class="text-right text-monospace ${catInfo.color} cat-sum-m${i}-${catKey}">${fmt(catMonths[i])}</td>`;
+            }
+            catHtml += `<td class="text-right text-monospace ${catInfo.color} cat-sum-y1-${catKey}">${fmt(catY1)}</td>
+                        <td class="text-right text-monospace ${catInfo.color} cat-sum-y2-${catKey}">${fmt(catY2)}</td>
+                        <td class="text-right text-monospace ${catInfo.color} cat-sum-y3-${catKey}">${fmt(catY3)}</td>
+            </tr>`;
+            
+            html += catHtml;
+
+            grouped[catKey].forEach(item => {
+                const isManual = item.calc_type === 'MANUAL';
+                let calcSelect = '';
+                let sourceSelect = '';
+                if (isApproved) {
+                    calcSelect = `<span class="badge badge-secondary">${item.calc_type}</span>`;
+                    sourceSelect = `<span class="badge badge-light border">${item.source_trend_variable || '-'}</span>`;
+                } else {
+                    const calcOpts = [
+                        {val: 'MANUAL', label: 'Manual'},
+                        {val: 'TREND', label: 'Tendencia'},
+                        {val: 'HISTORICAL', label: 'Histórica'}
+                    ].map(o => `<option value="${o.val}" ${item.calc_type === o.val ? 'selected' : ''}>${o.label}</option>`).join('');
+                    calcSelect = `<select class="form-control form-control-sm calc-type-select" style="font-size:0.75rem;" onchange="updateRowType(this)">${calcOpts}</select>`;
+                    
+                    const sourceVal = item.source_trend_variable || '';
+                    let sourceOpts = '';
+                    if (item.calc_type === 'HISTORICAL') {
+                        let filteredErAccounts = window.erAccounts;
+                        if (item.account_prefix) {
+                            filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
+                        }
+                        sourceOpts = `<option value="">-- Cuenta Base --</option>` + 
+                            filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
+                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
+                    } else if (item.calc_type === 'TREND') {
+                        sourceOpts = `<option value="">-- Variable --</option>
+                            <option value="cartera" ${sourceVal === 'cartera' ? 'selected' : ''}>Cartera</option>
+                            <option value="rendimiento_cartera" ${sourceVal === 'rendimiento_cartera' ? 'selected' : ''}>Rendimiento Cartera</option>
+                            <option value="ahorros" ${sourceVal === 'ahorros' ? 'selected' : ''}>Ahorros</option>
+                            <option value="dpf" ${sourceVal === 'dpf' ? 'selected' : ''}>Plazo Fijo</option>
+                            <option value="aportes" ${sourceVal === 'aportes' ? 'selected' : ''}>Aportaciones</option>
+                            <option value="socios" ${sourceVal === 'socios' ? 'selected' : ''}>Nro Socios</option>
+                            <option value="mora_soles" ${sourceVal === 'mora_soles' ? 'selected' : ''}>Mora</option>`;
+                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
+                    } else {
+                        // MANUAL: show historical account selector + % adjustment + load button
+                        let filteredErAccounts = window.erAccounts;
+                        if (item.account_prefix) {
+                            filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
+                        }
+                        sourceOpts = `<option value="">-- Seleccionar Cuenta --</option>` + 
+                            filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
+                        sourceSelect = `<div class="d-flex align-items-center" style="gap:3px;">
+                            <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${sourceOpts}</select>
+                            <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
+                                <input type="number" class="form-control form-control-sm text-center pct-adjustment" 
+                                    style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5" 
+                                    title="% de ajuste sobre dato histórico">
+                                <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;white-space:nowrap;" 
+                                onclick="loadHistoricalForManual(this)" title="Cargar datos históricos con ajuste %">
+                                <i class="fas fa-download"></i>
+                            </button>
+                        </div>`;
+                }
+            }
+
+            rY1 += item.y1_total * catInfo.sign;
+                rY2 += item.y2_total * catInfo.sign;
+                rY3 += item.y3_total * catInfo.sign;
+                if (catInfo.sign === 1) {
+                    ingY1 += item.y1_total;
+                    ingY2 += item.y2_total;
+                    ingY3 += item.y3_total;
+                } else {
+                    egY1 += item.y1_total;
+                    egY2 += item.y2_total;
+                    egY3 += item.y3_total;
+                }
+
+                let monthCells = '';
+                for (let i = 0; i < 12; i++) {
+                    const mVal = item.monthly_values[i] || 0;
+                    resMonths[i] += mVal * catInfo.sign;
+                    if (catInfo.sign === 1) ingMonths[i] += mVal;
+                    else egMonths[i] += mVal;
+                    
+                    const val = fmt(mVal);
+                    if (!isManual || isApproved) {
+                        monthCells += `<td class="text-right text-monospace" style="min-width:85px;padding:4px 6px;font-size:0.8rem;">
+                            <span class="month-input" data-month="${i}" data-raw="${(item.monthly_values[i] || 0)}">${val}</span></td>`;
+                    } else {
+                        monthCells += `<td style="min-width:85px;"><input type="text" inputmode="decimal"
+                            class="month-input form-control form-control-sm text-right bg-white" style="width:84px;font-size:0.8rem;"
+                            data-month="${i}" value="${val}"
+                            onfocus="this.value=this.value.replace(/,/g,'');this.select();"
+                            onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);"
+                            onchange="updateRowTotal(this)"></td>`;
+                    }
+                }
+
+                const y2fmt = fmt(item.y2_total);
+                const y3fmt = fmt(item.y3_total);
+                const y2Cell = (!isManual || isApproved)
+                    ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y2-input" data-raw="${item.y2_total}">${y2fmt}</span></td>`
+                    : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y2-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y2fmt}"
+                        onfocus="this.value=this.value.replace(/,/g,'');this.select();"
+                        onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
+                const y3Cell = (!isManual || isApproved)
+                    ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y3-input" data-raw="${item.y3_total}">${y3fmt}</span></td>`
+                    : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y3-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y3fmt}"
+                        onfocus="this.value=this.value.replace(/,/g,'');this.select();"
+                        onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
+
+                html += `<tr data-item-id="${item.item_id}" data-calc-type="${item.calc_type}" data-sign="${catInfo.sign}" data-category="${catKey}" data-account-prefix="${item.account_prefix || ''}">
+                    <td class="pl-4" style="min-width:260px;">${item.name}</td>
+                    <td class="text-center">${calcSelect}</td>
+                    <td class="text-center">${sourceSelect}</td>
+                    ${monthCells}
+                    <td class="bg-light font-weight-bold text-right text-monospace y1-total" style="min-width:110px;">${fmt(item.y1_total)}</td>
+                    ${y2Cell}${y3Cell}
+                </tr>`;
+            });
+        }
+
+        tbody.innerHTML = html;
+        for(let i=0; i<12; i++) {
+            document.getElementById('footer-ing-m'+i).innerText = fmt(ingMonths[i]);
+            document.getElementById('footer-eg-m'+i).innerText = fmt(egMonths[i]);
+            document.getElementById('footer-res-m'+i).innerText = fmt(resMonths[i]);
+        }
+        document.getElementById('footer-ing-y1').innerText = fmt(ingY1);
+        document.getElementById('footer-ing-y2').innerText = fmt(ingY2);
+        document.getElementById('footer-ing-y3').innerText = fmt(ingY3);
+        document.getElementById('footer-eg-y1').innerText = fmt(egY1);
+        document.getElementById('footer-eg-y2').innerText = fmt(egY2);
+        document.getElementById('footer-eg-y3').innerText = fmt(egY3);
+        document.getElementById('footer-y1').innerText = fmt(rY1);
+        document.getElementById('footer-y2').innerText = fmt(rY2);
+        document.getElementById('footer-y3').innerText = fmt(rY3);
+        
+        $('.select2').select2({ width: '100%' });
+        updateUIForStatus();
+    }
+
+    window.fmt_local = fmt;
+
+    window.updateRowType = function(sel) {
+        const tr = sel.closest('tr');
+        tr.dataset.calcType = sel.value;
+        const srcSelect = tr.querySelector('.source-select');
+        const accountPrefix = tr.dataset.accountPrefix;
+        const isManual = sel.value === 'MANUAL';
+
+        // Toggle input mode for months
+        tr.querySelectorAll('.month-input').forEach(el => {
+            const val = el.dataset.raw !== undefined ? fmt_local(el.dataset.raw) : (el.value || el.innerText);
+            const i = el.dataset.month;
+            if (isManual && el.tagName === 'SPAN') {
+                const td = el.closest('td');
+                td.innerHTML = `<input type="text" inputmode="decimal" class="month-input form-control form-control-sm text-right bg-white" style="width:84px;font-size:0.8rem;" data-month="${i}" value="${val}" onfocus="this.value=this.value.replace(/,/g,'');this.select();" onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)">`;
+                td.classList.remove('text-monospace');
+            } else if (!isManual && el.tagName === 'INPUT') {
+                const raw = parseNum(el.value);
+                const td = el.closest('td');
+                td.innerHTML = `<span class="month-input" data-month="${i}" data-raw="${raw}">${fmt_local(raw)}</span>`;
+                td.classList.add('text-right', 'text-monospace');
+            }
+        });
+        
+        // Toggle input mode for y2, y3
+        ['y2-input', 'y3-input'].forEach(cls => {
+            const el = tr.querySelector('.' + cls);
+            if (!el) return;
+            const val = el.dataset.raw !== undefined ? fmt_local(el.dataset.raw) : (el.value || el.innerText);
+            if (isManual && el.tagName === 'SPAN') {
+                const td = el.closest('td');
+                td.innerHTML = `<input type="text" inputmode="decimal" class="${cls} form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${val}" onfocus="this.value=this.value.replace(/,/g,'');this.select();" onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)">`;
+                td.classList.remove('text-monospace');
+            } else if (!isManual && el.tagName === 'INPUT') {
+                const raw = parseNum(el.value);
+                const td = el.closest('td');
+                td.innerHTML = `<span class="${cls}" data-raw="${raw}">${fmt_local(raw)}</span>`;
+                td.classList.add('text-right', 'text-monospace');
+            }
+        });
+        
+        if (srcSelect) {
+            if ($(srcSelect).hasClass("select2-hidden-accessible")) {
+                $(srcSelect).select2('destroy');
+            }
+
+            if (sel.value === 'HISTORICAL') {
+                let filteredErAccounts = window.erAccounts;
+                if (accountPrefix) {
+                    filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(accountPrefix));
+                }
+                srcSelect.innerHTML = `<option value="">-- Cuenta Base --</option>` + 
+                    filteredErAccounts.map(a => `<option value="${a.val}">${a.label}</option>`).join('');
+            } else if (sel.value === 'TREND') {
+                srcSelect.innerHTML = `<option value="">-- Variable --</option>
+                    <option value="cartera">Cartera</option>
+                    <option value="rendimiento_cartera">Rendimiento Cartera</option>
+                    <option value="ahorros">Ahorros</option>
+                    <option value="dpf">Plazo Fijo</option>
+                    <option value="aportes">Aportaciones</option>
+                    <option value="socios">Nro Socios</option>
+                    <option value="mora_soles">Mora</option>`;
+            } else {
+                // MANUAL: rebuild with historical account selector + % adjustment + load button
+                let filteredErAccounts = window.erAccounts;
+                if (accountPrefix) {
+                    filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(accountPrefix));
+                }
+                const opts = `<option value="">-- Seleccionar Cuenta --</option>` + 
+                    filteredErAccounts.map(a => `<option value="${a.val}">${a.label}</option>`).join('');
+                
+                // Replace the source cell with the full manual widget
+                const srcCell = srcSelect.closest('td');
+                srcCell.innerHTML = `<div class="d-flex align-items-center" style="gap:3px;">
+                    <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${opts}</select>
+                    <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
+                        <input type="number" class="form-control form-control-sm text-center pct-adjustment" 
+                            style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5" 
+                            title="% de ajuste sobre dato histórico">
+                        <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;white-space:nowrap;" 
+                        onclick="loadHistoricalForManual(this)" title="Cargar datos históricos con ajuste %">
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>`;
+                $(srcCell).find('.select2').select2({ width: 'auto' });
+                return;
+            }
+            $(srcSelect).select2({ width: '100%' });
+        }
+    };
+
+    // ── Load historical data for MANUAL rows with % adjustment ──
+    window.loadHistoricalForManual = function(btn) {
+        const tr = btn.closest('tr');
+        const srcSelect = tr.querySelector('.source-select');
+        const pctInput = tr.querySelector('.pct-adjustment');
+        const accountCode = srcSelect ? srcSelect.value : '';
+        const pct = pctInput ? parseFloat(pctInput.value) || 0 : 0;
+        const accountPrefix = tr.dataset.accountPrefix || '';
+        
+        // Use the selected account code, or fallback to the row's account_prefix
+        const prefix = accountCode || accountPrefix;
+        if (!prefix) {
+            Swal.fire('Atención', 'Seleccione una cuenta histórica primero.', 'warning');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        fetch(`/planificacion-financiera/plan/${planId}/api/api_get_historical_account_monthly/?account_prefix=${encodeURIComponent(prefix)}&adjustment_pct=${pct}`)
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i>';
+
+                if (data.status === 'error') {
+                    Swal.fire('Error', data.msg, 'error');
+                    return;
+                }
+                if (data.status === 'warning') {
+                    Swal.fire('Sin datos', data.msg, 'warning');
+                    return;
+                }
+
+                const monthly = data.adjusted_monthly || data.monthly;
+                const monthInputs = tr.querySelectorAll('.month-input');
+                monthInputs.forEach((el, i) => {
+                    const val = monthly[i] || 0;
+                    if (el.tagName === 'INPUT') {
+                        el.value = fmt(val);
+                    } else {
+                        // Convert span to input for manual editing
+                        el.dataset.raw = val;
+                        el.innerText = fmt(val);
+                    }
+                });
+
+                // Update Y2 and Y3 with adjusted annual
+                const annualAdj = data.adjusted_annual || 0;
+                const trendGrowth = data.trend_growth || 0;
+                const y2Projected = annualAdj * (1 + trendGrowth / 100.0);
+                const y3Projected = y2Projected * (1 + trendGrowth / 100.0);
+                
+                const y2Input = tr.querySelector('.y2-input');
+                const y3Input = tr.querySelector('.y3-input');
+                if (y2Input) {
+                    if (y2Input.tagName === 'INPUT') y2Input.value = fmt(y2Projected);
+                    else { y2Input.dataset.raw = y2Projected; y2Input.innerText = fmt(y2Projected); }
+                }
+                if (y3Input) {
+                    if (y3Input.tagName === 'INPUT') y3Input.value = fmt(y3Projected);
+                    else { y3Input.dataset.raw = y3Projected; y3Input.innerText = fmt(y3Projected); }
+                }
+
+                // Recalculate row and footer totals
+                tr.querySelector('.y1-total').innerText = fmt(monthly.reduce((a, b) => a + b, 0));
+                recalcFooter();
+
+                const pctLabel = pct >= 0 ? `+${pct}%` : `${pct}%`;
+                Swal.fire({
+                    toast: true, position: 'top-end', icon: 'success',
+                    title: `Histórico cargado (${pctLabel})`,
+                    text: `Base: ${fmt(data.annual_total)} → Ajustado: ${fmt(data.adjusted_annual)}`,
+                    showConfirmButton: false, timer: 3000
+                });
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i>';
+                Swal.fire('Error', 'Error de conexión al cargar datos históricos.', 'error');
+            });
+    };
+
+    window.updateRowTotal = function(inp) {
+        const tr = inp.closest('tr');
+        let y1 = 0;
+        tr.querySelectorAll('.month-input').forEach(el => {
+            y1 += el.dataset.raw !== undefined ? parseNum(el.dataset.raw) : parseNum(el.value);
+        });
+        tr.querySelector('.y1-total').innerText = fmt(y1);
+        recalcFooter();
+    };
+
+    function getMonthVal(el) {
+        return el.dataset.raw !== undefined ? parseNum(el.dataset.raw) : parseNum(el.value);
+    }
+    function getYearVal(el) {
+        return el && el.dataset.raw !== undefined ? parseNum(el.dataset.raw) : parseNum(el?.value);
+    }
+
+    function recalcFooter() {
+        let rY1 = 0, rY2 = 0, rY3 = 0;
+        let ingY1 = 0, ingY2 = 0, ingY3 = 0;
+        let egY1 = 0, egY2 = 0, egY3 = 0;
+        let resMonths = new Array(12).fill(0);
+        let ingMonths = new Array(12).fill(0);
+        let egMonths = new Array(12).fill(0);
+        
+        let catTotals = {};
+        Object.keys(CATEGORY_CONFIG).forEach(c => {
+            catTotals[c] = { m: new Array(12).fill(0), y1:0, y2:0, y3:0 };
+        });
+
+        document.querySelectorAll('#budget-table-body tr[data-item-id]').forEach(tr => {
+            const sign = parseInt(tr.dataset.sign || '1');
+            const cat = tr.dataset.category || 'OTROS_EG';
+            let y1 = 0;
+            tr.querySelectorAll('.month-input').forEach((el, i) => {
+                const mVal = getMonthVal(el);
+                y1 += mVal;
+                resMonths[i] += mVal * sign;
+                if (sign === 1) ingMonths[i] += mVal;
+                else egMonths[i] += mVal;
+                if (catTotals[cat]) catTotals[cat].m[i] += mVal;
+            });
+            const y2 = getYearVal(tr.querySelector('.y2-input'));
+            const y3 = getYearVal(tr.querySelector('.y3-input'));
+            rY1 += y1 * sign;
+            rY2 += y2 * sign;
+            rY3 += y3 * sign;
+            if (sign === 1) {
+                ingY1 += y1; ingY2 += y2; ingY3 += y3;
+            } else {
+                egY1 += y1; egY2 += y2; egY3 += y3;
+            }
+            if (catTotals[cat]) {
+                catTotals[cat].y1 += y1;
+                catTotals[cat].y2 += y2;
+                catTotals[cat].y3 += y3;
+            }
+        });
+        
+        Object.keys(catTotals).forEach(c => {
+            for(let i=0; i<12; i++) {
+                const el = document.querySelector(`.cat-sum-m${i}-${c}`);
+                if (el) el.innerText = fmt(catTotals[c].m[i]);
+            }
+            const elY1 = document.querySelector(`.cat-sum-y1-${c}`);
+            if (elY1) elY1.innerText = fmt(catTotals[c].y1);
+            const elY2 = document.querySelector(`.cat-sum-y2-${c}`);
+            if (elY2) elY2.innerText = fmt(catTotals[c].y2);
+            const elY3 = document.querySelector(`.cat-sum-y3-${c}`);
+            if (elY3) elY3.innerText = fmt(catTotals[c].y3);
+        });
+        
+        for(let i=0; i<12; i++) {
+            document.getElementById('footer-ing-m'+i).innerText = fmt(ingMonths[i]);
+            document.getElementById('footer-eg-m'+i).innerText = fmt(egMonths[i]);
+            document.getElementById('footer-res-m'+i).innerText = fmt(resMonths[i]);
+        }
+        document.getElementById('footer-ing-y1').innerText = fmt(ingY1);
+        document.getElementById('footer-ing-y2').innerText = fmt(ingY2);
+        document.getElementById('footer-ing-y3').innerText = fmt(ingY3);
+        document.getElementById('footer-eg-y1').innerText = fmt(egY1);
+        document.getElementById('footer-eg-y2').innerText = fmt(egY2);
+        document.getElementById('footer-eg-y3').innerText = fmt(egY3);
+        document.getElementById('footer-y1').innerText = fmt(rY1);
+        document.getElementById('footer-y2').innerText = fmt(rY2);
+        document.getElementById('footer-y3').innerText = fmt(rY3);
+    }
+
+    function updateUIForStatus() {
+        const badge = document.getElementById('budget-status-badge');
+        const btnSave = document.getElementById('btnSaveBudget');
+        const btnApprove = document.getElementById('btnApproveBudget');
+        const btnEdit = document.getElementById('btnEditApproved');
+        
+        if (currentVersionStatus === 'APPROVED') {
+            badge.className = 'badge badge-success px-3 py-2 rounded-pill shadow-sm';
+            badge.innerHTML = '<i class="fas fa-check-double mr-1"></i> Aprobado';
+            btnSave.disabled = true;
+            btnApprove.disabled = true;
+            if (btnEdit) btnEdit.style.display = 'inline-block';
+        } else {
+            badge.className = 'badge badge-warning px-3 py-2 rounded-pill shadow-sm';
+            badge.innerHTML = '<i class="fas fa-pen mr-1"></i> Borrador';
+            btnSave.disabled = false;
+            btnApprove.disabled = false;
+            if (btnEdit) btnEdit.style.display = 'none';
+        }
+    }
+
+    window.editApprovedBudget = function() {
+        currentVersionStatus = 'DRAFT';
+        updateUIForStatus();
+        renderBudgetTable();
+        Swal.fire({
+            title: 'Modo Edición Activado',
+            text: 'Ahora puedes modificar los rubros. Al hacer clic en "Guardar", se creará una nueva versión en Borrador.',
+            icon: 'info',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000
+        });
+    };
+
+    window.loadBudgetData = function() {
+        const scenario = document.getElementById('budget-scenario').value;
+        document.getElementById('budget-table-body').innerHTML =
+            '<tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando presupuesto...</p></td></tr>';
+
+        fetch(`/planificacion-financiera/plan/${planId}/api/api_get_budget_data/?scenario=${scenario}&_t=${Date.now()}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    currentBudgetData = data.data;
+                    currentVersionStatus = data.version_status;
+                    window.hasYieldParams = data.has_yield_params;
+                    window.hasCostParams = data.has_cost_params;
+                    window.erAccounts = data.er_accounts || [];
+                    renderBudgetTable();
+                } else {
+                    document.getElementById('budget-table-body').innerHTML =
+                        `<tr><td colspan="17" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><br>${data.message || 'Error desconocido'}</td></tr>`;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('budget-table-body').innerHTML =
+                    '<tr><td colspan="17" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle"></i> Error de conexión.</td></tr>';
+            });
+    };
+
+    window.seedAndSync = function() {
+        Swal.fire({
+            title: 'Inicializar Rubros',
+            text: 'Se crearán los rubros presupuestales estándar (Ingresos, Gastos Financieros, Administrativos, etc.) vinculados al plan de cuentas.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Inicializar'
+        }).then(res => {
+            if (!res.isConfirmed) return;
+            Swal.fire({title: 'Inicializando...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            fetch(`/planificacion-financiera/plan/${planId}/api/api_seed_budget_items/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('Listo', data.message, 'success').then(() => loadBudgetData());
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(() => Swal.fire('Error', 'Error de red', 'error'));
+        });
+    };
+
+    window.syncWithTrends = function() {
+        if (currentVersionStatus === 'APPROVED') {
+            Swal.fire('Aviso', 'No se puede sincronizar un presupuesto aprobado.', 'warning');
+            return;
+        }
+        
+        const tableData = gatherTableData();
+        let missingParams = false;
+        let missingType = '';
+        
+        for (const row of tableData) {
+            if (row.calc_type === 'TREND') {
+                if (row.source_trend_variable === 'rendimiento_cartera' && !window.hasYieldParams) {
+                    missingParams = true;
+                    missingType = 'Rendimiento de Cartera (Paso 2)';
+                    break;
+                }
+                if (['ahorros', 'dpf', 'ahorros_usd', 'dpf_usd'].includes(row.source_trend_variable) && !window.hasCostParams) {
+                    missingParams = true;
+                    missingType = 'Costos Financieros de Pasivos (Paso 2)';
+                    break;
+                }
+            }
+        }
+        
+        if (missingParams) {
+            Swal.fire({
+                title: 'Faltan Supuestos Institucionales',
+                html: `Se requiere configurar los supuestos para <b>${missingType}</b> antes de sincronizar estos rubros. Por favor, regresa al Paso 2 y completa la información.`,
+                icon: 'warning'
+            });
+            return;
+        }
+
+        const scenario = document.getElementById('budget-scenario').value;
+        Swal.fire({
+            title: 'Sincronizar con Tendencias',
+            html: `Calculará <b>Ingresos y Gastos</b> proyectados tomando como base el <b>E.R. Histórico 2025</b> y aplicando las tasas de crecimiento del Paso 6.`,
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonText: 'Sincronizar'
+        }).then(res => {
+            if (!res.isConfirmed) return;
+            Swal.fire({title: 'Calculando...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            
+            fetch(`/planificacion-financiera/plan/${planId}/api/api_save_budget_version/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({scenario, lines: tableData})
+            }).then(() => {
+                fetch(`/planificacion-financiera/plan/${planId}/api/api_sync_budget_trends/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                    body: JSON.stringify({scenario: scenario})
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        Swal.fire('Éxito', data.message, 'success').then(() => loadBudgetData());
+                    } else {
+                        Swal.fire('Error', data.message || 'Error en la sincronización', 'error');
+                    }
+                })
+                .catch(() => Swal.fire('Error', 'Error de red', 'error'));
+            });
+        });
+    };
+
+    let erPanelLoaded = false;
+    window.toggleErPanel = function() {
+        const panel = document.getElementById('er-historico-panel');
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            if (!erPanelLoaded) loadErHistorico();
+        } else {
+            panel.style.display = 'none';
+        }
+    };
+
+    function loadErHistorico() {
+        fetch(`/planificacion-financiera/plan/${planId}/api/api_get_er_historico/`)
+            .then(r => r.json())
+            .then(data => {
+                erPanelLoaded = true;
+                window.erData = data;
+                const cont = document.getElementById('er-historico-content');
+                if (data.status !== 'success') {
+                    cont.innerHTML = `<div class="alert alert-warning">${data.msg || 'Error cargando E.R. histórico.'}</div>`;
+                    return;
+                }
+                document.getElementById('er-hist-year-badge').innerText = `Año Base: ${data.base_year}`;
+                let html = '<div class="row">';
+
+                html += '<div class="col-md-6"><table class="table table-sm table-bordered mb-2" style="font-size:0.82rem;">';
+                html += '<thead class="bg-success text-white"><tr><th>Grupo Ingreso</th><th class="text-right">Total Anual</th></tr></thead><tbody>';
+                data.income_groups.forEach(g => {
+                    html += `<tr><td>${g.group_code} - ${g.group_name}</td><td class="text-right text-monospace">${fmt(g.total)}</td></tr>`;
+                });
+                html += `</tbody><tfoot class="font-weight-bold bg-light"><tr><td>TOTAL INGRESOS</td><td class="text-right text-monospace text-success">${fmt(data.totals.total_ingresos)}</td></tr></tfoot></table></div>`;
+
+                html += '<div class="col-md-6"><table class="table table-sm table-bordered mb-2" style="font-size:0.82rem;">';
+                html += '<thead class="bg-danger text-white"><tr><th>Grupo Gasto</th><th class="text-right">Total Anual</th></tr></thead><tbody>';
+                data.expense_groups.forEach(g => {
+                    html += `<tr><td>${g.group_code} - ${g.group_name}</td><td class="text-right text-monospace">${fmt(g.total)}</td></tr>`;
+                });
+                html += `</tbody><tfoot class="font-weight-bold bg-light"><tr><td>TOTAL GASTOS</td><td class="text-right text-monospace text-danger">${fmt(data.totals.total_gastos)}</td></tr></tfoot></table></div>`;
+
+                html += '</div>';
+                const utilColor = data.totals.utilidad_neta >= 0 ? 'text-success' : 'text-danger';
+                html += `<div class="alert alert-light border py-2 text-right font-weight-bold ${utilColor}" style="font-size:0.9rem;">
+                    UTILIDAD NETA HISTÓRICA: <span class="ml-2">${fmt(data.totals.utilidad_neta)}</span>
+                </div>`;
+                cont.innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('er-historico-content').innerHTML =
+                    '<div class="alert alert-danger">Error de conexión al cargar E.R. histórico.</div>';
+            });
+    }
+
+    function gatherTableData() {
+        const rows = document.querySelectorAll('#budget-table-body tr[data-item-id]');
+        return Array.from(rows).map(tr => {
+            const monthlyVals = Array.from(tr.querySelectorAll('.month-input')).map(el => getMonthVal(el));
+            const calcSelect = tr.querySelector('.calc-type-select');
+            const srcSelect = tr.querySelector('.source-select');
+            return {
+                item_id: tr.dataset.itemId,
+                calc_type: calcSelect ? calcSelect.value : tr.dataset.calcType,
+                source_trend_variable: srcSelect ? srcSelect.value : '',
+                account_prefix: tr.dataset.accountPrefix || '',
+                monthly_values: monthlyVals,
+                y1_total: monthlyVals.reduce((a, b) => a + b, 0),
+                y2_total: getYearVal(tr.querySelector('.y2-input')),
+                y3_total: getYearVal(tr.querySelector('.y3-input')),
+            };
+        });
+    }
+
+    window.saveBudgetVersion = function() {
+        const scenario = document.getElementById('budget-scenario').value;
+        Swal.fire({title: 'Guardando...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        fetch(`/planificacion-financiera/plan/${planId}/api/api_save_budget_version/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({scenario, lines: gatherTableData()})
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 2000});
+                loadBudgetData();
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        });
+    };
+
+    window.approveBudgetVersion = function() {
+        const scenario = document.getElementById('budget-scenario').value;
+        Swal.fire({
+            title: 'Aprobar Presupuesto',
+            text: 'Una vez aprobado, no podrá ser editado. ¿Continuar?',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#28a745', confirmButtonText: 'Sí, Aprobar'
+        }).then(res => {
+            if (!res.isConfirmed) return;
+            fetch(`/planificacion-financiera/plan/${planId}/api/api_save_budget_version/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({scenario, lines: gatherTableData()})
+            }).then(r => r.json()).then(d => {
+                if (d.status !== 'success') { Swal.fire('Error', d.message, 'error'); return; }
+                let fd = new FormData();
+                fd.append('scenario', scenario);
+                fd.append('csrfmiddlewaretoken', csrfToken);
+                fetch(`/planificacion-financiera/plan/${planId}/api/api_approve_budget_version/`, {method: 'POST', body: fd})
+                    .then(r => r.json())
+                    .then(d2 => {
+                        if (d2.status === 'success') { Swal.fire('Aprobado', 'Presupuesto aprobado.', 'success').then(() => loadBudgetData()); }
+                        else { Swal.fire('Error', d2.message, 'error'); }
+                    });
+            });
+        });
+    };
+
+    // Init
+    document.addEventListener('DOMContentLoaded', function() {
+        if (!window.budgetScriptInitialized) {
+            window.budgetScriptInitialized = true;
+            setTimeout(loadBudgetData, 400);
+        }
+    });
+})();
+</script>

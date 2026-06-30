@@ -1,0 +1,228 @@
+<div class="card shadow border-0 rounded-lg mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="m-0 font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">
+                    <i class="fas fa-chart-line mr-2"></i>ESTADO DE RESULTADOS PROYECTADO
+                </h4>
+                <p class="text-muted mt-1 mb-0">Consolidación del Presupuesto (Paso 7) a nivel de Estado de Resultados.</p>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <select id="scenarioSelector" class="form-control form-control-sm mr-3 font-weight-bold" style="width: 250px; border-radius: 20px;" onchange="loadERConsolidated()">
+                    <option value="BASE">Base (Tendencias)</option>
+                    <option value="OPTIMISTIC">Optimista (Tendencias)</option>
+                    <option value="PESSIMISTIC">Pesimista (Tendencias)</option>
+                    <option value="MC_BASE">Base (Montecarlo)</option>
+                    <option value="MC_OPTIMISTIC">Optimista (Montecarlo)</option>
+                    <option value="MC_PESSIMISTIC">Pesimista (Montecarlo)</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-outline-success font-weight-bold rounded-pill shadow-sm" onclick="exportERToExcel()">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar a Excel
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 text-nowrap" id="er-table">
+                <thead class="bg-indigo text-white text-center">
+                    <tr>
+                        <th class="align-middle text-left" style="min-width: 300px;">CUENTA / RUBRO</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Base Histórica</th>
+                        <th class="align-middle bg-secondary text-white">Ene</th>
+                        <th class="align-middle bg-secondary text-white">Feb</th>
+                        <th class="align-middle bg-secondary text-white">Mar</th>
+                        <th class="align-middle bg-secondary text-white">Abr</th>
+                        <th class="align-middle bg-secondary text-white">May</th>
+                        <th class="align-middle bg-secondary text-white">Jun</th>
+                        <th class="align-middle bg-secondary text-white">Jul</th>
+                        <th class="align-middle bg-secondary text-white">Ago</th>
+                        <th class="align-middle bg-secondary text-white">Sep</th>
+                        <th class="align-middle bg-secondary text-white">Oct</th>
+                        <th class="align-middle bg-secondary text-white">Nov</th>
+                        <th class="align-middle bg-secondary text-white">Dic</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 1 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 2 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 3 Proy.</th>
+                    </tr>
+                </thead>
+                <tbody id="er-table-body">
+                    <tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando Estado de Resultados Consolidado...</p></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-right">
+        <button type="button" class="btn btn-outline-indigo px-5 rounded-pill font-weight-bold shadow-sm" onclick="handleWizardContinue('?step=9')">
+            Siguiente Paso: BG Proyectado <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    function loadERConsolidated() {
+        const planId = '{{ plan.id }}';
+        const scenario = document.getElementById('scenarioSelector').value;
+        
+        // This makes an API call to get the approved budget data
+        // For demonstration, we render a structure similar to an Income Statement
+        // Since budget builder already fetches this in api_get_budget_data, we can just hit it.
+        fetch(`/planificacion-financiera/plan/${planId}/api/api_get_budget_data/?scenario=${scenario}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    renderERTable(data.data, data.version_status);
+                } else {
+                    document.getElementById('er-table-body').innerHTML = `<tr class="bg-warning"><td colspan="17" class="text-center text-danger">Error: ${data.message}</td></tr>`;
+                }
+            })
+            .catch(err => {
+                document.getElementById('er-table-body').innerHTML = '<tr><td colspan="17" class="text-center text-danger">Error al cargar datos.</td></tr>';
+            });
+    }
+    
+    function formatER(val) {
+        return parseFloat(val || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function renderERTable(budgetItems, status) {
+        const tbody = document.getElementById('er-table-body');
+        let html = '';
+        
+        if (status !== 'APPROVED') {
+            html += `
+                <tr class="bg-warning">
+                    <td colspan="17" class="text-center font-weight-bold text-dark py-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Advertencia: El presupuesto actual (Paso 7) se encuentra en estado BORRADOR. Apruebe el presupuesto para consolidar resultados finales.
+                    </td>
+                </tr>
+            `;
+        }
+        
+        const initArray = () => Array(12).fill(0);
+        
+        let prefixGroups = {
+            '51': { name: 'Ingresos Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '52': { name: 'Ingresos por Servicios Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '53': { name: 'Reversión Pérdidas / Provisiones', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '54': { name: 'Reversión de Provisiones', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '56': { name: 'Otros Ingresos', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '57': { name: 'Ventas', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '41': { name: 'Gastos Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '42': { name: 'Gastos por Servicios Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '43': { name: 'Provisiones para Incobrabilidad', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '44': { name: 'Depreciación y Amortización', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '45': { name: 'Gastos de Administración', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '46': { name: 'Otros Gastos', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '49': { name: 'Costo de Ventas', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] }
+        };
+        
+        budgetItems.forEach(item => {
+            let pfx = item.account_prefix ? item.account_prefix.substring(0, 2) : '';
+            if (!prefixGroups[pfx]) {
+                 if (item.category === 'ING_FIN') pfx = '51';
+                 else if (item.category === 'GAS_FIN') pfx = '41';
+                 else if (item.category === 'PROV') pfx = '43';
+                 else if (item.category === 'ING_SERV') pfx = '52';
+                 else if (item.category === 'GAS_SERV') pfx = '42';
+                 else if (item.category === 'GAS_ADMIN') pfx = '45';
+                 else if (item.category === 'DEP_AMORT') pfx = '44';
+                 else if (item.category === 'OTROS_ING') pfx = '56';
+                 else pfx = '46';
+            }
+            
+            let g = prefixGroups[pfx];
+            g.items.push(item);
+            g.y1 += item.y1_total;
+            g.y2 += item.y2_total;
+            g.y3 += item.y3_total;
+            if (item.monthly_values) {
+                item.monthly_values.forEach((v, i) => { if(i < 12) g.m[i] += v; });
+            }
+        });
+        
+        let resNeto = { m: initArray(), y1: 0, y2: 0, y3: 0 };
+        
+        Object.values(prefixGroups).forEach(g => {
+            resNeto.y1 += g.y1 * g.sign;
+            resNeto.y2 += g.y2 * g.sign;
+            resNeto.y3 += g.y3 * g.sign;
+            g.m.forEach((v, i) => resNeto.m[i] += v * g.sign);
+        });
+        
+        const renderRow = (title, mArr, y1, y2, y3, cssClass, isTitle=false, isItem=false) => {
+            let paddingClass = isTitle ? '' : (isItem ? 'pl-5 text-muted' : 'pl-4');
+            let fontClass = isItem ? '' : 'font-weight-bold';
+            
+            let rowHtml = `<tr class="${cssClass}">
+                <td class="${paddingClass}">${title}</td>
+                <td class="text-right text-muted">-</td>`;
+            mArr.forEach(mVal => {
+                rowHtml += `<td class="text-right ${isTitle ? '' : fontClass}">${formatER(mVal)}</td>`;
+            });
+            rowHtml += `<td class="text-right ${fontClass}">${formatER(y1)}</td>
+                        <td class="text-right ${fontClass}">${formatER(y2)}</td>
+                        <td class="text-right ${fontClass}">${formatER(y3)}</td></tr>`;
+            return rowHtml;
+        };
+
+        const renderGroup = (key, cssClass, icon) => {
+            let g = prefixGroups[key];
+            if (g.y1 === 0 && g.y2 === 0 && g.y3 === 0 && !['51','41','43','52','42','45','44','56','46'].includes(key)) return;
+            
+            html += `<tr class="bg-light font-weight-bold"><td colspan="17" class="${cssClass}"><i class="fas ${icon} mr-2"></i>${key} - ${g.name.toUpperCase()}</td></tr>`;
+            
+            g.items.forEach(item => {
+                let mArr = item.monthly_values ? item.monthly_values.slice(0, 12) : Array(12).fill(0);
+                let itemTitle = (item.account_prefix ? item.account_prefix + ' - ' : '') + item.name;
+                html += renderRow(itemTitle, mArr, item.y1_total, item.y2_total, item.y3_total, "", false, true);
+            });
+            
+            html += renderRow(`Total ${g.name}`, g.m, g.y1, g.y2, g.y3, "bg-white", false, false);
+        };
+
+        renderGroup('51', 'text-success', 'fa-plus-circle');
+        renderGroup('41', 'text-danger', 'fa-minus-circle');
+        
+        let mFin = { m: initArray(), y1: prefixGroups['51'].y1 - prefixGroups['41'].y1, y2: prefixGroups['51'].y2 - prefixGroups['41'].y2, y3: prefixGroups['51'].y3 - prefixGroups['41'].y3 };
+        prefixGroups['51'].m.forEach((v, i) => mFin.m[i] = v - prefixGroups['41'].m[i]);
+        html += renderRow('MARGEN FINANCIERO BRUTO', mFin.m, mFin.y1, mFin.y2, mFin.y3, "bg-info text-white font-weight-bold text-uppercase", true);
+
+        renderGroup('43', 'text-danger', 'fa-minus-circle');
+        renderGroup('53', 'text-success', 'fa-plus-circle');
+        renderGroup('54', 'text-success', 'fa-plus-circle');
+        
+        let mFinNeto = { m: initArray(), y1: mFin.y1 - prefixGroups['43'].y1 + prefixGroups['53'].y1 + prefixGroups['54'].y1, y2: mFin.y2 - prefixGroups['43'].y2 + prefixGroups['53'].y2 + prefixGroups['54'].y2, y3: mFin.y3 - prefixGroups['43'].y3 + prefixGroups['53'].y3 + prefixGroups['54'].y3 };
+        mFin.m.forEach((v, i) => mFinNeto.m[i] = v - prefixGroups['43'].m[i] + prefixGroups['53'].m[i] + prefixGroups['54'].m[i]);
+        html += renderRow('MARGEN FINANCIERO NETO', mFinNeto.m, mFinNeto.y1, mFinNeto.y2, mFinNeto.y3, "bg-info text-white font-weight-bold text-uppercase", true);
+
+        renderGroup('52', 'text-success', 'fa-plus-circle');
+        renderGroup('42', 'text-danger', 'fa-minus-circle');
+        
+        let mOp = { m: initArray(), y1: mFinNeto.y1 + prefixGroups['52'].y1 - prefixGroups['42'].y1, y2: mFinNeto.y2 + prefixGroups['52'].y2 - prefixGroups['42'].y2, y3: mFinNeto.y3 + prefixGroups['52'].y3 - prefixGroups['42'].y3 };
+        mFinNeto.m.forEach((v, i) => mOp.m[i] = v + prefixGroups['52'].m[i] - prefixGroups['42'].m[i]);
+        html += renderRow('MARGEN OPERACIONAL', mOp.m, mOp.y1, mOp.y2, mOp.y3, "bg-info text-white font-weight-bold text-uppercase", true);
+
+        renderGroup('45', 'text-danger', 'fa-minus-circle');
+        renderGroup('44', 'text-warning', 'fa-minus-circle');
+        renderGroup('56', 'text-success', 'fa-plus-circle');
+        renderGroup('57', 'text-success', 'fa-plus-circle');
+        renderGroup('46', 'text-danger', 'fa-minus-circle');
+        renderGroup('49', 'text-danger', 'fa-minus-circle');
+
+        html += renderRow('RESULTADO DEL EJERCICIO (UTILIDAD NETA)', resNeto.m, resNeto.y1, resNeto.y2, resNeto.y3, "bg-dark text-white font-weight-bold mt-3 text-uppercase", true);
+        
+        tbody.innerHTML = html;
+    }
+
+    function exportERToExcel() {
+        const planId = '{{ plan.id }}';
+        window.location.href = `/planificacion-financiera/plan/${planId}/export_er_proyectado/`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(loadERConsolidated, 400);
+    });
+</script>

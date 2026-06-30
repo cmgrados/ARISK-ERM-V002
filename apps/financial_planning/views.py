@@ -1378,3 +1378,1029 @@ def api_get_assumptions_product(request, plan_id=None):
 @login_required
 def api_save_assumptions_product(request, plan_id=None):
     return JsonResponse({'status': 'success'})
+
+
+from decimal import Decimal
+from django.db import transaction
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+import json
+import pandas as pd
+from .models import PlanFinanciero, BudgetItem, BudgetVersion, BudgetLine, BudgetLineDetail, BudgetCalculationRule
+from .services.budget_engine import BudgetEngine
+
+@login_required
+def api_get_budget_data(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    scenario = request.GET.get('scenario', 'BASE')
+    
+    engine = BudgetEngine(plan, organization, request.user)
+    engine._ensure_default_items()
+    
+    version = BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=scenario, 
+        status='DRAFT'
+    ).first()
+    
+    if not version:
+        version = BudgetVersion.objects.filter(
+            plan_financiero=plan, 
+            organization=organization, 
+            scenario=scenario, 
+            status='APPROVED'
+        ).first()
+        
+    if not version:
+        version = engine.get_or_create_draft_version(scenario)
+    
+    items = BudgetItem.objects.filter(organization=organization).order_by('category')
+    data = []
+    lines = BudgetLine.objects.filter(version=version)
+    lines_by_item = {l.item_id: l for l in lines}
+    
+    for item in items:
+        rule = BudgetCalculationRule.objects.filter(item=item).first()
+        line = lines_by_item.get(item.id)
+        
+        calc_type = line.applied_calculation_type if line else (rule.calculation_type if rule else 'MANUAL')
+        source_trend = rule.source_trend_variable if rule else ''
+        account_prefix = rule.assumption_driver if rule and rule.assumption_driver else ''
+        
+        if not account_prefix:
+            # Fallback a DEFAULT_BUDGET_ITEMS
+            from .services.budget_engine import DEFAULT_BUDGET_ITEMS
+            default_item = next((d for d in DEFAULT_BUDGET_ITEMS if d['code'] == item.code), None)
+            if default_item:
+                account_prefix = default_item.get('account_prefix', '')
+
+        item_data = {
+            'item_id': item.id,
+            'category': item.category,
+            'code': item.code,
+            'name': item.name,
+            'calc_type': calc_type,
+            'source_trend_variable': source_trend,
+            'account_prefix': account_prefix,
+            'monthly_values': [0]*12,
+            'y1_total': 0,
+            'y2_total': 0,
+            'y3_total': 0
+        }
+        
+        if line:
+            item_data['y1_total'] = float(line.total_amount_y1)
+            item_data['y2_total'] = float(line.total_amount_y2)
+            item_data['y3_total'] = float(line.total_amount_y3)
+            
+            details = BudgetLineDetail.objects.filter(budget_line=line, period_type='MONTH').order_by('period_index')
+            for d in details:
+                if 1 <= d.period_index <= 12:
+                    item_data['monthly_values'][d.period_index - 1] = float(d.amount)
+                    
+        data.append(item_data)
+    has_yield_params = False
+    has_cost_params = False
+    er_accounts = []
+    if plan.historical_data:
+        inst_assump = plan.historical_data.get('institutional_assumptions', {})
+        has_yield_params = bool(inst_assump.get('yieldParams'))
+        has_cost_params = bool(inst_assump.get('costParams'))
+        
+        selected_periods = plan.historical_data.get('selected_periods', [])
+        if selected_periods:
+            from liquidity_risk.models import LiqBalanceDetail
+            from django.db.models import Q
+            q = Q()
+            for p_str in selected_periods:
+                try:
+                    y, m = p_str.split('-')
+                    q |= Q(period__year=int(y), period__month=int(m), upload__status='SUCCESS')
+                except:
+                    pass
+            if q:
+                qs = LiqBalanceDetail.objects.filter(q).filter(
+                    Q(account_code__startswith='4') | Q(account_code__startswith='5')
+                ).values('account_code', 'account_name').distinct().order_by('account_code')
+                for acc in qs:
+                    er_accounts.append({
+                        'val': str(acc['account_code']),
+                        'label': f"{acc['account_code']} - {acc['account_name']}"
+                    })
+
+    # Default fallback if empty
+    if not er_accounts:
+        er_accounts = [
+            {'val': '51', 'label': 'Ing. Financieros (51)'},
+            {'val': '52', 'label': 'Ing. Servicios (52)'},
+            {'val': '53', 'label': 'Rev. Provisiones (53)'},
+            {'val': '54', 'label': 'Reversiones (54)'},
+            {'val': '56', 'label': 'Otros Ingresos (56)'},
+            {'val': '57', 'label': 'Ventas (57)'},
+            {'val': '41', 'label': 'Gtos. Financieros (41)'},
+            {'val': '42', 'label': 'Gtos. Servicios (42)'},
+            {'val': '43', 'label': 'Provisiones (43)'},
+            {'val': '44', 'label': 'Depreciación (44)'},
+            {'val': '45', 'label': 'Gtos. Admin (45)'},
+            {'val': '46', 'label': 'Otros Gastos (46)'},
+            {'val': '49', 'label': 'Costo Ventas (49)'}
+        ]
+        
+    return JsonResponse({
+        'status': 'success',
+        'data': data,
+        'version_id': version.id,
+        'version_status': version.status,
+        'has_yield_params': has_yield_params,
+        'has_cost_params': has_cost_params,
+        'er_accounts': er_accounts
+    })
+@login_required
+@require_POST
+def api_sync_budget_trends(request, plan_id):
+    import traceback
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+
+    # Accept scenario from JSON body or form POST
+    scenario = 'BASE'
+    try:
+        body = json.loads(request.body)
+        scenario = body.get('scenario', 'BASE')
+    except Exception:
+        scenario = request.POST.get('scenario', 'BASE')
+    
+    engine = BudgetEngine(plan, organization, request.user)
+    try:
+        engine.sync_with_trends(scenario)
+        # Re-count synced lines
+        version = engine.get_or_create_draft_version(scenario)
+        synced_count = BudgetLine.objects.filter(version=version).count()
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Sincronizado con tendencias: {synced_count} rubros calculados.',
+            'synced_count': synced_count,
+        })
+    except Exception as e:
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+@login_required
+def api_get_er_historico(request, plan_id):
+    """
+    Returns the historical Income Statement (E.R.) for the plan's selected periods,
+    grouped by account category.  Used by Step 7 budget builder to show the base year.
+    """
+    import traceback
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    hist_data = plan.historical_data or {}
+    selected_periods = hist_data.get('selected_periods', [])
+
+    if not selected_periods:
+        return JsonResponse({'status': 'error', 'msg': 'No hay períodos históricos seleccionados en el plan.'})
+
+    from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Q
+
+    # Build query for all selected periods
+    q = Q()
+    for p_str in selected_periods:
+        try:
+            y, m = p_str.split('-')
+            q |= Q(period__year=int(y), period__month=int(m), upload__status='SUCCESS')
+        except Exception:
+            pass
+
+    if not q:
+        return JsonResponse({'status': 'error', 'msg': 'No se pudo procesar los períodos seleccionados.'})
+
+    # Fetch only income/expense accounts
+    qs = LiqBalanceDetail.objects.filter(q).filter(
+        Q(account_code__startswith='4') | Q(account_code__startswith='5')
+    ).values('account_code', 'account_name', 'period__year', 'period__month', 'balance')
+
+    # Find the most recent year in selected periods for YTD reading
+    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+    base_year = years[0] if years else str(plan.anio_base - 1)
+
+    # Group by account (use Dec value = YTD; fall back to sum)
+    account_totals = {}
+    period_months = set()
+    for row in qs:
+        code = str(row['account_code'])
+        y_val = row['period__year']
+        m_val = row['period__month']
+        bal = float(row['balance'])
+        period_months.add((y_val, m_val))
+
+        if code not in account_totals:
+            account_totals[code] = {
+                'code': code,
+                'name': row['account_name'],
+                'monthly': {},
+                'ytd': 0.0,
+            }
+
+        p_key = f"{y_val}-{m_val:02d}"
+        account_totals[code]['monthly'][p_key] = bal
+
+    # Use December balance as YTD; otherwise sum all months
+    for code, acc in account_totals.items():
+        dec_key = f"{base_year}-12"
+        if dec_key in acc['monthly']:
+            ytd = acc['monthly'][dec_key]
+        else:
+            ytd = sum(acc['monthly'].values())
+        # Flip sign for income (5x) to show as positive
+        if code.startswith('5'):
+            ytd = abs(ytd)
+        acc['ytd'] = round(ytd, 2)
+
+    # Aggregate by 2-digit account group
+    CATEGORY_MAP = {
+        '51': 'Ingresos Financieros',
+        '52': 'Ingresos por Servicios Financieros',
+        '53': 'Reversión Pérdidas / Provisiones',
+        '54': 'Reversión de Provisiones',
+        '56': 'Otros Ingresos',
+        '57': 'Ventas',
+        '41': 'Gastos Financieros',
+        '42': 'Gastos por Servicios Financieros',
+        '43': 'Provisiones para Incobrabilidad',
+        '44': 'Depreciación y Amortización',
+        '45': 'Gastos de Administración',
+        '46': 'Otros Gastos',
+        '49': 'Costo de Ventas',
+    }
+
+    grouped = {}
+    for code, acc in account_totals.items():
+        prefix_2 = code[:2] if len(code) >= 2 else code[:1]
+        if prefix_2 not in grouped:
+            grouped[prefix_2] = {
+                'group_code': prefix_2,
+                'group_name': CATEGORY_MAP.get(prefix_2, f'Cuenta {prefix_2}'),
+                'is_income': code.startswith('5'),
+                'total': 0.0,
+                'accounts': [],
+            }
+        grouped[prefix_2]['total'] += acc['ytd']
+        grouped[prefix_2]['accounts'].append({
+            'code': code,
+            'name': acc['name'],
+            'amount': acc['ytd'],
+        })
+
+    # Sort: income groups first (5x), then expense groups (4x)
+    income_groups = sorted(
+        [v for v in grouped.values() if v['is_income']],
+        key=lambda x: x['group_code']
+    )
+    expense_groups = sorted(
+        [v for v in grouped.values() if not v['is_income']],
+        key=lambda x: x['group_code']
+    )
+
+    total_ingresos = sum(g['total'] for g in income_groups)
+    total_gastos = sum(g['total'] for g in expense_groups)
+    utilidad_neta = total_ingresos - total_gastos
+
+    return JsonResponse({
+        'status': 'success',
+        'base_year': base_year,
+        'income_groups': income_groups,
+        'expense_groups': expense_groups,
+        'totals': {
+            'total_ingresos': round(total_ingresos, 2),
+            'total_gastos': round(total_gastos, 2),
+            'utilidad_neta': round(utilidad_neta, 2),
+        }
+    })
+
+
+@login_required
+def api_get_historical_account_monthly(request, plan_id):
+    """
+    Returns the 12-month breakdown for a given account_prefix from historical data.
+    Used by "Manual" calc_type rows that want to load historical data and apply a % adjustment.
+    GET params:
+        - account_prefix: e.g. '4501', '51', '57'
+        - adjustment_pct: e.g. 5 (means +5%), -10 (means -10%). Default 0.
+    """
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    account_prefix = request.GET.get('account_prefix', '')
+    try:
+        adjustment_pct = float(request.GET.get('adjustment_pct', 0))
+    except (ValueError, TypeError):
+        adjustment_pct = 0.0
+
+    if not account_prefix:
+        return JsonResponse({'status': 'error', 'msg': 'Se requiere un prefijo de cuenta.'})
+
+    hist_data = plan.historical_data or {}
+    selected_periods = hist_data.get('selected_periods', [])
+
+    if not selected_periods:
+        return JsonResponse({'status': 'error', 'msg': 'No hay períodos históricos seleccionados.'})
+
+    from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Q
+
+    # Determine base year
+    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+    base_year = int(years[0]) if years else (plan.anio_base - 1)
+
+    # Build query for all months of the base year
+    q = Q(period__year=base_year, upload__status='SUCCESS')
+
+    qs = LiqBalanceDetail.objects.filter(q).filter(
+        account_code__startswith=account_prefix
+    ).values('account_code', 'account_name', 'period__month', 'balance')
+
+    # Aggregate by month across all sub-accounts of this prefix
+    monthly_totals = [0.0] * 12
+    account_names = set()
+    has_data = False
+
+    for row in qs:
+        has_data = True
+        m = row['period__month']
+        bal = float(row['balance'])
+        # Income accounts (5x) are stored as negative; flip to positive
+        if str(row['account_code']).startswith('5'):
+            bal = abs(bal)
+        if 1 <= m <= 12:
+            monthly_totals[m - 1] += bal
+        account_names.add(f"{row['account_code']} - {row['account_name']}")
+
+    if not has_data:
+        return JsonResponse({
+            'status': 'warning',
+            'msg': f'No se encontraron datos históricos para el prefijo {account_prefix} en {base_year}.',
+            'monthly': [0.0] * 12,
+            'annual_total': 0.0,
+            'adjusted_monthly': [0.0] * 12,
+            'adjusted_annual': 0.0,
+        })
+
+    # De-accumulate the YTD values into discrete monthly flows.
+    # Trial balances for ER accounts (4 and 5) are stored cumulatively (YTD).
+    actual_monthly = [0.0] * 12
+    last_ytd = 0.0
+    for i in range(12):
+        curr_ytd = monthly_totals[i]
+        if curr_ytd == 0 and i > 0 and last_ytd > 0:
+            # Missing month data, assume 0 flow
+            actual_monthly[i] = 0.0
+        else:
+            actual_monthly[i] = max(0.0, curr_ytd - last_ytd)
+            last_ytd = curr_ytd
+            
+    monthly_totals = [round(v, 2) for v in actual_monthly]
+    
+    annual_total = sum(monthly_totals)
+    
+    # Apply percentage adjustment
+    factor = 1.0 + (adjustment_pct / 100.0)
+    adjusted_monthly = [round(v * factor, 2) for v in monthly_totals]
+    adjusted_annual = round(sum(adjusted_monthly), 2)
+
+    # Fetch default trend growth to allow Y2 and Y3 projections to follow the Montecarlo trend
+    from .models import SimulacionEscenario
+    trend_growth = 0.0
+    sims = SimulacionEscenario.objects.filter(plan=plan, organization=organization, agencia='Consolidado')
+    if sims.exists():
+        cartera_sim = sims.filter(variable_id='cartera').first()
+        if cartera_sim and cartera_sim.tasa_tendencia:
+            trend_growth = float(cartera_sim.tasa_tendencia)
+        else:
+            tasa_list = [float(s.tasa_tendencia) for s in sims if s.tasa_tendencia]
+            if tasa_list:
+                trend_growth = sum(tasa_list) / len(tasa_list)
+
+    return JsonResponse({
+        'status': 'success',
+        'base_year': base_year,
+        'account_prefix': account_prefix,
+        'accounts_found': list(account_names)[:20],
+        'adjustment_pct': adjustment_pct,
+        'monthly': [round(v, 2) for v in monthly_totals],
+        'annual_total': round(annual_total, 2),
+        'adjusted_monthly': adjusted_monthly,
+        'adjusted_annual': adjusted_annual,
+        'trend_growth': round(trend_growth, 4)
+    })
+
+
+@login_required
+@require_POST
+def api_seed_budget_items(request, plan_id):
+    """Force-seeds / refreshes all canonical BudgetItems and their Calculation Rules."""
+    import traceback
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    engine = BudgetEngine(plan, organization, request.user)
+    try:
+        # Force full re-seed by temporarily clearing existing items to re-check
+        from .services.budget_engine import DEFAULT_BUDGET_ITEMS
+        created_codes = []
+        for defn in DEFAULT_BUDGET_ITEMS:
+            item, created = BudgetItem.objects.update_or_create(
+                organization=organization,
+                code=defn['code'],
+                defaults={
+                    'name': defn['name'],
+                    'category': defn['category'],
+                }
+            )
+            BudgetCalculationRule.objects.update_or_create(
+                organization=organization,
+                item=item,
+                defaults={
+                    'calculation_type': defn['calc_type'] if defn['calc_type'] != 'GROWTH_VARIABLE' else 'TREND',
+                    'source_trend_variable': defn.get('trend_variable'),
+                    'assumption_driver': defn.get('account_prefix'),
+                }
+            )
+            if created:
+                created_codes.append(defn['code'])
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Rubros presupuestales actualizados ({len(DEFAULT_BUDGET_ITEMS)} total, {len(created_codes)} nuevos).',
+            'total': len(DEFAULT_BUDGET_ITEMS),
+            'new': len(created_codes),
+        })
+    except Exception as e:
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@login_required
+@require_POST
+def api_save_budget_version(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    try:
+        payload = json.loads(request.body)
+        scenario = payload.get('scenario', 'BASE')
+        lines_data = payload.get('lines', [])
+        
+        engine = BudgetEngine(plan, organization, request.user)
+        version = engine.get_or_create_draft_version(scenario)
+        
+        with transaction.atomic():
+            for l_data in lines_data:
+                item_id = l_data.get('item_id')
+                if not item_id: continue
+                item = get_object_or_404(BudgetItem, id=item_id)
+                
+                calc_type = l_data.get('calc_type', 'MANUAL')
+                source_trend = l_data.get('source_trend_variable', '')
+                
+                rule, _ = BudgetCalculationRule.objects.get_or_create(
+                    organization=organization,
+                    item=item
+                )
+                rule.calculation_type = calc_type
+                rule.source_trend_variable = source_trend
+                rule.save()
+                
+                budget_line, _ = BudgetLine.objects.update_or_create(
+                    organization=organization,
+                    version=version,
+                    item=item,
+                    defaults={
+                        'applied_calculation_type': calc_type,
+                        'total_amount_y1': Decimal(str(l_data.get('y1_total', 0) or 0)),
+                        'total_amount_y2': Decimal(str(l_data.get('y2_total', 0) or 0)),
+                        'total_amount_y3': Decimal(str(l_data.get('y3_total', 0) or 0))
+                    }
+                )
+                
+                monthly = l_data.get('monthly_values', [])
+                for idx, val in enumerate(monthly):
+                    amt = Decimal(str(val or 0))
+                    BudgetLineDetail.objects.update_or_create(
+                        organization=organization,
+                        budget_line=budget_line,
+                        period_type='MONTH',
+                        period_index=idx + 1,
+                        defaults={'amount': amt}
+                    )
+        
+        return JsonResponse({'status': 'success', 'message': 'Guardado exitosamente.'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)})
+
+@login_required
+@require_POST
+def api_approve_budget_version(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    scenario = request.POST.get('scenario', 'BASE')
+    
+    version = BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=scenario, 
+        status='DRAFT'
+    ).first()
+    
+    if not version:
+        return JsonResponse({'status': 'error', 'message': 'No hay versión en borrador para aprobar.'})
+        
+    BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=scenario, 
+        status='APPROVED'
+    ).update(status='ARCHIVED')
+    
+    version.status = 'APPROVED'
+    version.save()
+    
+    return JsonResponse({'status': 'success', 'message': 'Versión aprobada.'})
+
+@login_required
+@require_POST
+def api_copy_base_year_budget(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    scenario = request.POST.get('scenario', 'BASE')
+    return JsonResponse({'status': 'success', 'message': 'Datos del año base copiados (Simulado)'})
+
+@login_required
+def export_er_proyectado(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    
+    version = BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=request.GET.get('scenario', 'BASE')
+    ).order_by('-created_at').first()
+
+    data = []
+    
+    if version:
+        # Definir el orden de presentación de las categorías
+        category_order = ['ING_FIN', 'ING_SERV', 'OTROS_ING', 'GAS_FIN', 'GAS_SERV', 'PROV', 'DEP_AMORT', 'GAS_ADMIN', 'OTROS_EG']
+        category_names = {
+            'ING_FIN': 'INGRESOS FINANCIEROS',
+            'ING_SERV': 'INGRESOS POR SERVICIOS',
+            'OTROS_ING': 'OTROS INGRESOS',
+            'GAS_FIN': 'GASTOS FINANCIEROS',
+            'GAS_SERV': 'GASTOS POR SERVICIOS FIN.',
+            'PROV': 'PROVISIONES',
+            'DEP_AMORT': 'DEPRECIACIÓN Y AMORTIZACIÓN',
+            'GAS_ADMIN': 'GASTOS ADMINISTRATIVOS',
+            'OTROS_EG': 'OTROS EGRESOS'
+        }
+        
+        items = BudgetItem.objects.filter(organization=organization)
+        lines = BudgetLine.objects.filter(version=version)
+        lines_by_item = {l.item_id: l for l in lines}
+        
+        items_by_cat = {}
+        for item in items:
+            cat = item.category
+            if cat not in items_by_cat:
+                items_by_cat[cat] = []
+            items_by_cat[cat].append(item)
+            
+        total_ingresos_y1, total_ingresos_y2, total_ingresos_y3 = 0, 0, 0
+        total_gastos_y1, total_gastos_y2, total_gastos_y3 = 0, 0, 0
+        
+        for cat in category_order:
+            if cat in items_by_cat:
+                cat_name = category_names.get(cat, cat)
+                data.append({"Rubro": cat_name, "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""})
+                
+                cat_y1, cat_y2, cat_y3 = 0, 0, 0
+                sign = 1 if cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING'] else -1
+                
+                for item in items_by_cat[cat]:
+                    line = lines_by_item.get(item.id)
+                    y1 = float(line.total_amount_y1) if line else 0.0
+                    y2 = float(line.total_amount_y2) if line else 0.0
+                    y3 = float(line.total_amount_y3) if line else 0.0
+                    
+                    cat_y1 += y1
+                    cat_y2 += y2
+                    cat_y3 += y3
+                    
+                    data.append({
+                        "Rubro": f"  {item.name}", 
+                        "Año 1 Proy.": y1, 
+                        "Año 2 Proy.": y2, 
+                        "Año 3 Proy.": y3
+                    })
+                    
+                data.append({
+                    "Rubro": f"Total {cat_name}", 
+                    "Año 1 Proy.": cat_y1 * sign, 
+                    "Año 2 Proy.": cat_y2 * sign, 
+                    "Año 3 Proy.": cat_y3 * sign
+                })
+                
+                if sign == 1:
+                    total_ingresos_y1 += cat_y1
+                    total_ingresos_y2 += cat_y2
+                    total_ingresos_y3 += cat_y3
+                else:
+                    total_gastos_y1 += cat_y1
+                    total_gastos_y2 += cat_y2
+                    total_gastos_y3 += cat_y3
+                    
+        # Add summary row
+        data.append({"Rubro": "RESULTADO DEL EJERCICIO", 
+                     "Año 1 Proy.": total_ingresos_y1 - total_gastos_y1, 
+                     "Año 2 Proy.": total_ingresos_y2 - total_gastos_y2, 
+                     "Año 3 Proy.": total_ingresos_y3 - total_gastos_y3})
+
+    if not data:
+        data = [{"Rubro": "No hay datos de presupuesto disponibles", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""}]
+        
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="ER_Proyectado_{plan.name}.xlsx"'
+    df.to_excel(response, index=False)
+    return response
+
+@login_required
+def export_bg_proyectado(request, plan_id):
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    
+    scenario = request.GET.get('scenario', 'BASE')
+    
+    # Obtener simulaciones del paso 6
+    simulaciones = SimulacionEscenario.objects.filter(plan=plan, organization=organization, agencia='Consolidado')
+    
+    sim_dict = {}
+    for sim in simulaciones:
+        proy_anuales = []
+        for year in range(1, 4):
+            # Tomamos el valor del mes 12 de cada año proyectado (ej. mes 12, 24, 36)
+            pm = ProyeccionMensual.objects.filter(escenario=sim, mes_proyeccion=year*12).first()
+            if pm:
+                if scenario == 'PESIMISTA': val = pm.valor_pesimista
+                elif scenario == 'OPTIMISTA': val = pm.valor_optimista
+                else: val = pm.valor_base
+                proy_anuales.append(float(val))
+            else:
+                proy_anuales.append(0.0)
+        sim_dict[sim.variable_id] = proy_anuales
+        
+    hist_data = plan.historical_data or {}
+    step6_data = hist_data.get('step6_data', {})
+    
+    def get_hist_val(var_id):
+        if 'datasets_by_agency' in step6_data:
+            variables = step6_data['datasets_by_agency'].get('Consolidado', {}).get('variables', [])
+            for v in variables:
+                if v.get('id') == var_id:
+                    hist_arr = v.get('hist', [])
+                    return hist_arr[-1] if hist_arr else 0.0
+        return 0.0
+
+    cartera_hist = get_hist_val('cartera')
+    mora_hist = get_hist_val('mora_soles')
+    ahorros_hist = get_hist_val('ahorros')
+    dpf_hist = get_hist_val('dpf')
+    aportes_hist = get_hist_val('aportes')
+    
+    # Asumimos que Fondos Disponibles es aprox 15-20% del total pasivo o un valor predeterminado si no hay
+    fondos_hist = 15000000.0
+    
+    data = [
+        {"Rubro": "ACTIVO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
+        {"Rubro": "Fondos Disponibles", "Base Histórica": fondos_hist, "Año 1 Proy.": fondos_hist*1.05, "Año 2 Proy.": fondos_hist*1.10, "Año 3 Proy.": fondos_hist*1.15},
+        {"Rubro": "Cartera de Créditos (Bruta)", 
+         "Base Histórica": cartera_hist, 
+         "Año 1 Proy.": sim_dict.get('cartera', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('cartera', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('cartera', [0,0,0])[2]},
+        {"Rubro": "(-) Provisiones para Créditos", 
+         "Base Histórica": -mora_hist, 
+         "Año 1 Proy.": -sim_dict.get('mora_soles', [0,0,0])[0], 
+         "Año 2 Proy.": -sim_dict.get('mora_soles', [0,0,0])[1], 
+         "Año 3 Proy.": -sim_dict.get('mora_soles', [0,0,0])[2]},
+        {"Rubro": "TOTAL ACTIVO", "Base Histórica": fondos_hist + cartera_hist - mora_hist, 
+         "Año 1 Proy.": (fondos_hist*1.05) + sim_dict.get('cartera', [0,0,0])[0] - sim_dict.get('mora_soles', [0,0,0])[0], 
+         "Año 2 Proy.": (fondos_hist*1.10) + sim_dict.get('cartera', [0,0,0])[1] - sim_dict.get('mora_soles', [0,0,0])[1], 
+         "Año 3 Proy.": (fondos_hist*1.15) + sim_dict.get('cartera', [0,0,0])[2] - sim_dict.get('mora_soles', [0,0,0])[2]},
+        
+        {"Rubro": "PASIVO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
+        {"Rubro": "Obligaciones con el Público (Ahorros)", 
+         "Base Histórica": ahorros_hist, 
+         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2]},
+        {"Rubro": "Obligaciones con el Público (Plazo Fijo)", 
+         "Base Histórica": dpf_hist, 
+         "Año 1 Proy.": sim_dict.get('dpf', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('dpf', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('dpf', [0,0,0])[2]},
+        {"Rubro": "TOTAL PASIVO", "Base Histórica": ahorros_hist + dpf_hist, 
+         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0] + sim_dict.get('dpf', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1] + sim_dict.get('dpf', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2] + sim_dict.get('dpf', [0,0,0])[2]},
+        
+        {"Rubro": "PATRIMONIO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
+        {"Rubro": "Capital Social (Aportes)", 
+         "Base Histórica": aportes_hist, 
+         "Año 1 Proy.": sim_dict.get('aportes', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('aportes', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('aportes', [0,0,0])[2]},
+        {"Rubro": "TOTAL PATRIMONIO", "Base Histórica": aportes_hist, "Año 1 Proy.": sim_dict.get('aportes', [0,0,0])[0], "Año 2 Proy.": sim_dict.get('aportes', [0,0,0])[1], "Año 3 Proy.": sim_dict.get('aportes', [0,0,0])[2]},
+        
+        {"Rubro": "Total Pasivo y Patrimonio", "Base Histórica": ahorros_hist + dpf_hist + aportes_hist, 
+         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0] + sim_dict.get('dpf', [0,0,0])[0] + sim_dict.get('aportes', [0,0,0])[0], 
+         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1] + sim_dict.get('dpf', [0,0,0])[1] + sim_dict.get('aportes', [0,0,0])[1], 
+         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2] + sim_dict.get('dpf', [0,0,0])[2] + sim_dict.get('aportes', [0,0,0])[2]},
+    ]
+    df = pd.DataFrame(data)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="BG_Proyectado_{plan.name}.xlsx"'
+    df.to_excel(response, index=False)
+    return response
+
+
+
+@login_required
+def api_get_projected_balance_data(request, plan_id):
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from .models import PlanFinanciero, SimulacionEscenario, ProyeccionMensual, BudgetVersion, BudgetLine, BudgetLineDetail
+    from liquidity_risk.models import LiqBalanceDetail
+    
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    scenario = request.GET.get('scenario', 'BASE')
+
+    # 1. Historical Balance (Dec of Base Year)
+    selected_periods = plan.historical_data.get('selected_periods', []) if plan.historical_data else []
+    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+    base_year = int(years[0]) if years else (plan.anio_base - 1)
+
+    dec_qs = LiqBalanceDetail.objects.filter(
+        period__year=base_year,
+        period__month=12,
+        upload__status='SUCCESS',
+    ).values('account_code', 'balance')
+
+    hist_bals = {}
+    for row in dec_qs:
+        code = str(row['account_code'])
+        bal = abs(float(row['balance']))
+        hist_bals[code] = bal
+
+    def get_sum(prefix, exclude_prefix=None):
+        return sum(v for k, v in hist_bals.items() if k.startswith(prefix) and (not exclude_prefix or not k.startswith(exclude_prefix)))
+
+    base_cartera = get_sum('14', exclude_prefix='149')
+    base_prov = get_sum('149')
+    base_cxc = get_sum('16')
+    base_af = get_sum('18')
+    base_otros_act = get_sum('1') - (base_cartera + base_prov + base_cxc + base_af)
+
+    base_ahorros = get_sum('211')
+    base_dpf = get_sum('212')
+    base_adeudos = get_sum('24')
+    base_otros_pas = get_sum('2') - (base_ahorros + base_dpf + base_adeudos)
+
+    base_cap_social = get_sum('31')
+    base_reservas = get_sum('32')
+    base_res_acum = get_sum('33')
+    base_otros_pat = get_sum('3') - (base_cap_social + base_reservas + base_res_acum)
+
+    # 2. Get Projections
+    sims = SimulacionEscenario.objects.filter(plan=plan, organization=organization)
+    
+    def get_proj_vals(variable_id):
+        sim = sims.filter(variable_id=variable_id).first()
+        if not sim:
+            return None
+        projs = list(ProyeccionMensual.objects.filter(escenario=sim).order_by('mes_proyeccion'))
+        field = 'valor_base'
+        if scenario == 'OPTIMISTIC': field = 'valor_optimista'
+        elif scenario == 'PESSIMISTIC': field = 'valor_pesimista'
+        return [float(getattr(p, field, 0) or 0) for p in projs]
+        
+    proj_cartera = get_proj_vals('cartera')
+    proj_ahorros = get_proj_vals('ahorros')
+    proj_dpf = get_proj_vals('dpf')
+    
+    # 3. Get Budget Net Income (Resultado del Ejercicio)
+    version = BudgetVersion.objects.filter(plan_financiero=plan, organization=organization, scenario=scenario, status='DRAFT').first()
+    net_incomes = [0.0] * 36
+    if version:
+        lines = BudgetLine.objects.filter(version=version).select_related('item')
+        for line in lines:
+            details = list(BudgetLineDetail.objects.filter(budget_line=line).order_by('period_index'))
+            cat = line.item.category
+            sign = 1 if cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING'] else -1
+            for i, d in enumerate(details[:12]):
+                if i < 12:
+                    net_incomes[i] += float(d.amount) * sign
+            
+            y2 = float(line.total_amount_y2 or 0) * sign
+            y3 = float(line.total_amount_y3 or 0) * sign
+            for i in range(12, 24): net_incomes[i] += y2 / 12
+            for i in range(24, 36): net_incomes[i] += y3 / 12
+            
+    def build_row(name, base_val, proj_array, is_negative=False):
+        row_vals = []
+        for i in range(36):
+            val = proj_array[i] if proj_array and i < len(proj_array) else base_val
+            row_vals.append(val)
+            
+        m1_12 = row_vals[:12]
+        y1_total = row_vals[11]
+        y2_total = row_vals[23]
+        y3_total = row_vals[35]
+        return {
+            'name': name,
+            'base': -base_val if is_negative else base_val,
+            'm1_12': [-v if is_negative else v for v in m1_12],
+            'y1': -y1_total if is_negative else y1_total,
+            'y2': -y2_total if is_negative else y2_total,
+            'y3': -y3_total if is_negative else y3_total
+        }
+        
+    cartera_row = build_row('Cartera de Créditos (Bruta)', base_cartera, proj_cartera)
+    prov_row = build_row('(-) Provisiones para Créditos', base_prov, None, is_negative=True)
+    cxc_row = build_row('Cuentas por Cobrar', base_cxc, None)
+    af_row = build_row('Activo Fijo (Neto)', base_af, None)
+    otros_act_row = build_row('Otros Activos', base_otros_act, None)
+    
+    ahorros_row = build_row('Obligaciones con el Público (Ahorros)', base_ahorros, proj_ahorros)
+    dpf_row = build_row('Obligaciones con el Público (Plazo Fijo)', base_dpf, proj_dpf)
+    adeudos_row = build_row('Adeudos y Oblig. Financieras', base_adeudos, None)
+    otros_pas_row = build_row('Otros Pasivos', base_otros_pas, None)
+    
+    cap_social_row = build_row('Capital Social', base_cap_social, None)
+    reservas_row = build_row('Reservas', base_reservas, None)
+    res_acum_row = build_row('Resultados Acumulados', base_res_acum, None)
+    otros_pat_row = build_row('Otros Patrimonio', base_otros_pat, None)
+    
+    res_ej_base = 0.0
+    res_ej_m1_12 = []
+    cum = 0
+    for i in range(12):
+        cum += net_incomes[i]
+        res_ej_m1_12.append(cum)
+    
+    y1_ej = sum(net_incomes[:12])
+    y2_ej = sum(net_incomes[12:24])
+    y3_ej = sum(net_incomes[24:36])
+    
+    res_acum_row['y1'] = base_res_acum
+    res_acum_row['y2'] = base_res_acum + y1_ej
+    res_acum_row['y3'] = base_res_acum + y1_ej + y2_ej
+    
+    res_ej_row = {
+        'name': 'Resultado del Ejercicio',
+        'base': res_ej_base,
+        'm1_12': res_ej_m1_12,
+        'y1': y1_ej,
+        'y2': y2_ej,
+        'y3': y3_ej
+    }
+    
+    def sum_rows(rows, attr):
+        return sum(r[attr] for r in rows)
+        
+    def sum_rows_array(rows, attr):
+        return [sum(r[attr][i] for r in rows) for i in range(12)]
+        
+    pasivo_rows = [ahorros_row, dpf_row, adeudos_row, otros_pas_row]
+    patrimonio_rows = [cap_social_row, reservas_row, res_acum_row, otros_pat_row, res_ej_row]
+    
+    total_pasivo = {
+        'base': sum_rows(pasivo_rows, 'base'),
+        'm1_12': sum_rows_array(pasivo_rows, 'm1_12'),
+        'y1': sum_rows(pasivo_rows, 'y1'),
+        'y2': sum_rows(pasivo_rows, 'y2'),
+        'y3': sum_rows(pasivo_rows, 'y3'),
+    }
+    
+    total_patrimonio = {
+        'base': sum_rows(patrimonio_rows, 'base'),
+        'm1_12': sum_rows_array(patrimonio_rows, 'm1_12'),
+        'y1': sum_rows(patrimonio_rows, 'y1'),
+        'y2': sum_rows(patrimonio_rows, 'y2'),
+        'y3': sum_rows(patrimonio_rows, 'y3'),
+    }
+    
+    total_pas_pat = {
+        'base': total_pasivo['base'] + total_patrimonio['base'],
+        'm1_12': [total_pasivo['m1_12'][i] + total_patrimonio['m1_12'][i] for i in range(12)],
+        'y1': total_pasivo['y1'] + total_patrimonio['y1'],
+        'y2': total_pasivo['y2'] + total_patrimonio['y2'],
+        'y3': total_pasivo['y3'] + total_patrimonio['y3'],
+    }
+    
+    activo_no_fd_rows = [cartera_row, prov_row, cxc_row, af_row, otros_act_row]
+    
+    sub_activo = {
+        'base': sum_rows(activo_no_fd_rows, 'base'),
+        'm1_12': sum_rows_array(activo_no_fd_rows, 'm1_12'),
+        'y1': sum_rows(activo_no_fd_rows, 'y1'),
+        'y2': sum_rows(activo_no_fd_rows, 'y2'),
+        'y3': sum_rows(activo_no_fd_rows, 'y3'),
+    }
+    
+    fondos_row = {
+        'name': 'Fondos Disponibles',
+        'base': total_pas_pat['base'] - sub_activo['base'],
+        'm1_12': [total_pas_pat['m1_12'][i] - sub_activo['m1_12'][i] for i in range(12)],
+        'y1': total_pas_pat['y1'] - sub_activo['y1'],
+        'y2': total_pas_pat['y2'] - sub_activo['y2'],
+        'y3': total_pas_pat['y3'] - sub_activo['y3'],
+    }
+    
+    activo_rows = [fondos_row, cartera_row, prov_row, cxc_row, af_row, otros_act_row]
+    total_activo = {
+        'base': sum_rows(activo_rows, 'base'),
+        'm1_12': sum_rows_array(activo_rows, 'm1_12'),
+        'y1': sum_rows(activo_rows, 'y1'),
+        'y2': sum_rows(activo_rows, 'y2'),
+        'y3': sum_rows(activo_rows, 'y3'),
+    }
+    
+    data = {
+        'status': 'success',
+        'groups': [
+            {
+                'name': 'ACTIVO',
+                'accounts': activo_rows,
+                'total': total_activo
+            },
+            {
+                'name': 'PASIVO',
+                'accounts': pasivo_rows,
+                'total': total_pasivo
+            },
+            {
+                'name': 'PATRIMONIO',
+                'accounts': patrimonio_rows,
+                'total': total_patrimonio
+            }
+        ],
+        'total_pasivo_patrimonio': total_pas_pat
+    }
+    
+    return JsonResponse(data)
+
