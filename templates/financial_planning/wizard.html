@@ -68,15 +68,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 7 %}active bg-indigo text-white{% elif step > 7 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=7{% else %}#{% endif %}" title="Presupuesto">
-                            <i class="fas {% if step > 7 %}fa-check-circle{% else %}fa-7{% endif %} mr-1"></i>7. Presupuesto
+                        <a class="nav-link {% if step == 7 %}active bg-indigo text-white{% elif step > 7 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=7{% else %}#{% endif %}" title="Presupuesto Operativo y Financiero">
+                            <i class="fas {% if step > 7 %}fa-check-circle{% else %}fa-7{% endif %} mr-1"></i>7. Presupuesto Operativo y Financiero
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if step == 8 %}active bg-indigo text-white{% elif step > 8 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=8{% else %}#{% endif %}" title="Estado de Resultados Proyectado">
-                            <i class="fas {% if step > 8 %}fa-check-circle{% else %}fa-8{% endif %} mr-1"></i>8. ER Proyectado
-                        </a>
-                    </li>
+
                     <li class="nav-item">
                         <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Balance General Proyectado">
                             <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-9{% endif %} mr-1"></i>9. BG Proyectado
@@ -1955,7 +1951,7 @@
                 </div>
                 {% endif %}
 
-                <!-- STEP 7: Presupuesto -->
+                <!-- STEP 7: Presupuesto Operativo y Financiero -->
                 {% if step == 7 %}
                 {% include 'financial_planning/institutional_budget_builder.html' %}
                 {% endif %}

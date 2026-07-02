@@ -73,7 +73,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    renderERTable(data.data, data.version_status);
+                    renderERTable(data.data, data.version_status, data.group_historical_totals || {}, data.raw_historical_balances || {});
                 } else {
                     document.getElementById('er-table-body').innerHTML = `<tr class="bg-warning"><td colspan="17" class="text-center text-danger">Error: ${data.message}</td></tr>`;
                 }
@@ -87,7 +87,7 @@
         return parseFloat(val || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
-    function renderERTable(budgetItems, status) {
+    function renderERTable(budgetItems, status, groupHistoricalTotals, rawHistoricalBalances) {
         const tbody = document.getElementById('er-table-body');
         let html = '';
         
@@ -104,19 +104,19 @@
         const initArray = () => Array(12).fill(0);
         
         let prefixGroups = {
-            '51': { name: 'Ingresos Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '52': { name: 'Ingresos por Servicios Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '53': { name: 'Reversión Pérdidas / Provisiones', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '54': { name: 'Reversión de Provisiones', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '56': { name: 'Otros Ingresos', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '57': { name: 'Ventas', m: initArray(), y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
-            '41': { name: 'Gastos Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '42': { name: 'Gastos por Servicios Financieros', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '43': { name: 'Provisiones para Incobrabilidad', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '44': { name: 'Depreciación y Amortización', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '45': { name: 'Gastos de Administración', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '46': { name: 'Otros Gastos', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
-            '49': { name: 'Costo de Ventas', m: initArray(), y1: 0, y2: 0, y3: 0, sign: -1, items: [] }
+            '51': { name: 'Ingresos Financieros', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '52': { name: 'Ingresos por Servicios Financieros', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '53': { name: 'Reversión Pérdidas / Provisiones', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '54': { name: 'Reversión de Provisiones', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '56': { name: 'Otros Ingresos', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '57': { name: 'Ventas', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: 1, items: [] },
+            '41': { name: 'Gastos Financieros', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '42': { name: 'Gastos por Servicios Financieros', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '43': { name: 'Provisiones para Incobrabilidad', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '44': { name: 'Depreciación y Amortización', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '45': { name: 'Gastos de Administración', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '46': { name: 'Otros Gastos', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] },
+            '49': { name: 'Costo de Ventas', m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0, sign: -1, items: [] }
         };
         
         budgetItems.forEach(item => {
@@ -143,22 +143,28 @@
             }
         });
         
-        let resNeto = { m: initArray(), y1: 0, y2: 0, y3: 0 };
+        // Populate group hist totals from the exhaustive API aggregation
+        Object.keys(prefixGroups).forEach(k => {
+            prefixGroups[k].hist = groupHistoricalTotals[k] || 0;
+        });
+
+        let resNeto = { m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0 };
         
         Object.values(prefixGroups).forEach(g => {
+            resNeto.hist += g.hist * g.sign;
             resNeto.y1 += g.y1 * g.sign;
             resNeto.y2 += g.y2 * g.sign;
             resNeto.y3 += g.y3 * g.sign;
             g.m.forEach((v, i) => resNeto.m[i] += v * g.sign);
         });
         
-        const renderRow = (title, mArr, y1, y2, y3, cssClass, isTitle=false, isItem=false) => {
+        const renderRow = (title, hist, mArr, y1, y2, y3, cssClass, isTitle=false, isItem=false) => {
             let paddingClass = isTitle ? '' : (isItem ? 'pl-5 text-muted' : 'pl-4');
             let fontClass = isItem ? '' : 'font-weight-bold';
             
             let rowHtml = `<tr class="${cssClass}">
                 <td class="${paddingClass}">${title}</td>
-                <td class="text-right text-muted">-</td>`;
+                <td class="text-right font-weight-bold text-dark" style="background-color: #e9ecef;">${formatER(hist)}</td>`;
             mArr.forEach(mVal => {
                 rowHtml += `<td class="text-right ${isTitle ? '' : fontClass}">${formatER(mVal)}</td>`;
             });
@@ -170,49 +176,77 @@
 
         const renderGroup = (key, cssClass, icon) => {
             let g = prefixGroups[key];
-            if (g.y1 === 0 && g.y2 === 0 && g.y3 === 0 && !['51','41','43','52','42','45','44','56','46'].includes(key)) return;
+            if (g.hist === 0 && g.y1 === 0 && g.y2 === 0 && g.y3 === 0 && !['51','41','43','52','42','45','44','56','46'].includes(key)) return;
             
             html += `<tr class="bg-light font-weight-bold"><td colspan="17" class="${cssClass}"><i class="fas ${icon} mr-2"></i>${key} - ${g.name.toUpperCase()}</td></tr>`;
             
+            let itemSumHist = 0;
+            let definedPrefixes = [];
             g.items.forEach(item => {
                 let mArr = item.monthly_values ? item.monthly_values.slice(0, 12) : Array(12).fill(0);
-                let itemTitle = (item.account_prefix ? item.account_prefix + ' - ' : '') + item.name;
-                html += renderRow(itemTitle, mArr, item.y1_total, item.y2_total, item.y3_total, "", false, true);
+                let displayPrefix = item.account_prefix || '';
+                if (displayPrefix) definedPrefixes.push(displayPrefix);
+                let itemTitle = (displayPrefix ? displayPrefix + ' - ' : '') + item.name;
+                let hVal = item.historical_total || 0;
+                itemSumHist += hVal;
+                html += renderRow(itemTitle, hVal, mArr, item.y1_total, item.y2_total, item.y3_total, "", false, true);
             });
             
-            html += renderRow(`Total ${g.name}`, g.m, g.y1, g.y2, g.y3, "bg-white", false, false);
+            // Render detailed unmapped accounts (up to 12 digits) for this group
+            let rawCodes = Object.keys(rawHistoricalBalances).filter(c => c.startsWith(key)).sort();
+            rawCodes.forEach(code => {
+                let isCovered = definedPrefixes.some(p => code.startsWith(p));
+                if (!isCovered) {
+                    let unmapped = rawHistoricalBalances[code];
+                    let itemTitle = `${code} - ${unmapped.name}`;
+                    html += renderRow(itemTitle, unmapped.balance, initArray(), 0, 0, 0, "", false, true);
+                }
+            });
+            
+            html += renderRow(`Total ${g.name}`, g.hist, g.m, g.y1, g.y2, g.y3, "bg-white", false, false);
         };
 
+        // Render all Income groups (5)
         renderGroup('51', 'text-success', 'fa-plus-circle');
-        renderGroup('41', 'text-danger', 'fa-minus-circle');
-        
-        let mFin = { m: initArray(), y1: prefixGroups['51'].y1 - prefixGroups['41'].y1, y2: prefixGroups['51'].y2 - prefixGroups['41'].y2, y3: prefixGroups['51'].y3 - prefixGroups['41'].y3 };
-        prefixGroups['51'].m.forEach((v, i) => mFin.m[i] = v - prefixGroups['41'].m[i]);
-        html += renderRow('MARGEN FINANCIERO BRUTO', mFin.m, mFin.y1, mFin.y2, mFin.y3, "bg-info text-white font-weight-bold text-uppercase", true);
-
-        renderGroup('43', 'text-danger', 'fa-minus-circle');
+        renderGroup('52', 'text-success', 'fa-plus-circle');
         renderGroup('53', 'text-success', 'fa-plus-circle');
         renderGroup('54', 'text-success', 'fa-plus-circle');
-        
-        let mFinNeto = { m: initArray(), y1: mFin.y1 - prefixGroups['43'].y1 + prefixGroups['53'].y1 + prefixGroups['54'].y1, y2: mFin.y2 - prefixGroups['43'].y2 + prefixGroups['53'].y2 + prefixGroups['54'].y2, y3: mFin.y3 - prefixGroups['43'].y3 + prefixGroups['53'].y3 + prefixGroups['54'].y3 };
-        mFin.m.forEach((v, i) => mFinNeto.m[i] = v - prefixGroups['43'].m[i] + prefixGroups['53'].m[i] + prefixGroups['54'].m[i]);
-        html += renderRow('MARGEN FINANCIERO NETO', mFinNeto.m, mFinNeto.y1, mFinNeto.y2, mFinNeto.y3, "bg-info text-white font-weight-bold text-uppercase", true);
-
-        renderGroup('52', 'text-success', 'fa-plus-circle');
-        renderGroup('42', 'text-danger', 'fa-minus-circle');
-        
-        let mOp = { m: initArray(), y1: mFinNeto.y1 + prefixGroups['52'].y1 - prefixGroups['42'].y1, y2: mFinNeto.y2 + prefixGroups['52'].y2 - prefixGroups['42'].y2, y3: mFinNeto.y3 + prefixGroups['52'].y3 - prefixGroups['42'].y3 };
-        mFinNeto.m.forEach((v, i) => mOp.m[i] = v + prefixGroups['52'].m[i] - prefixGroups['42'].m[i]);
-        html += renderRow('MARGEN OPERACIONAL', mOp.m, mOp.y1, mOp.y2, mOp.y3, "bg-info text-white font-weight-bold text-uppercase", true);
-
-        renderGroup('45', 'text-danger', 'fa-minus-circle');
-        renderGroup('44', 'text-warning', 'fa-minus-circle');
         renderGroup('56', 'text-success', 'fa-plus-circle');
         renderGroup('57', 'text-success', 'fa-plus-circle');
+
+        let totIngresos = { m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0 };
+        ['51','52','53','54','56','57'].forEach(k => {
+            let g = prefixGroups[k];
+            totIngresos.hist += g.hist;
+            totIngresos.y1 += g.y1;
+            totIngresos.y2 += g.y2;
+            totIngresos.y3 += g.y3;
+            g.m.forEach((v, i) => totIngresos.m[i] += v);
+        });
+        html += renderRow('TOTAL INGRESOS', totIngresos.hist, totIngresos.m, totIngresos.y1, totIngresos.y2, totIngresos.y3, "bg-info text-white font-weight-bold text-uppercase", true);
+
+        // Render all Expense groups (4)
+        renderGroup('41', 'text-danger', 'fa-minus-circle');
+        renderGroup('42', 'text-danger', 'fa-minus-circle');
+        renderGroup('43', 'text-danger', 'fa-minus-circle');
+        renderGroup('44', 'text-warning', 'fa-minus-circle');
+        renderGroup('45', 'text-danger', 'fa-minus-circle');
         renderGroup('46', 'text-danger', 'fa-minus-circle');
         renderGroup('49', 'text-danger', 'fa-minus-circle');
 
-        html += renderRow('RESULTADO DEL EJERCICIO (UTILIDAD NETA)', resNeto.m, resNeto.y1, resNeto.y2, resNeto.y3, "bg-dark text-white font-weight-bold mt-3 text-uppercase", true);
+        let totGastos = { m: initArray(), hist: 0, y1: 0, y2: 0, y3: 0 };
+        ['41','42','43','44','45','46','49'].forEach(k => {
+            let g = prefixGroups[k];
+            totGastos.hist += g.hist;
+            totGastos.y1 += g.y1;
+            totGastos.y2 += g.y2;
+            totGastos.y3 += g.y3;
+            g.m.forEach((v, i) => totGastos.m[i] += v);
+        });
+        html += renderRow('TOTAL GASTOS', totGastos.hist, totGastos.m, totGastos.y1, totGastos.y2, totGastos.y3, "bg-warning text-dark font-weight-bold text-uppercase", true);
+
+        // resNeto is already calculated properly in the Object.values(prefixGroups) loop earlier with sign handling
+        html += renderRow('RESULTADO DEL EJERCICIO (UTILIDAD NETA)', resNeto.hist, resNeto.m, resNeto.y1, resNeto.y2, resNeto.y3, "bg-dark text-white font-weight-bold mt-3 text-uppercase", true);
         
         tbody.innerHTML = html;
     }

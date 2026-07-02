@@ -1404,6 +1404,8 @@ def api_get_budget_data(request, plan_id):
     engine = BudgetEngine(plan, organization, request.user)
     engine._ensure_default_items()
     
+    er_totals = engine._get_historical_er_totals()
+    
     version = BudgetVersion.objects.filter(
         plan_financiero=plan, 
         organization=organization, 
@@ -1442,6 +1444,11 @@ def api_get_budget_data(request, plan_id):
             if default_item:
                 account_prefix = default_item.get('account_prefix', '')
 
+        # Resolve historical total
+        historical_total = 0.0
+        if account_prefix:
+            historical_total = engine._resolve_historical_total(account_prefix, er_totals)
+
         item_data = {
             'item_id': item.id,
             'category': item.category,
@@ -1453,7 +1460,8 @@ def api_get_budget_data(request, plan_id):
             'monthly_values': [0]*12,
             'y1_total': 0,
             'y2_total': 0,
-            'y3_total': 0
+            'y3_total': 0,
+            'historical_total': historical_total
         }
         
         if line:
@@ -1467,6 +1475,9 @@ def api_get_budget_data(request, plan_id):
                     item_data['monthly_values'][d.period_index - 1] = float(d.amount)
                     
         data.append(item_data)
+        
+    # No custom sort needed; BudgetItem query is ordered by category
+    
     has_yield_params = False
     has_cost_params = False
     er_accounts = []
@@ -1476,6 +1487,9 @@ def api_get_budget_data(request, plan_id):
         has_cost_params = bool(inst_assump.get('costParams'))
         
         selected_periods = plan.historical_data.get('selected_periods', [])
+        if not selected_periods:
+            selected_periods = [f"{plan.anio_base - 1}-12"]
+            
         if selected_periods:
             from liquidity_risk.models import LiqBalanceDetail
             from django.db.models import Q
@@ -1574,20 +1588,23 @@ def api_get_er_historico(request, plan_id):
     hist_data = plan.historical_data or {}
     selected_periods = hist_data.get('selected_periods', [])
 
-    if not selected_periods:
-        return JsonResponse({'status': 'error', 'msg': 'No hay períodos históricos seleccionados en el plan.'})
-
     from liquidity_risk.models import LiqBalanceDetail
     from django.db.models import Q
 
-    # Build query for all selected periods
-    q = Q()
-    for p_str in selected_periods:
-        try:
-            y, m = p_str.split('-')
-            q |= Q(period__year=int(y), period__month=int(m), upload__status='SUCCESS')
-        except Exception:
-            pass
+    if not selected_periods:
+        base_year = str(plan.anio_base - 1)
+        q = Q(period__year=int(base_year), upload__status='SUCCESS')
+    else:
+        # Build query for all selected periods
+        q = Q()
+        for p_str in selected_periods:
+            try:
+                y, m = p_str.split('-')
+                q |= Q(period__year=int(y), period__month=int(m), upload__status='SUCCESS')
+            except Exception:
+                pass
+        years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+        base_year = years[0] if years else str(plan.anio_base - 1)
 
     if not q:
         return JsonResponse({'status': 'error', 'msg': 'No se pudo procesar los períodos seleccionados.'})
@@ -1597,9 +1614,7 @@ def api_get_er_historico(request, plan_id):
         Q(account_code__startswith='4') | Q(account_code__startswith='5')
     ).values('account_code', 'account_name', 'period__year', 'period__month', 'balance')
 
-    # Find the most recent year in selected periods for YTD reading
-    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
-    base_year = years[0] if years else str(plan.anio_base - 1)
+    # Determine base_year is done above
 
     # Group by account (use Dec value = YTD; fall back to sum)
     account_totals = {}
@@ -1723,15 +1738,15 @@ def api_get_historical_account_monthly(request, plan_id):
     hist_data = plan.historical_data or {}
     selected_periods = hist_data.get('selected_periods', [])
 
-    if not selected_periods:
-        return JsonResponse({'status': 'error', 'msg': 'No hay períodos históricos seleccionados.'})
-
     from liquidity_risk.models import LiqBalanceDetail
     from django.db.models import Q
 
-    # Determine base year
-    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
-    base_year = int(years[0]) if years else (plan.anio_base - 1)
+    if not selected_periods:
+        base_year = plan.anio_base - 1
+    else:
+        # Determine base year
+        years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+        base_year = int(years[0]) if years else (plan.anio_base - 1)
 
     # Build query for all months of the base year
     q = Q(period__year=base_year, upload__status='SUCCESS')

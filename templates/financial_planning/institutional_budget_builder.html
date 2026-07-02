@@ -3,7 +3,7 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap">
             <div>
                 <h4 class="m-0 font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">
-                    <i class="fas fa-file-invoice-dollar mr-2"></i>PRESUPUESTO (Paso 7)
+                    <i class="fas fa-file-invoice-dollar mr-2"></i>PRESUPUESTO OPERATIVO Y FINANCIERO (Paso 7)
                 </h4>
                 <p class="text-muted mt-1 mb-0">Construcción del presupuesto a partir del E.R. histórico y tendencias proyectadas.</p>
             </div>
@@ -45,7 +45,19 @@
             <button type="button" class="btn btn-sm btn-light border font-weight-bold shadow-sm rounded-pill px-3" onclick="toggleErPanel()">
                 <i class="fas fa-history text-secondary mr-1"></i> Ver E.R. Histórico
             </button>
-            <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3 ml-auto" id="btnSaveBudget" onclick="saveBudgetVersion()">
+            <div class="btn-group btn-group-sm shadow-sm ml-2 rounded-pill" role="group">
+                <button type="button" class="btn btn-light border font-weight-bold px-3" onclick="collapseToLevel2()" title="Contraer a 2 dígitos">
+                    <i class="fas fa-compress-arrows-alt text-secondary"></i>
+                </button>
+                <button type="button" class="btn btn-light border font-weight-bold px-3" onclick="expandAll()" title="Expandir todo">
+                    <i class="fas fa-expand-arrows-alt text-secondary"></i>
+                </button>
+            </div>
+            <div class="custom-control custom-switch ml-auto" style="display: flex; align-items: center;">
+                <input type="checkbox" class="custom-control-input" id="hideZeroRows" onchange="renderBudgetTable()">
+                <label class="custom-control-label font-weight-bold text-secondary mb-0" for="hideZeroRows" style="padding-top: 2px; cursor: pointer;">Ocultar Cuentas en Cero</label>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3 ml-3" id="btnSaveBudget" onclick="saveBudgetVersion()">
                 <i class="fas fa-save mr-1"></i> Guardar
             </button>
             <button type="button" class="btn btn-sm btn-success shadow-sm font-weight-bold rounded-pill px-3" id="btnApproveBudget" onclick="approveBudgetVersion()">
@@ -195,11 +207,46 @@
             return;
         }
 
-        let grouped = {};
+        const digit1Names = { '4': 'EGRESOS', '5': 'INGRESOS' };
+        const digit2Names = {
+            '51': 'INGRESOS FINANCIEROS', '52': 'INGRESOS POR SERVICIOS',
+            '53': 'INGRESOS POR SERVICIOS FINANCIEROS', '54': 'OTROS INGRESOS',
+            '56': 'UTILIDADES EN VENTA DE BIENES', '57': 'INGRESOS DIVERSOS',
+            '59': 'CARGAS IMPUTABLES', '41': 'GASTOS FINANCIEROS',
+            '42': 'GASTOS POR SERVICIOS FINANCIEROS', '43': 'PROVISIONES',
+            '44': 'DEPRECIACIÓN Y AMORTIZACIÓN', '45': 'GASTOS ADMINISTRATIVOS',
+            '46': 'GASTOS DE VENTAS', '49': 'OTRAS CARGAS IMPUTABLES',
+        };
+
+        // Group by 1 digit, then 2 digit
+        let hierarchy = { '5': {}, '4': {} };
+        const hideZeros = document.getElementById('hideZeroRows') ? document.getElementById('hideZeroRows').checked : false;
+
         currentBudgetData.forEach(item => {
-            const cat = CATEGORY_CONFIG[item.category] ? item.category : 'OTROS_EG';
-            if (!grouped[cat]) grouped[cat] = [];
-            grouped[cat].push(item);
+            const y1 = parseFloat(item.y1_total) || 0;
+            const y2 = parseFloat(item.y2_total) || 0;
+            const y3 = parseFloat(item.y3_total) || 0;
+            const isYZero = (isNaN(y1) || Math.abs(y1) < 0.005) && (isNaN(y2) || Math.abs(y2) < 0.005) && (isNaN(y3) || Math.abs(y3) < 0.005);
+            
+            if (hideZeros && isYZero) {
+                let hasMonthly = false;
+                for (let i = 0; i < 12; i++) {
+                    const mVal = parseFloat(item.monthly_values[i]) || 0;
+                    if (!isNaN(mVal) && Math.abs(mVal) >= 0.005) {
+                        hasMonthly = true;
+                        break;
+                    }
+                }
+                if (!hasMonthly) return;
+            }
+
+            const pfx = item.account_prefix || '';
+            const d1 = pfx.substring(0, 1) || (CATEGORY_CONFIG[item.category].sign === 1 ? '5' : '4');
+            const d2 = pfx.substring(0, 2) || (CATEGORY_CONFIG[item.category].sign === 1 ? '50' : '40');
+            
+            if (!hierarchy[d1]) hierarchy[d1] = {};
+            if (!hierarchy[d1][d2]) hierarchy[d1][d2] = [];
+            hierarchy[d1][d2].push(item);
         });
 
         let html = '';
@@ -211,153 +258,158 @@
         let egMonths = new Array(12).fill(0);
         const isApproved = currentVersionStatus === 'APPROVED';
 
-        for (const catKey of Object.keys(CATEGORY_CONFIG)) {
-            if (!grouped[catKey] || grouped[catKey].length === 0) continue;
-            const catInfo = CATEGORY_CONFIG[catKey];
-            
-            let catMonths = new Array(12).fill(0);
-            let catY1 = 0, catY2 = 0, catY3 = 0;
-            
-            grouped[catKey].forEach(item => {
-                catY1 += parseFloat(item.y1_total) || 0;
-                catY2 += parseFloat(item.y2_total) || 0;
-                catY3 += parseFloat(item.y3_total) || 0;
-                for (let i=0; i<12; i++) {
-                    catMonths[i] += parseFloat(item.monthly_values[i]) || 0;
-                }
-            });
+        for (const d1 of ['5', '4']) {
+            if (Object.keys(hierarchy[d1]).length === 0) continue;
+            const sign = d1 === '5' ? 1 : -1;
+            const color = d1 === '5' ? 'text-success' : 'text-danger';
+            const icon = d1 === '5' ? 'fa-plus-circle' : 'fa-minus-circle';
+            const d1Name = digit1Names[d1] || 'OTRAS CUENTAS';
 
-            let catHtml = `<tr class="bg-light font-weight-bold border-top">
-                <td class="${catInfo.color}" style="padding-left:10px;">
-                    <i class="fas ${catInfo.icon} mr-2"></i>${catInfo.name}
+            let d1Months = new Array(12).fill(0);
+            let d1Y1 = 0, d1Y2 = 0, d1Y3 = 0;
+
+            let d1Html = '';
+
+            // Render children first to sum up
+            let d2HtmlAcc = '';
+            for (const d2 of Object.keys(hierarchy[d1]).sort()) {
+                const items = hierarchy[d1][d2];
+                let d2Months = new Array(12).fill(0);
+                let d2Y1 = 0, d2Y2 = 0, d2Y3 = 0;
+                let itemsHtml = '';
+
+                items.forEach(item => {
+                    let itemMonths = new Array(12).fill(0);
+                    for (let i = 0; i < 12; i++) {
+                        const mVal = parseFloat(item.monthly_values[i]) || 0;
+                        itemMonths[i] = mVal;
+                        d2Months[i] += mVal;
+                        d1Months[i] += mVal;
+                        resMonths[i] += mVal * sign;
+                        if (sign === 1) ingMonths[i] += mVal;
+                        else egMonths[i] += mVal;
+                    }
+                    
+                    const iY1 = parseFloat(item.y1_total) || 0;
+                    const iY2 = parseFloat(item.y2_total) || 0;
+                    const iY3 = parseFloat(item.y3_total) || 0;
+                    d2Y1 += iY1; d2Y2 += iY2; d2Y3 += iY3;
+                    d1Y1 += iY1; d1Y2 += iY2; d1Y3 += iY3;
+                    
+                    rY1 += iY1 * sign; rY2 += iY2 * sign; rY3 += iY3 * sign;
+                    if (sign === 1) { ingY1 += iY1; ingY2 += iY2; ingY3 += iY3; } 
+                    else { egY1 += iY1; egY2 += iY2; egY3 += iY3; }
+
+                    const isManual = item.calc_type === 'MANUAL';
+                    let calcSelect = '';
+                    let sourceSelect = '';
+                    if (isApproved) {
+                        calcSelect = `<span class="badge badge-secondary">${item.calc_type}</span>`;
+                        sourceSelect = `<span class="badge badge-light border">${item.source_trend_variable || '-'}</span>`;
+                    } else {
+                        const calcOpts = [
+                            {val: 'MANUAL', label: 'Manual'},
+                            {val: 'TREND', label: 'Tendencia'},
+                            {val: 'HISTORICAL', label: 'Histórica'}
+                        ].map(o => `<option value="${o.val}" ${item.calc_type === o.val ? 'selected' : ''}>${o.label}</option>`).join('');
+                        calcSelect = `<select class="form-control form-control-sm calc-type-select" style="font-size:0.75rem;" onchange="updateRowType(this)">${calcOpts}</select>`;
+                        
+                        const sourceVal = item.source_trend_variable || '';
+                        let sourceOpts = '';
+                        if (item.calc_type === 'HISTORICAL') {
+                            let filteredErAccounts = window.erAccounts;
+                            if (item.account_prefix) {
+                                filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
+                            }
+                            sourceOpts = `<option value="">-- Cuenta --</option>` + 
+                                filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
+                            sourceSelect = `<div class="d-flex align-items-center" style="gap:3px;">
+                                <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${sourceOpts}</select>
+                                <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
+                                    <input type="number" class="form-control form-control-sm text-center pct-adjustment" style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5">
+                                    <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;" onclick="loadHistoricalForManual(this)"><i class="fas fa-download"></i></button>
+                            </div>`;
+                        } else if (item.calc_type === 'TREND') {
+                            sourceOpts = `<option value="">-- Variable --</option>
+                                <option value="cartera" ${sourceVal === 'cartera' ? 'selected' : ''}>Cartera</option>
+                                <option value="rendimiento_cartera" ${sourceVal === 'rendimiento_cartera' ? 'selected' : ''}>Rendimiento Cartera</option>
+                                <option value="ahorros" ${sourceVal === 'ahorros' ? 'selected' : ''}>Ahorros</option>
+                                <option value="dpf" ${sourceVal === 'dpf' ? 'selected' : ''}>Plazo Fijo</option>
+                                <option value="aportes" ${sourceVal === 'aportes' ? 'selected' : ''}>Aportaciones</option>
+                                <option value="socios" ${sourceVal === 'socios' ? 'selected' : ''}>Nro Socios</option>
+                                <option value="mora_soles" ${sourceVal === 'mora_soles' ? 'selected' : ''}>Mora</option>`;
+                            sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
+                        }
+                    }
+
+                    let monthCells = '';
+                    for (let i = 0; i < 12; i++) {
+                        const val = fmt(itemMonths[i]);
+                        if (!isManual || isApproved) {
+                            monthCells += `<td class="text-right text-monospace" style="min-width:85px;padding:4px 6px;font-size:0.8rem;">
+                                <span class="month-input" data-month="${i}" data-raw="${itemMonths[i]}">${val}</span></td>`;
+                        } else {
+                            monthCells += `<td style="min-width:85px;"><input type="text" inputmode="decimal"
+                                class="month-input form-control form-control-sm text-right bg-white" style="width:84px;font-size:0.8rem;"
+                                data-month="${i}" value="${val}"
+                                onfocus="this.value=this.value.replace(/,/g,'');this.select();"
+                                onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);"
+                                onchange="updateRowTotal(this)"></td>`;
+                        }
+                    }
+
+                    const y2fmt = fmt(iY2);
+                    const y3fmt = fmt(iY3);
+                    const y2Cell = (!isManual || isApproved) ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y2-input" data-raw="${iY2}">${y2fmt}</span></td>`
+                        : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y2-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y2fmt}" onfocus="this.value=this.value.replace(/,/g,'');this.select();" onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
+                    const y3Cell = (!isManual || isApproved) ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y3-input" data-raw="${iY3}">${y3fmt}</span></td>`
+                        : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y3-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y3fmt}" onfocus="this.value=this.value.replace(/,/g,'');this.select();" onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
+
+                    itemsHtml += `<tr class="lvl4 lvl4-${d2} lvl4-${d1}" data-item-id="${item.item_id}" data-calc-type="${item.calc_type}" data-sign="${sign}" data-category="${item.category}" data-account-prefix="${item.account_prefix || ''}" style="background-color: #fafafa;">
+                        <td class="pl-5" style="min-width:260px; border-left: 3px solid #dee2e6;"><span class="text-muted mr-1">${item.account_prefix}</span> ${item.name}</td>
+                        <td class="text-center">${calcSelect}</td>
+                        <td class="text-center">${sourceSelect}</td>
+                        ${monthCells}
+                        <td class="bg-light font-weight-bold text-right text-monospace y1-total" style="min-width:110px;">${fmt(iY1)}</td>
+                        ${y2Cell}${y3Cell}
+                    </tr>`;
+                });
+
+                // Level 2 Header
+                const d2Name = digit2Names[d2] || 'OTRAS CUENTAS';
+                let d2Html = `<tr class="bg-light font-weight-bold border-top lvl2 lvl2-${d1}" style="cursor:pointer;" onclick="$('.lvl4-${d2}').toggle(); $(this).find('.toggle-icon').toggleClass('fa-chevron-down fa-chevron-right');">
+                    <td class="${color}" style="padding-left:25px;">
+                        <i class="fas fa-chevron-down mr-2 toggle-icon text-secondary" style="width:14px;"></i> ${d2} - ${d2Name}
+                    </td>
+                    <td colspan="2"></td>`;
+                for (let i = 0; i < 12; i++) {
+                    d2Html += `<td class="text-right text-monospace ${color} cat-sum-m${i}-${d2}">${fmt(d2Months[i])}</td>`;
+                }
+                d2Html += `<td class="text-right text-monospace ${color} cat-sum-y1-${d2}">${fmt(d2Y1)}</td>
+                            <td class="text-right text-monospace ${color} cat-sum-y2-${d2}">${fmt(d2Y2)}</td>
+                            <td class="text-right text-monospace ${color} cat-sum-y3-${d2}">${fmt(d2Y3)}</td>
+                </tr>`;
+                
+                d2HtmlAcc += d2Html + itemsHtml;
+            }
+
+            // Level 1 Header
+            d1Html = `<tr class="bg-white font-weight-bold border-top border-bottom lvl1" style="cursor:pointer; background-color: #f1f3f5 !important;" onclick="const isCollapsed = $(this).find('.toggle-icon').hasClass('fa-chevron-right'); if(isCollapsed){ $('.lvl2-${d1}').show(); $('.lvl4-${d1}').show(); $(this).find('.toggle-icon').removeClass('fa-chevron-right').addClass('fa-chevron-down'); $('.lvl2-${d1} .toggle-icon').removeClass('fa-chevron-right').addClass('fa-chevron-down'); } else { $('.lvl2-${d1}').hide(); $('.lvl4-${d1}').hide(); $(this).find('.toggle-icon').removeClass('fa-chevron-down').addClass('fa-chevron-right'); }">
+                <td class="${color}" style="padding-left:10px; font-size: 1.05rem;">
+                    <i class="fas fa-chevron-down mr-2 toggle-icon text-dark" style="width:14px;"></i><i class="fas ${icon} mr-2"></i>${d1} - ${d1Name}
                 </td>
                 <td colspan="2"></td>`;
-                
             for (let i = 0; i < 12; i++) {
-                catHtml += `<td class="text-right text-monospace ${catInfo.color} cat-sum-m${i}-${catKey}">${fmt(catMonths[i])}</td>`;
+                d1Html += `<td class="text-right text-monospace ${color}">${fmt(d1Months[i])}</td>`;
             }
-            catHtml += `<td class="text-right text-monospace ${catInfo.color} cat-sum-y1-${catKey}">${fmt(catY1)}</td>
-                        <td class="text-right text-monospace ${catInfo.color} cat-sum-y2-${catKey}">${fmt(catY2)}</td>
-                        <td class="text-right text-monospace ${catInfo.color} cat-sum-y3-${catKey}">${fmt(catY3)}</td>
+            d1Html += `<td class="text-right text-monospace ${color}">${fmt(d1Y1)}</td>
+                        <td class="text-right text-monospace ${color}">${fmt(d1Y2)}</td>
+                        <td class="text-right text-monospace ${color}">${fmt(d1Y3)}</td>
             </tr>`;
-            
-            html += catHtml;
 
-            grouped[catKey].forEach(item => {
-                const isManual = item.calc_type === 'MANUAL';
-                let calcSelect = '';
-                let sourceSelect = '';
-                if (isApproved) {
-                    calcSelect = `<span class="badge badge-secondary">${item.calc_type}</span>`;
-                    sourceSelect = `<span class="badge badge-light border">${item.source_trend_variable || '-'}</span>`;
-                } else {
-                    const calcOpts = [
-                        {val: 'MANUAL', label: 'Manual'},
-                        {val: 'TREND', label: 'Tendencia'},
-                        {val: 'HISTORICAL', label: 'Histórica'}
-                    ].map(o => `<option value="${o.val}" ${item.calc_type === o.val ? 'selected' : ''}>${o.label}</option>`).join('');
-                    calcSelect = `<select class="form-control form-control-sm calc-type-select" style="font-size:0.75rem;" onchange="updateRowType(this)">${calcOpts}</select>`;
-                    
-                    const sourceVal = item.source_trend_variable || '';
-                    let sourceOpts = '';
-                    if (item.calc_type === 'HISTORICAL') {
-                        let filteredErAccounts = window.erAccounts;
-                        if (item.account_prefix) {
-                            filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
-                        }
-                        sourceOpts = `<option value="">-- Cuenta Base --</option>` + 
-                            filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
-                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
-                    } else if (item.calc_type === 'TREND') {
-                        sourceOpts = `<option value="">-- Variable --</option>
-                            <option value="cartera" ${sourceVal === 'cartera' ? 'selected' : ''}>Cartera</option>
-                            <option value="rendimiento_cartera" ${sourceVal === 'rendimiento_cartera' ? 'selected' : ''}>Rendimiento Cartera</option>
-                            <option value="ahorros" ${sourceVal === 'ahorros' ? 'selected' : ''}>Ahorros</option>
-                            <option value="dpf" ${sourceVal === 'dpf' ? 'selected' : ''}>Plazo Fijo</option>
-                            <option value="aportes" ${sourceVal === 'aportes' ? 'selected' : ''}>Aportaciones</option>
-                            <option value="socios" ${sourceVal === 'socios' ? 'selected' : ''}>Nro Socios</option>
-                            <option value="mora_soles" ${sourceVal === 'mora_soles' ? 'selected' : ''}>Mora</option>`;
-                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
-                    } else {
-                        // MANUAL: show historical account selector + % adjustment + load button
-                        let filteredErAccounts = window.erAccounts;
-                        if (item.account_prefix) {
-                            filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
-                        }
-                        sourceOpts = `<option value="">-- Seleccionar Cuenta --</option>` + 
-                            filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
-                        sourceSelect = `<div class="d-flex align-items-center" style="gap:3px;">
-                            <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${sourceOpts}</select>
-                            <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
-                                <input type="number" class="form-control form-control-sm text-center pct-adjustment" 
-                                    style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5" 
-                                    title="% de ajuste sobre dato histórico">
-                                <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;white-space:nowrap;" 
-                                onclick="loadHistoricalForManual(this)" title="Cargar datos históricos con ajuste %">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>`;
-                }
-            }
-
-            rY1 += item.y1_total * catInfo.sign;
-                rY2 += item.y2_total * catInfo.sign;
-                rY3 += item.y3_total * catInfo.sign;
-                if (catInfo.sign === 1) {
-                    ingY1 += item.y1_total;
-                    ingY2 += item.y2_total;
-                    ingY3 += item.y3_total;
-                } else {
-                    egY1 += item.y1_total;
-                    egY2 += item.y2_total;
-                    egY3 += item.y3_total;
-                }
-
-                let monthCells = '';
-                for (let i = 0; i < 12; i++) {
-                    const mVal = item.monthly_values[i] || 0;
-                    resMonths[i] += mVal * catInfo.sign;
-                    if (catInfo.sign === 1) ingMonths[i] += mVal;
-                    else egMonths[i] += mVal;
-                    
-                    const val = fmt(mVal);
-                    if (!isManual || isApproved) {
-                        monthCells += `<td class="text-right text-monospace" style="min-width:85px;padding:4px 6px;font-size:0.8rem;">
-                            <span class="month-input" data-month="${i}" data-raw="${(item.monthly_values[i] || 0)}">${val}</span></td>`;
-                    } else {
-                        monthCells += `<td style="min-width:85px;"><input type="text" inputmode="decimal"
-                            class="month-input form-control form-control-sm text-right bg-white" style="width:84px;font-size:0.8rem;"
-                            data-month="${i}" value="${val}"
-                            onfocus="this.value=this.value.replace(/,/g,'');this.select();"
-                            onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);"
-                            onchange="updateRowTotal(this)"></td>`;
-                    }
-                }
-
-                const y2fmt = fmt(item.y2_total);
-                const y3fmt = fmt(item.y3_total);
-                const y2Cell = (!isManual || isApproved)
-                    ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y2-input" data-raw="${item.y2_total}">${y2fmt}</span></td>`
-                    : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y2-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y2fmt}"
-                        onfocus="this.value=this.value.replace(/,/g,'');this.select();"
-                        onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
-                const y3Cell = (!isManual || isApproved)
-                    ? `<td class="text-right text-monospace" style="min-width:100px;padding:4px 6px;font-size:0.8rem;"><span class="y3-input" data-raw="${item.y3_total}">${y3fmt}</span></td>`
-                    : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y3-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y3fmt}"
-                        onfocus="this.value=this.value.replace(/,/g,'');this.select();"
-                        onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
-
-                html += `<tr data-item-id="${item.item_id}" data-calc-type="${item.calc_type}" data-sign="${catInfo.sign}" data-category="${catKey}" data-account-prefix="${item.account_prefix || ''}">
-                    <td class="pl-4" style="min-width:260px;">${item.name}</td>
-                    <td class="text-center">${calcSelect}</td>
-                    <td class="text-center">${sourceSelect}</td>
-                    ${monthCells}
-                    <td class="bg-light font-weight-bold text-right text-monospace y1-total" style="min-width:110px;">${fmt(item.y1_total)}</td>
-                    ${y2Cell}${y3Cell}
-                </tr>`;
-            });
+            html += d1Html + d2HtmlAcc;
         }
 
         tbody.innerHTML = html;
@@ -380,7 +432,19 @@
         updateUIForStatus();
     }
 
-    window.fmt_local = fmt;
+    window.collapseToLevel2 = function() {
+        $('.lvl2').show();
+        $('.lvl4').hide();
+        $('.lvl1 .toggle-icon').removeClass('fa-chevron-right').addClass('fa-chevron-down');
+        $('.lvl2 .toggle-icon').removeClass('fa-chevron-down').addClass('fa-chevron-right');
+    };
+
+    window.expandAll = function() {
+        $('.lvl2').show();
+        $('.lvl4').show();
+        $('.lvl1 .toggle-icon').removeClass('fa-chevron-right').addClass('fa-chevron-down');
+        $('.lvl2 .toggle-icon').removeClass('fa-chevron-right').addClass('fa-chevron-down');
+    };
 
     window.updateRowType = function(sel) {
         const tr = sel.closest('tr');

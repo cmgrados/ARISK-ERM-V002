@@ -11,145 +11,476 @@ from ..models import (
 # y cómo proyectar: 'GROWTH_VARIABLE' = usar tasa de crecimiento de SimulacionEscenario,
 #                   'INFLATION' = usar inflación del plan, 'MANUAL' = sin auto-cálculo.
 DEFAULT_BUDGET_ITEMS = [
-    # ── INGRESOS FINANCIEROS (cuenta 51) ──────────────────────────────────────────
     {
-        'code': 'ING_FIN_CARTERA',
-        'name': 'Intereses y Rendimientos por Cartera de Créditos',
-        'category': 'ING_FIN',
-        'account_prefix': '51',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'cartera',
-    },
-    {
-        'code': 'ING_SERV_DIV',
-        'name': 'Ingresos por Servicios Financieros Diversos',
-        'category': 'ING_SERV',
-        'account_prefix': '52',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'cartera',   # crece con la cartera
-    },
-    {
-        'code': 'ING_REVERSION',
-        'name': 'Reversión de Pérdidas por Deterioro y Provisiones',
-        'category': 'OTROS_ING',
-        'account_prefix': '53',
-        'calc_type': 'MANUAL',
-        'trend_variable': None,
-    },
-    {
-        'code': 'ING_OTROS',
-        'name': 'Otros Ingresos',
-        'category': 'OTROS_ING',
-        'account_prefix': '56',
-        'calc_type': 'MANUAL',
-        'trend_variable': None,
-    },
-    {
-        'code': 'ING_VENTAS',
-        'name': 'Ventas',
-        'category': 'OTROS_ING',
-        'account_prefix': '57',
-        'calc_type': 'MANUAL',
-        'trend_variable': None,
-    },
-
-    # ── GASTOS FINANCIEROS (cuenta 41) ────────────────────────────────────────────
-    {
-        'code': 'GAS_FIN_DPF',
-        'name': 'Intereses y Gastos por Depósitos a Plazo Fijo',
+        'code': 'ACC_4101',
+        'name': 'Intereses y Gastos por Obligaciones Con Los Socios',
         'category': 'GAS_FIN',
-        'account_prefix': '41',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'dpf',
+        'account_prefix': '4101',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
     },
     {
-        'code': 'GAS_FIN_AHORROS',
-        'name': 'Intereses y Gastos por Depósitos de Ahorro',
+        'code': 'ACC_4102',
+        'name': 'Intereses y Gastos por Fondos  Intercooperativos',
         'category': 'GAS_FIN',
-        'account_prefix': '41',          # sub-cuenta de 41
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'ahorros',
+        'account_prefix': '4102',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
     },
-
-    # ── GASTOS POR SERVICIOS FINANCIEROS (cuenta 42) ──────────────────────────────
     {
-        'code': 'GAS_SERV_FIN',
-        'name': 'Gastos por Servicios Financieros',
+        'code': 'ACC_4103',
+        'name': 'Intereses y Gastos por Depósitos de Coopac',
+        'category': 'GAS_FIN',
+        'account_prefix': '4103',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4104',
+        'name': 'Intereses por Adeudos y Obligaciones Financieras',
+        'category': 'GAS_FIN',
+        'account_prefix': '4104',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4105',
+        'name': 'Intereses de Cuentas por Pagar',
+        'category': 'GAS_FIN',
+        'account_prefix': '4105',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4106',
+        'name': 'Intereses por Valores, Títulos  y  Obligaciones en Circulacion',
+        'category': 'GAS_FIN',
+        'account_prefix': '4106',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4107',
+        'name': 'Comisiones y Otros Cargos por Obligaciones Financieras',
+        'category': 'GAS_FIN',
+        'account_prefix': '4107',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4108',
+        'name': 'Diferencia de Cambio',
+        'category': 'GAS_FIN',
+        'account_prefix': '4108',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4109',
+        'name': 'Cargas Financieras Diversas',
+        'category': 'GAS_FIN',
+        'account_prefix': '4109',
+        'calc_type': 'TREND',
+        'trend_variable': "dpf",
+    },
+    {
+        'code': 'ACC_4201',
+        'name': 'Gastos por Operaciones Contingentes',
         'category': 'GAS_SERV',
-        'account_prefix': '42',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'cartera',
+        'account_prefix': '4201',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
     },
-
-    # ── PROVISIONES (cuenta 43) ───────────────────────────────────────────────────
     {
-        'code': 'PROV_INCOB',
-        'name': 'Provisiones para Incobrabilidad de Créditos',
+        'code': 'ACC_4202',
+        'name': 'Gastos por Servicios Financieros Diversos',
+        'category': 'GAS_SERV',
+        'account_prefix': '4202',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_4301',
+        'name': 'Pérdida por Deterioro de Inversiones',
         'category': 'PROV',
-        'account_prefix': '43',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'mora_soles',
+        'account_prefix': '4301',
+        'calc_type': 'TREND',
+        'trend_variable': "mora_soles",
     },
-
-    # ── DEPRECIACIÓN Y AMORTIZACIÓN (cuenta 44) ───────────────────────────────────
     {
-        'code': 'DEP_AMORT',
-        'name': 'Depreciación, Amortización y Deterioro',
+        'code': 'ACC_4302',
+        'name': 'Provisiones Para Incobrabilidad de Créditos',
+        'category': 'PROV',
+        'account_prefix': '4302',
+        'calc_type': 'TREND',
+        'trend_variable': "mora_soles",
+    },
+    {
+        'code': 'ACC_4303',
+        'name': 'Provisiones Para Incobrabilidad de Cuentas por Cobrar',
+        'category': 'PROV',
+        'account_prefix': '4303',
+        'calc_type': 'TREND',
+        'trend_variable': "mora_soles",
+    },
+    {
+        'code': 'ACC_4304',
+        'name': 'Provisiones  Para  Bienes Realizables, Recibidos  en  Pago y Adjudicados y Activos No Corrientes Mantenidos Para La Venta',
+        'category': 'PROV',
+        'account_prefix': '4304',
+        'calc_type': 'TREND',
+        'trend_variable': "mora_soles",
+    },
+    {
+        'code': 'ACC_4305',
+        'name': 'Provisiones Para Contingencias y Otras',
+        'category': 'PROV',
+        'account_prefix': '4305',
+        'calc_type': 'TREND',
+        'trend_variable': "mora_soles",
+    },
+    {
+        'code': 'ACC_4401',
+        'name': 'Depreciación de Inmuebles, Mobiliario y Equipo',
         'category': 'DEP_AMORT',
-        'account_prefix': '44',
-        'calc_type': 'MANUAL',
+        'account_prefix': '4401',
+        'calc_type': 'HISTORICAL',
         'trend_variable': None,
     },
-
-    # ── GASTOS ADMINISTRATIVOS (cuenta 45) ───────────────────────────────────────
     {
-        'code': 'GAS_PERSONAL',
+        'code': 'ACC_4403',
+        'name': 'Amortización de Intangibles',
+        'category': 'DEP_AMORT',
+        'account_prefix': '4403',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4404',
+        'name': 'Deterioro de Valor de Inmuebles, Mobiliario y Equipo',
+        'category': 'DEP_AMORT',
+        'account_prefix': '4404',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4405',
+        'name': 'Deterioro de Valor de Activos Intangibles',
+        'category': 'DEP_AMORT',
+        'account_prefix': '4405',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4501',
         'name': 'Gastos de Personal',
         'category': 'GAS_ADMIN',
         'account_prefix': '4501',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'socios',     # crece proporcional a socios
+        'calc_type': 'TREND',
+        'trend_variable': "socios",
     },
     {
-        'code': 'GAS_DIRECTIVOS',
+        'code': 'ACC_4502',
         'name': 'Gastos de Directivos',
         'category': 'GAS_ADMIN',
         'account_prefix': '4502',
-        'calc_type': 'MANUAL',
+        'calc_type': 'HISTORICAL',
         'trend_variable': None,
     },
     {
-        'code': 'GAS_SERVICIOS_TERCEROS',
-        'name': 'Gastos por Servicios de Terceros',
+        'code': 'ACC_4503',
+        'name': 'Gastos por Servicios Recibidos de Terceros',
         'category': 'GAS_ADMIN',
         'account_prefix': '4503',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'cartera',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
     },
     {
-        'code': 'GAS_TRIBUTOS',
+        'code': 'ACC_4504',
         'name': 'Tributos',
         'category': 'GAS_ADMIN',
         'account_prefix': '4504',
-        'calc_type': 'MANUAL',
+        'calc_type': 'HISTORICAL',
         'trend_variable': None,
     },
     {
-        'code': 'GAS_ACTIVIDADES_ASOC',
+        'code': 'ACC_4505',
         'name': 'Gastos de Actividades Asociativas',
         'category': 'GAS_ADMIN',
         'account_prefix': '4505',
-        'calc_type': 'GROWTH_VARIABLE',
-        'trend_variable': 'socios',
+        'calc_type': 'TREND',
+        'trend_variable': "socios",
     },
-
-    # ── OTROS GASTOS (cuenta 46) ──────────────────────────────────────────────────
     {
-        'code': 'OTROS_GASTOS',
+        'code': 'ACC_4601',
+        'name': 'Pérdida en Venta de Inmuebles, Mobiliario y Equipo',
+        'category': 'OTROS_EG',
+        'account_prefix': '4601',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4602',
+        'name': 'Pérdida en Bienes Adjudicados y Recuperados',
+        'category': 'OTROS_EG',
+        'account_prefix': '4602',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4604',
+        'name': 'Pérdida en Venta de Activos No Corrientes Mantenidos Para La Venta',
+        'category': 'OTROS_EG',
+        'account_prefix': '4604',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4605',
+        'name': 'Sanciones Administrativas y Fiscales',
+        'category': 'OTROS_EG',
+        'account_prefix': '4605',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4606',
+        'name': 'Pérdidas No Cubiertas por Seguros',
+        'category': 'OTROS_EG',
+        'account_prefix': '4606',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4607',
+        'name': 'Donaciones Efectuadas',
+        'category': 'OTROS_EG',
+        'account_prefix': '4607',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4609',
         'name': 'Otros Gastos',
         'category': 'OTROS_EG',
-        'account_prefix': '46',
-        'calc_type': 'MANUAL',
+        'account_prefix': '4609',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4901',
+        'name': 'Costo de Ventas de Bienes',
+        'category': 'OTROS_EG',
+        'account_prefix': '4901',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_4902',
+        'name': 'Costo de Ventas de Servicios',
+        'category': 'OTROS_EG',
+        'account_prefix': '4902',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5101',
+        'name': 'Intereses y Rendimientos por  Disponibles',
+        'category': 'ING_FIN',
+        'account_prefix': '5101',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5102',
+        'name': 'Intereses y Rendimientos por Fondos Intercooperativos',
+        'category': 'ING_FIN',
+        'account_prefix': '5102',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5103',
+        'name': 'Ingresos  por  Inversiones  Negociables y A Vencimiento',
+        'category': 'ING_FIN',
+        'account_prefix': '5103',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5104',
+        'name': 'Intereses por Créditos',
+        'category': 'ING_FIN',
+        'account_prefix': '5104',
+        'calc_type': 'TREND',
+        'trend_variable': "rendimiento_cartera",
+    },
+    {
+        'code': 'ACC_5105',
+        'name': 'Ingresos de Cuentas por Cobrar',
+        'category': 'ING_FIN',
+        'account_prefix': '5105',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5107',
+        'name': 'Comisiones y Otros Rendimientos por Creditos Directos',
+        'category': 'ING_FIN',
+        'account_prefix': '5107',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5108',
+        'name': 'Diferencia de Cambio',
+        'category': 'ING_FIN',
+        'account_prefix': '5108',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5109',
+        'name': 'Ingresos Financieros Diversos',
+        'category': 'ING_FIN',
+        'account_prefix': '5109',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5201',
+        'name': 'Ingresos por Créditos Indirectos',
+        'category': 'ING_SERV',
+        'account_prefix': '5201',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5202',
+        'name': 'Ingresos por Servicios Diversos',
+        'category': 'ING_SERV',
+        'account_prefix': '5202',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5203',
+        'name': 'Ingresos por Arrendamientos',
+        'category': 'ING_SERV',
+        'account_prefix': '5203',
+        'calc_type': 'TREND',
+        'trend_variable': "cartera",
+    },
+    {
+        'code': 'ACC_5301',
+        'name': 'Reversión por Deterioro de Inversiones Negociables y A Vencimiento',
+        'category': 'OTROS_ING',
+        'account_prefix': '5301',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5302',
+        'name': 'Recuperación de Deterioro en Inmuebles, Mobiliario y Equipo',
+        'category': 'OTROS_ING',
+        'account_prefix': '5302',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5303',
+        'name': 'Recuperación de Deterioro de Activos Intangibles',
+        'category': 'OTROS_ING',
+        'account_prefix': '5303',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5404',
+        'name': 'Reversión de Provisiones por Créditos',
+        'category': 'OTROS_ING',
+        'account_prefix': '5404',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5405',
+        'name': 'Reversión de Provisiones por Cuentas por Cobrar',
+        'category': 'OTROS_ING',
+        'account_prefix': '5405',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5406',
+        'name': 'Reversión de Provisiones por Bienes Realizables, Recuperados y Recibidos en Pago y Adjudicados',
+        'category': 'OTROS_ING',
+        'account_prefix': '5406',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5601',
+        'name': 'Utilidad en Venta de Inmuebles, Mobiliario y Equipo',
+        'category': 'OTROS_ING',
+        'account_prefix': '5601',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5602',
+        'name': 'Utilidad en Venta de Bienes Adjudicados y Recuperados',
+        'category': 'OTROS_ING',
+        'account_prefix': '5602',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5604',
+        'name': 'Utilidad en Venta de Activos No Corrientes Mantenidos Para La Venta',
+        'category': 'OTROS_ING',
+        'account_prefix': '5604',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5607',
+        'name': 'Donaciones Recibidas Para Cobertura de Gastos',
+        'category': 'OTROS_ING',
+        'account_prefix': '5607',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5609',
+        'name': 'Otros Ingresos',
+        'category': 'OTROS_ING',
+        'account_prefix': '5609',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5701',
+        'name': 'Bienes',
+        'category': 'OTROS_ING',
+        'account_prefix': '5701',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5702',
+        'name': 'Servicios',
+        'category': 'OTROS_ING',
+        'account_prefix': '5702',
+        'calc_type': 'HISTORICAL',
+        'trend_variable': None,
+    },
+    {
+        'code': 'ACC_5901',
+        'name': 'Cargas Imputables',
+        'category': 'OTROS_ING',
+        'account_prefix': '5901',
+        'calc_type': 'HISTORICAL',
         'trend_variable': None,
     },
 ]
@@ -197,58 +528,43 @@ class BudgetEngine:
         Falls back to summing all months when December is missing.
         """
         from liquidity_risk.models import LiqBalanceDetail
-        from django.db.models import Q, Sum
+        from django.db.models import Q, Sum, Max
 
         hist_data = self.plan.historical_data or {}
         selected_periods = hist_data.get('selected_periods', [])
 
-        if not selected_periods:
-            return {}
+        if selected_periods:
+            years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
+            base_year = int(years[0])
+        else:
+            base_year = self.plan.anio_base - 1
 
-        # Determine the base year to use (most recent year in selected_periods)
-        years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
-        base_year = int(years[0]) if years else (self.plan.anio_base - 1)
-
-        # Try to get December (month 12) of that year – which holds YTD for IS accounts
-        dec_qs = LiqBalanceDetail.objects.filter(
+        # Try to get the latest period of that year – which holds YTD for IS accounts
+        latest_period = LiqBalanceDetail.objects.filter(
             period__year=base_year,
-            period__month=12,
-            upload__status='SUCCESS',
-        ).filter(
-            Q(account_code__startswith='4') | Q(account_code__startswith='5')
-        ).values('account_code', 'account_name', 'balance')
-
+            upload__status='SUCCESS'
+        ).aggregate(Max('period__month'))
+        
+        latest_month = latest_period.get('period__month__max')
+        
         totals = {}
-        for row in dec_qs:
-            code = str(row['account_code'])
-            bal = float(row['balance'])
-            # Income (5x) stored as negative in DB -> flip to positive
-            if code.startswith('5'):
-                bal = abs(bal)
-            # Expense (4x) stored as positive in DB already
-            totals[code] = bal
+        if latest_month:
+            dec_qs = LiqBalanceDetail.objects.filter(
+                period__year=base_year,
+                period__month=latest_month,
+                upload__status='SUCCESS',
+            ).filter(
+                Q(account_code__startswith='4') | Q(account_code__startswith='5')
+            ).values('account_code').annotate(total=Sum('balance'))
 
-        # If no December data, sum all months in selected_periods
-        if not totals:
-            q = Q()
-            for p_str in selected_periods:
-                try:
-                    y, m = p_str.split('-')
-                    q |= Q(period__year=int(y), period__month=int(m))
-                except Exception:
-                    pass
-
-            if q:
-                sum_qs = LiqBalanceDetail.objects.filter(q, upload__status='SUCCESS').filter(
-                    Q(account_code__startswith='4') | Q(account_code__startswith='5')
-                ).values('account_code', 'account_name').annotate(total=Sum('balance'))
-
-                for row in sum_qs:
-                    code = str(row['account_code'])
-                    bal = float(row['total'] or 0)
-                    if code.startswith('5'):
-                        bal = abs(bal)
-                    totals[code] = bal
+            for row in dec_qs:
+                code = str(row['account_code'])
+                bal = float(row['total'] or 0)
+                # Income (5x) stored as negative in DB -> flip to positive
+                if code.startswith('5'):
+                    bal = abs(bal)
+                # Expense (4x) stored as positive in DB already
+                totals[code] = bal
 
         return totals
 
@@ -265,14 +581,11 @@ class BudgetEngine:
     @transaction.atomic
     def _ensure_default_items(self):
         """Creates default BudgetItems and Rules if none exist for the organization."""
-        # Only wipe & recreate if we have fewer items than the canonical list
-        existing_codes = set(
-            BudgetItem.objects.filter(organization=self.organization)
-                              .values_list('code', flat=True)
-        )
-        missing = [d for d in DEFAULT_BUDGET_ITEMS if d['code'] not in existing_codes]
+        # Clean up any dynamically generated items (e.g. from 12-digits experiment)
+        valid_codes = [d['code'] for d in DEFAULT_BUDGET_ITEMS]
+        BudgetItem.objects.filter(organization=self.organization).exclude(code__in=valid_codes).delete()
 
-        for defn in missing:
+        for defn in DEFAULT_BUDGET_ITEMS:
             item, _ = BudgetItem.objects.get_or_create(
                 organization=self.organization,
                 code=defn['code'],
@@ -288,13 +601,13 @@ class BudgetEngine:
                     category=defn['category'],
                 )
 
-            BudgetCalculationRule.objects.get_or_create(
+            BudgetCalculationRule.objects.update_or_create(
                 organization=self.organization,
                 item=item,
                 defaults={
-                    'calculation_type': defn['calc_type'] if defn['calc_type'] != 'GROWTH_VARIABLE' else 'TREND',
-                    'source_trend_variable': defn.get('trend_variable'),
-                    'assumption_driver': defn.get('account_prefix'),   # reused field for prefix
+                    'calculation_type': defn.get('calc_type', 'HISTORICAL'),
+                    'source_trend_variable': defn.get('trend_variable', None),
+                    'assumption_driver': defn.get('account_prefix'),
                 }
             )
 
