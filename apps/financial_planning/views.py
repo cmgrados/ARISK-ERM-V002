@@ -1407,22 +1407,27 @@ def api_get_budget_data(request, plan_id):
     
     er_totals = engine._get_historical_er_totals()
     
-    version = BudgetVersion.objects.filter(
+    draft_version = BudgetVersion.objects.filter(
         plan_financiero=plan, 
         organization=organization, 
         scenario=scenario, 
         status='DRAFT'
-    ).first()
+    ).order_by('-id').first()
     
-    if not version:
-        version = BudgetVersion.objects.filter(
-            plan_financiero=plan, 
-            organization=organization, 
-            scenario=scenario, 
-            status='APPROVED'
-        ).first()
-        
-    if not version:
+    approved_version = BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=scenario, 
+        status='APPROVED'
+    ).order_by('-id').first()
+    
+    if draft_version and approved_version:
+        version = draft_version if draft_version.id > approved_version.id else approved_version
+    elif draft_version:
+        version = draft_version
+    elif approved_version:
+        version = approved_version
+    else:
         version = engine.get_or_create_draft_version(scenario)
     
     items = BudgetItem.objects.filter(organization=organization).order_by('category')
