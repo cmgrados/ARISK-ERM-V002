@@ -74,23 +74,23 @@
                     </li>
 
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Balance General Proyectado">
-                            <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-9{% endif %} mr-1"></i>9. BG Proyectado
+                        <a class="nav-link {% if step == 8 %}active bg-indigo text-white{% elif step > 8 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=8{% else %}#{% endif %}" title="Balance General Proyectado">
+                            <i class="fas {% if step > 8 %}fa-check-circle{% else %}fa-8{% endif %} mr-1"></i>8. BG Proyectado
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 10 %}active bg-indigo text-white{% elif step > 10 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=10{% else %}#{% endif %}" title="Flujo de Caja">
-                            <i class="fas {% if step > 10 %}fa-check-circle{% else %}fa-list{% endif %} mr-1"></i>10. Flujo Caja
+                        <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Flujo de Caja">
+                            <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-list{% endif %} mr-1"></i>9. Flujo Caja
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 11 %}active bg-indigo text-white{% elif step > 11 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=11{% else %}#{% endif %}" title="Flujo de Efectivo">
-                            <i class="fas {% if step > 11 %}fa-check-circle{% else %}fa-table{% endif %} mr-1"></i>11. Flujo Efectivo
+                        <a class="nav-link {% if step == 10 %}active bg-indigo text-white{% elif step > 10 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=10{% else %}#{% endif %}" title="Flujo de Efectivo">
+                            <i class="fas {% if step > 10 %}fa-check-circle{% else %}fa-table{% endif %} mr-1"></i>10. Flujo Efectivo
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if step == 12 %}active bg-indigo text-white{% elif step > 12 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=12{% else %}#{% endif %}" title="Reportes">
-                            <i class="fas {% if step > 12 %}fa-check-circle{% else %}fa-chart-bar{% endif %} mr-1"></i>12. Reportes
+                        <a class="nav-link {% if step == 11 %}active bg-indigo text-white{% elif step > 11 %}bg-light text-success font-weight-bold{% else %}{% if plan %}text-secondary{% else %}disabled{% endif %}{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=11{% else %}#{% endif %}" title="Reportes">
+                            <i class="fas {% if step > 11 %}fa-check-circle{% else %}fa-chart-bar{% endif %} mr-1"></i>11. Reportes
                         </a>
                     </li>
                 </ul>
@@ -1956,33 +1956,18 @@
                 {% include 'financial_planning/institutional_budget_builder.html' %}
                 {% endif %}
 
-                <!-- STEP 8: Estado de Resultados Proyectado -->
+                <!-- STEP 8: Balance General Proyectado -->
                 {% if step == 8 %}
-                {% include 'financial_planning/projected_income_statement.html' %}
-                {% endif %}
-
-                <!-- STEP 9: Balance General Proyectado -->
-                {% if step == 9 %}
                 {% include 'financial_planning/projected_balance.html' %}
                 {% endif %}
 
-                <!-- STEP 10: Flujo de Caja -->
-                {% if step == 10 %}
-                <div class="text-center mb-4">
-                    <h4 class="font-weight-bold">Flujo de Caja</h4>
-                    <p class="text-muted">Proyecciones del flujo de caja mensual y anual.</p>
-                </div>
-                <div class="row justify-content-center">
-                    <div class="col-lg-8 text-center">
-                        <i class="fas fa-money-bill-wave fa-5x text-secondary mb-4 opacity-50"></i>
-                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Caja Proyectado.</p>
-                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=11')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Flujo Efectivo <i class="fas fa-arrow-right ml-2"></i></a>
-                    </div>
-                </div>
+                <!-- STEP 9: Flujo de Caja -->
+                {% if step == 9 %}
+                {% include 'financial_planning/cash_flow.html' %}
                 {% endif %}
 
-                <!-- STEP 11: Flujo de Efectivo -->
-                {% if step == 11 %}
+                <!-- STEP 10: Flujo de Efectivo -->
+                {% if step == 10 %}
                 <div class="text-center mb-4">
                     <h4 class="font-weight-bold">Flujo de Efectivo</h4>
                     <p class="text-muted">Análisis del flujo de efectivo operativo, de inversión y financiamiento.</p>
@@ -1991,13 +1976,13 @@
                     <div class="col-lg-8 text-center">
                         <i class="fas fa-coins fa-5x text-secondary mb-4 opacity-50"></i>
                         <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Efectivo.</p>
-                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=12')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Reportes <i class="fas fa-arrow-right ml-2"></i></a>
+                        <a href="javascript:void(0);" onclick="handleWizardContinue('?step=11')" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso: Reportes <i class="fas fa-arrow-right ml-2"></i></a>
                     </div>
                 </div>
                 {% endif %}
 
-                <!-- STEP 12: Reportes -->
-                {% if step == 12 %}
+                <!-- STEP 11: Reportes -->
+                {% if step == 11 %}
                 <div class="text-center mb-4">
                     <h4 class="font-weight-bold">Informe de Planeamiento Financiero</h4>
                     <p class="text-muted">Los resultados han sido procesados exitosamente y están listos para la generación del informe.</p>
@@ -4026,7 +4011,7 @@ function filterERByYear(year) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    {% if step == 9 and projected_years %}
+    {% if step == 8 and projected_years %}
     filterERByYear('{{ projected_years.0 }}');
     {% endif %}
 });

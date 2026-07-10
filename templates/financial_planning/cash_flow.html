@@ -1,0 +1,461 @@
+<style>
+    .hide-zeros .is-zero-row { display: none !important; }
+</style>
+<div class="card shadow border-0 rounded-lg mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h4 class="m-0 font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">
+                    <i class="fas fa-money-bill-wave mr-2"></i>FLUJO DE CAJA PROYECTADO
+                </h4>
+                <p class="text-muted mt-1 mb-0">Vista consolidada del Flujo de Caja proyectado de forma mensual y a {{ plan.horizonte_anios }} años.</p>
+            </div>
+            
+            <div class="d-flex align-items-center mt-3 mt-md-0">
+                <div class="custom-control custom-switch d-flex align-items-center mr-3">
+                    <input type="checkbox" class="custom-control-input" id="hideZeroRowsCF" onchange="loadCFTrends()">
+                    <label class="custom-control-label font-weight-bold text-secondary" for="hideZeroRowsCF" style="padding-top: 2px; cursor: pointer;">
+                        Ocultar filas en cero
+                    </label>
+                </div>
+                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden border mr-3" style="width: auto;">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light font-weight-bold border-0 text-secondary">Escenario:</span>
+                    </div>
+                    <select class="custom-select font-weight-bold border-0 text-indigo" id="cf-scenario" onchange="loadCFTrends()" style="box-shadow: none;">
+                        <optgroup label="Tendencia (Determinístico)">
+                            <option value="BASE" selected>Base (Tendencia)</option>
+                            <option value="OPTIMISTIC">Optimista (Tendencia)</option>
+                            <option value="PESSIMISTIC">Pesimista (Tendencia)</option>
+                        </optgroup>
+                        <optgroup label="Montecarlo (Estocástico)">
+                            <option value="MC_BASE">Base (Montecarlo)</option>
+                            <option value="MC_OPTIMISTIC">Optimista (Montecarlo)</option>
+                            <option value="MC_PESSIMISTIC">Pesimista (Montecarlo)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div id="cf-edit-actions" class="d-flex align-items-center">
+                    <div class="dropdown mr-2">
+                        <button class="btn btn-sm btn-outline-primary font-weight-bold rounded-pill shadow-sm" type="button" onclick="openCFAdjustmentModal()">
+                            <i class="fas fa-edit mr-1"></i> Ajuste Manual
+                        </button>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-success font-weight-bold rounded-pill shadow-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-export mr-1"></i> Exportar
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right shadow-sm border-0">
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="exportCFToExcel()"><i class="fas fa-file-excel text-success mr-2"></i> Excel (.xlsx)</a>
+                        <a class="dropdown-item" href="javascript:void(0)" onclick="exportCF('pdf')"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF Document</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 text-nowrap" id="cf-table">
+                <thead class="bg-indigo text-white text-center">
+                    <tr>
+                        <th class="align-middle text-left" style="min-width: 300px;">CONCEPTO</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Base Histórica</th>
+                        <th class="align-middle bg-secondary text-white">Ene</th>
+                        <th class="align-middle bg-secondary text-white">Feb</th>
+                        <th class="align-middle bg-secondary text-white">Mar</th>
+                        <th class="align-middle bg-secondary text-white">Abr</th>
+                        <th class="align-middle bg-secondary text-white">May</th>
+                        <th class="align-middle bg-secondary text-white">Jun</th>
+                        <th class="align-middle bg-secondary text-white">Jul</th>
+                        <th class="align-middle bg-secondary text-white">Ago</th>
+                        <th class="align-middle bg-secondary text-white">Sep</th>
+                        <th class="align-middle bg-secondary text-white">Oct</th>
+                        <th class="align-middle bg-secondary text-white">Nov</th>
+                        <th class="align-middle bg-secondary text-white">Dic</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 1 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 2 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 3 Proy.</th>
+                    </tr>
+                </thead>
+                <tbody id="cf-table-body">
+                    <tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando Flujo de Caja...</p></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-right">
+        <button type="button" class="btn btn-outline-indigo px-5 rounded-pill font-weight-bold shadow-sm" onclick="handleWizardContinue('?step=10')">
+            Siguiente Paso: Flujo Efectivo <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+    </div>
+</div>
+
+<!-- Modal para Agregar Ajuste al Flujo de Caja -->
+<div class="modal fade" id="cfAdjustmentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg rounded-lg overflow-hidden">
+            <div class="modal-header bg-gradient-primary text-white border-0 py-3" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
+                <h5 class="modal-title font-weight-bold" style="letter-spacing: 0.5px;">
+                    <i class="fas fa-sliders-h mr-2"></i>Ajuste Manual en Flujo de Caja
+                </h5>
+                <button type="button" class="close text-white opacity-75" data-dismiss="modal" aria-label="Close" style="text-shadow: none;">
+                    <span aria-hidden="true"><i class="fas fa-times"></i></span>
+                </button>
+            </div>
+            <div class="modal-body p-4" style="background-color: #f8f9fc;">
+                <div class="alert bg-white shadow-sm py-2 px-3 mb-4 d-flex align-items-center rounded-lg" style="border: 1px solid #e3e6f0; border-left: 4px solid #4e73df;">
+                    <i class="fas fa-info-circle fa-lg mr-3 text-primary"></i>
+                    <span class="small text-secondary">Los montos ingresados modificarán manualmente las proyecciones calculadas del concepto seleccionado.</span>
+                </div>
+                
+                <div class="card border-0 shadow-sm mb-4 rounded-lg">
+                    <div class="card-body p-3">
+                        <label class="font-weight-bold text-dark mb-2"><i class="fas fa-hashtag text-primary mr-1"></i> Concepto Objetivo</label>
+                        <div class="input-group input-group-lg">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-light border-right-0 text-secondary rounded-left"><i class="fas fa-list-ul"></i></span>
+                            </div>
+                            <select class="form-control border-left-0 font-weight-bold text-dark bg-light rounded-right" id="cf-adj-concept" style="font-size: 1.1rem; box-shadow: none; border-color: #d1d3e2;">
+                                <option value="">Seleccione un concepto...</option>
+                                <option value="ingresos_cartera">Ingresos: Recuperación de Cartera</option>
+                                <option value="ingresos_captacion">Ingresos: Captación de Ahorros/DPF</option>
+                                <option value="ingresos_otros">Otros Ingresos Operativos</option>
+                                <option value="egresos_desembolsos">Egresos: Desembolsos de Crédito</option>
+                                <option value="egresos_retiros">Egresos: Retiro de Ahorros/DPF</option>
+                                <option value="egresos_gastos">Egresos: Gastos Administrativos/Personal</option>
+                                <option value="egresos_otros">Otros Egresos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card border-0 shadow-sm rounded-lg mb-4">
+                    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
+                        <h6 class="font-weight-bold text-dark text-uppercase mb-0" style="letter-spacing: 0.5px;"><i class="far fa-calendar-alt mr-2 text-primary"></i>Meses del Año 1 (Ene - Dic)</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="row mx-n2">
+                            <!-- ENE -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">ENE</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="1" value="0">
+                                </div>
+                            </div>
+                            <!-- FEB -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">FEB</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="2" value="0">
+                                </div>
+                            </div>
+                            <!-- MAR -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">MAR</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="3" value="0">
+                                </div>
+                            </div>
+                            <!-- ABR -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">ABR</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="4" value="0">
+                                </div>
+                            </div>
+                            <!-- MAY -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">MAY</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="5" value="0">
+                                </div>
+                            </div>
+                            <!-- JUN -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">JUN</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="6" value="0">
+                                </div>
+                            </div>
+                            <!-- JUL -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">JUL</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="7" value="0">
+                                </div>
+                            </div>
+                            <!-- AGO -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">AGO</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="8" value="0">
+                                </div>
+                            </div>
+                            <!-- SEP -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">SEP</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="9" value="0">
+                                </div>
+                            </div>
+                            <!-- OCT -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">OCT</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="10" value="0">
+                                </div>
+                            </div>
+                            <!-- NOV -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">NOV</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="11" value="0">
+                                </div>
+                            </div>
+                            <!-- DIC -->
+                            <div class="col-md-3 col-sm-6 px-2 mb-3">
+                                <div class="d-flex align-items-center bg-white border rounded-lg shadow-sm transition-hover p-1 pr-2">
+                                    <div class="text-primary font-weight-bold rounded px-2 py-2 text-center mr-2" style="width: 50px; font-size: 0.85rem; background-color: #eaecf4;">DIC</div>
+                                    <input type="number" step="0.01" class="form-control form-control-sm text-right font-weight-bold text-dark border-0 shadow-none p-0 bg-transparent cf-adj-month-input w-100" data-month="12" value="0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top-0 py-3 px-4">
+                <button type="button" class="btn btn-outline-secondary font-weight-bold rounded-pill px-4 shadow-sm" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary font-weight-bold rounded-pill px-4 shadow-sm" onclick="saveCFAdjustment()">
+                    <i class="fas fa-save mr-1"></i> Aplicar Ajuste
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentCFData = null;
+
+    function formatNumber(val, decimals=2) {
+        if (!val || val === 0) return '<span class="text-muted">-</span>';
+        return val.toLocaleString('en-US', {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+    }
+
+    function loadCFTrends() {
+        const scenario = document.getElementById('cf-scenario').value;
+        const hideZeros = document.getElementById('hideZeroRowsCF').checked;
+        const tbody = document.getElementById('cf-table-body');
+        
+        if (hideZeros) {
+            document.getElementById('cf-table').classList.add('hide-zeros');
+        } else {
+            document.getElementById('cf-table').classList.remove('hide-zeros');
+        }
+
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando Flujo de Caja...</p></td></tr>`;
+        }
+
+        fetch(`/planificacion-financiera/plan/{{ plan.id }}/api/api_get_cash_flow_data/?scenario=${scenario}&_t=` + new Date().getTime())
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === 'success') {
+                currentCFData = res.data;
+                renderCFTable(currentCFData);
+            } else {
+                Swal.fire('Error', res.message || 'Error al cargar los datos del flujo de caja.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cash flow data:', error);
+            Swal.fire('Error', 'Error de red al cargar el flujo de caja.', 'error');
+        });
+    }
+
+    function renderCFTable(data) {
+        const tbody = document.getElementById('cf-table-body');
+        if (!tbody) return;
+        
+        let html = '';
+        let currentCat = '';
+        
+        data.forEach(row => {
+            if (row.cat !== currentCat) {
+                currentCat = row.cat;
+                html += `
+                    <tr>
+                        <td colspan="17" class="font-weight-bold text-white pl-3 py-2" style="background-color: #5a5c69;">
+                            <i class="fas fa-folder-open mr-2"></i> ${currentCat}
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // Check if row is zero
+            let isZero = (row.base === 0 && row.y1 === 0 && row.y2 === 0 && row.y3 === 0);
+            row.months.forEach(m => { if(m !== 0) isZero = false; });
+            
+            let rowClass = isZero ? 'is-zero-row' : '';
+            let style = row.is_total ? 'background-color: #eaecf4; font-weight: bold;' : '';
+            let nameHtml = row.is_total ? `<span class="text-primary"><i class="fas fa-calculator mr-2"></i>${row.name}</span>` : `<span class="pl-3"><i class="fas fa-caret-right mr-2 text-muted"></i>${row.name}</span>`;
+            
+            html += `
+                <tr class="${rowClass}" style="${style}">
+                    <td class="align-middle">${nameHtml}</td>
+                    <td class="text-right text-monospace align-middle bg-light">${formatNumber(row.base)}</td>
+            `;
+            
+            row.months.forEach(val => {
+                html += `<td class="text-right text-monospace align-middle">${formatNumber(val)}</td>`;
+            });
+            
+            html += `
+                    <td class="text-right text-monospace align-middle font-weight-bold bg-light" style="color: #4e73df;">${formatNumber(row.y1)}</td>
+                    <td class="text-right text-monospace align-middle font-weight-bold bg-light" style="color: #4e73df;">${formatNumber(row.y2)}</td>
+                    <td class="text-right text-monospace align-middle font-weight-bold bg-light" style="color: #4e73df;">${formatNumber(row.y3)}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+
+    function openCFAdjustmentModal() {
+        // Reset inputs
+        document.getElementById('cf-adj-concept').value = '';
+        document.querySelectorAll('.cf-adj-month-input').forEach(input => input.value = '0');
+        $('#cfAdjustmentModal').modal('show');
+    }
+
+    function saveCFAdjustment() {
+        const concept = document.getElementById('cf-adj-concept').value;
+        const scenario = document.getElementById('cf-scenario').value;
+        if (!concept) {
+            Swal.fire('Error', 'Debe seleccionar un concepto objetivo.', 'error');
+            return;
+        }
+
+        const values = [];
+        document.querySelectorAll('.cf-adj-month-input').forEach(input => {
+            values.push(parseFloat(input.value) || 0);
+        });
+
+        const btn = event.currentTarget;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Guardando...';
+        btn.disabled = true;
+
+        fetch(`/planificacion-financiera/plan/{{ plan.id }}/api/save_cf_adjustment/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                concept: concept,
+                scenario: scenario,
+                values: values
+            })
+        })
+        .then(response => response.json())
+        .then(res => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (res.status === 'success') {
+                Swal.fire({
+                    title: '¡Ajuste Aplicado!',
+                    text: 'Los valores han sido agregados al concepto exitosamente.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    $('#cfAdjustmentModal').modal('hide');
+                    loadCFTrends();
+                });
+            } else {
+                Swal.fire('Error', res.message, 'error');
+            }
+        })
+        .catch(err => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            console.error(err);
+            Swal.fire('Error', 'Ocurrió un problema de red al guardar.', 'error');
+        });
+    }
+
+    window.exportCFToExcel = function() {
+        if (typeof XLSX === 'undefined') {
+            Swal.fire('Error', 'La librería de exportación a Excel no está disponible.', 'error');
+            return;
+        }
+        Swal.fire({title: 'Generando Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        try {
+            const table = document.getElementById('cf-table');
+            // Clone table to remove icons before export
+            const clonedTable = table.cloneNode(true);
+            clonedTable.querySelectorAll('i').forEach(i => i.remove());
+            clonedTable.querySelectorAll('button').forEach(btn => btn.remove());
+            
+            const wb = XLSX.utils.table_to_book(clonedTable, {sheet: "Flujo de Caja"});
+            const timestamp = new Date().toISOString().slice(0,10);
+            XLSX.writeFile(wb, `FlujoCaja_Proyectado_${timestamp}.xlsx`);
+            Swal.close();
+        } catch(e) {
+            console.error(e);
+            Swal.fire('Error', 'No se pudo generar el archivo Excel.', 'error');
+        }
+    };
+
+    window.exportCF = async function(format) {
+        if (format === 'pdf') {
+            if (typeof html2pdf === 'undefined') {
+                Swal.fire('Error', 'La librería de exportación a PDF no está disponible.', 'error');
+                return;
+            }
+            Swal.fire({title: 'Generando PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+            
+            const table = document.getElementById('cf-table');
+            const clonedTable = table.cloneNode(true);
+            clonedTable.querySelectorAll('i').forEach(i => i.remove());
+            clonedTable.querySelectorAll('button').forEach(btn => btn.remove());
+            
+            // Adjust styles for PDF rendering if needed
+            clonedTable.style.width = '100%';
+            clonedTable.style.fontSize = '8pt';
+            
+            const timestamp = new Date().toISOString().slice(0,10);
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     `FlujoCaja_Proyectado_${timestamp}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+            
+            try {
+                // To render correctly, it must be in the DOM
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.appendChild(clonedTable);
+                document.body.appendChild(tempDiv);
+                
+                await html2pdf().set(opt).from(clonedTable).save();
+                document.body.removeChild(tempDiv);
+                Swal.close();
+            } catch(e) {
+                console.error(e);
+                Swal.fire('Error', 'No se pudo generar el archivo PDF.', 'error');
+            }
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadCFTrends();
+    });
+</script>

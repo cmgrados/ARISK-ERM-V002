@@ -42,6 +42,9 @@
             <button type="button" class="btn btn-sm btn-info text-white font-weight-bold shadow-sm rounded-pill px-3" onclick="syncWithTrends()">
                 <i class="fas fa-sync-alt mr-1"></i> Sincronizar con Tendencias
             </button>
+            <button type="button" class="btn btn-sm btn-outline-primary font-weight-bold shadow-sm rounded-pill px-3" id="btnCopyScenario" onclick="copyFromScenario()">
+                <i class="fas fa-copy mr-1"></i> Importar Escenario
+            </button>
             <button type="button" class="btn btn-sm btn-light border font-weight-bold shadow-sm rounded-pill px-3" onclick="toggleErPanel()">
                 <i class="fas fa-history text-secondary mr-1"></i> Ver E.R. Histórico
             </button>
@@ -57,7 +60,18 @@
                 <input type="checkbox" class="custom-control-input" id="hideZeroRows" onchange="renderBudgetTable()">
                 <label class="custom-control-label font-weight-bold text-secondary mb-0" for="hideZeroRows" style="padding-top: 2px; cursor: pointer;">Ocultar Cuentas en Cero</label>
             </div>
-            <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3 ml-3" id="btnSaveBudget" onclick="saveBudgetVersion()">
+            <div class="dropdown ml-2">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill shadow-sm font-weight-bold px-3" type="button" id="exportMenu" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fas fa-file-export mr-1"></i> Exportar
+                </button>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="exportMenu">
+                    <a class="dropdown-item" href="#" onclick="exportBudget('xlsx'); return false;"><i class="fas fa-file-excel text-success mr-2"></i> Excel (.xlsx)</a>
+                    <a class="dropdown-item" href="#" onclick="exportBudget('word'); return false;"><i class="fas fa-file-word text-primary mr-2"></i> Word (.doc)</a>
+                    <a class="dropdown-item" href="#" onclick="exportBudget('pdf'); return false;"><i class="fas fa-file-pdf text-danger mr-2"></i> PDF (.pdf)</a>
+                    <a class="dropdown-item" href="#" onclick="exportBudget('jpg'); return false;"><i class="fas fa-file-image text-info mr-2"></i> Imagen (.jpg)</a>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm font-weight-bold rounded-pill px-3 ml-2" id="btnSaveBudget" onclick="saveBudgetVersion()">
                 <i class="fas fa-save mr-1"></i> Guardar
             </button>
             <button type="button" class="btn btn-sm btn-success shadow-sm font-weight-bold rounded-pill px-3" id="btnApproveBudget" onclick="approveBudgetVersion()">
@@ -169,6 +183,10 @@
 </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <script>
 (function() {
     let currentBudgetData = [];
@@ -220,7 +238,16 @@
 
         // Group by 1 digit, then 2 digit
         let hierarchy = { '5': {}, '4': {} };
-        const hideZeros = document.getElementById('hideZeroRows') ? document.getElementById('hideZeroRows').checked : false;
+        const hideZeroRowsEl = document.getElementById('hideZeroRows');
+        const hideZeros = hideZeroRowsEl ? hideZeroRowsEl.checked : false;
+        if (hideZeroRowsEl) localStorage.setItem('hideZeroRows_budget', hideZeros);
+
+        const tbodyEl = document.getElementById('budget-table-body');
+        if (hideZeros) {
+            tbodyEl.classList.add('hide-zeros');
+        } else {
+            tbodyEl.classList.remove('hide-zeros');
+        }
 
         currentBudgetData.forEach(item => {
             const y1 = parseFloat(item.y1_total) || 0;
@@ -228,7 +255,8 @@
             const y3 = parseFloat(item.y3_total) || 0;
             const isYZero = (isNaN(y1) || Math.abs(y1) < 0.005) && (isNaN(y2) || Math.abs(y2) < 0.005) && (isNaN(y3) || Math.abs(y3) < 0.005);
             
-            if (hideZeros && isYZero) {
+            let hideThisRowClass = '';
+            if (isYZero) {
                 let hasMonthly = false;
                 for (let i = 0; i < 12; i++) {
                     const mVal = parseFloat(item.monthly_values[i]) || 0;
@@ -237,7 +265,7 @@
                         break;
                     }
                 }
-                if (!hasMonthly) return;
+                if (!hasMonthly) hideThisRowClass = 'is-zero-row';
             }
 
             const pfx = item.account_prefix || '';
@@ -368,7 +396,12 @@
                         : `<td style="min-width:100px;"><input type="text" inputmode="decimal" class="y3-input form-control form-control-sm text-right bg-white" style="width:98px;font-size:0.8rem;" value="${y3fmt}" onfocus="this.value=this.value.replace(/,/g,'');this.select();" onblur="this.value=fmt_local(parseNum(this.value));updateRowTotal(this);" onchange="updateRowTotal(this)"></td>`;
 
                     itemsHtml += `<tr class="lvl4 lvl4-${d2} lvl4-${d1}" data-item-id="${item.item_id}" data-calc-type="${item.calc_type}" data-sign="${sign}" data-category="${item.category}" data-account-prefix="${item.account_prefix || ''}" style="background-color: #fafafa;">
-                        <td class="pl-5" style="min-width:260px; border-left: 3px solid #dee2e6;"><span class="text-muted mr-1">${item.account_prefix}</span> ${item.name}</td>
+                        <td class="pl-5" style="min-width:260px; border-left: 3px solid #dee2e6;">
+                            <button type="button" class="btn btn-sm p-0 mr-2 toggle-lock-btn ${item.is_locked ? 'text-danger' : 'text-muted'}" onclick="toggleLock('${item.item_id}', this)" title="${item.is_locked ? 'Desbloquear rubro' : 'Fijar/Bloquear rubro (previene sobreescritura al importar)'}" ${isApproved ? 'disabled' : ''}>
+                                <i class="fas ${item.is_locked ? 'fa-lock' : 'fa-unlock'}"></i>
+                            </button>
+                            <span class="text-muted mr-1">${item.account_prefix}</span> ${item.name}
+                        </td>
                         <td class="text-center">${calcSelect}</td>
                         <td class="text-center">${sourceSelect}</td>
                         ${monthCells}
@@ -622,6 +655,7 @@
     };
 
     window.updateRowTotal = function(inp) {
+        inp.classList.add('text-danger', 'font-weight-bold');
         const tr = inp.closest('tr');
         let y1 = 0;
         tr.querySelectorAll('.month-input').forEach(el => {
@@ -714,18 +748,21 @@
         const btnSave = document.getElementById('btnSaveBudget');
         const btnApprove = document.getElementById('btnApproveBudget');
         const btnEdit = document.getElementById('btnEditApproved');
+        const btnCopy = document.getElementById('btnCopyScenario');
         
         if (currentVersionStatus === 'APPROVED') {
             badge.className = 'badge badge-success px-3 py-2 rounded-pill shadow-sm';
             badge.innerHTML = '<i class="fas fa-check-double mr-1"></i> Aprobado';
             btnSave.disabled = true;
             btnApprove.disabled = true;
+            if (btnCopy) btnCopy.disabled = true;
             if (btnEdit) btnEdit.style.display = 'inline-block';
         } else {
             badge.className = 'badge badge-warning px-3 py-2 rounded-pill shadow-sm';
             badge.innerHTML = '<i class="fas fa-pen mr-1"></i> Borrador';
             btnSave.disabled = false;
             btnApprove.disabled = false;
+            if (btnCopy) btnCopy.disabled = false;
             if (btnEdit) btnEdit.style.display = 'none';
         }
     }
@@ -984,8 +1021,218 @@
         });
     };
 
+    window.toggleLock = function(itemId, btnElem) {
+        if (currentVersionStatus === 'APPROVED') return;
+        const item = currentBudgetData.find(i => String(i.item_id) === String(itemId));
+        if (item) {
+            item.is_locked = !item.is_locked;
+            const icon = btnElem.querySelector('i');
+            if (item.is_locked) {
+                icon.className = 'fas fa-lock';
+                btnElem.classList.remove('text-muted');
+                btnElem.classList.add('text-danger');
+                btnElem.title = 'Desbloquear rubro';
+            } else {
+                icon.className = 'fas fa-unlock';
+                btnElem.classList.remove('text-danger');
+                btnElem.classList.add('text-muted');
+                btnElem.title = 'Fijar/Bloquear rubro (previene sobreescritura al importar)';
+            }
+        }
+    };
+
+    window.copyFromScenario = function() {
+        if (currentVersionStatus === 'APPROVED') {
+            Swal.fire('Aviso', 'No puedes importar datos a un escenario aprobado. Activa el modo edición primero.', 'warning');
+            return;
+        }
+
+        const selectOptions = document.getElementById('budget-scenario').innerHTML;
+        const currentScenarioName = document.getElementById('budget-scenario').options[document.getElementById('budget-scenario').selectedIndex].text;
+        
+        Swal.fire({
+            title: 'Importar de otro Escenario',
+            html: `
+                <p class="text-muted text-sm text-left mb-3">
+                    Selecciona el escenario del cual deseas copiar los datos.<br>
+                    <strong>Destino actual:</strong> ${currentScenarioName}
+                </p>
+                <select id="swal-scenario-select" class="swal2-select w-100 mx-0 mb-3" style="font-size: 1rem; max-width: 100%;">
+                    ${selectOptions}
+                </select>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-file-import mr-1"></i> Importar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => document.getElementById('swal-scenario-select').value
+        }).then(result => {
+            if (result.isConfirmed) {
+                const fromScenario = result.value;
+                const currentScenario = document.getElementById('budget-scenario').value;
+                if (fromScenario === currentScenario) {
+                    Swal.fire('Error', 'No puedes copiar los datos del mismo escenario en el que te encuentras.', 'warning');
+                    return;
+                }
+                
+                Swal.fire({title: 'Importando datos...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+                
+                fetch(`/planificacion-financiera/plan/${planId}/api/api_get_budget_data/?scenario=${fromScenario}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const uiData = gatherTableData();
+                            const newData = data.data;
+                            
+                            // Merge data respecting locks
+                            const finalData = newData.map(incomingItem => {
+                                const currentItem = currentBudgetData.find(i => String(i.item_id) === String(incomingItem.item_id));
+                                if (currentItem && currentItem.is_locked) {
+                                    // Preserve from UI as well to not lose un-saved edits
+                                    const uiRow = uiData.find(u => String(u.item_id) === String(currentItem.item_id));
+                                    if (uiRow) {
+                                        currentItem.monthly_values = uiRow.monthly_values;
+                                        currentItem.calc_type = uiRow.calc_type;
+                                        currentItem.source_trend_variable = uiRow.source_trend_variable;
+                                        currentItem.y2_total = uiRow.y2_total;
+                                        currentItem.y3_total = uiRow.y3_total;
+                                    }
+                                    return currentItem;
+                                }
+                                // Ensure new item isn't locked by default
+                                incomingItem.is_locked = false;
+                                return incomingItem;
+                            });
+                            
+                            currentBudgetData = finalData;
+                            renderBudgetTable();
+                            Swal.fire({
+                                title: '¡Importación exitosa!', 
+                                text: 'Los datos han sido importados. Los rubros fijados (con candado) mantuvieron su valor original. Recuerda presionar "Guardar" para conservarlos.', 
+                                icon: 'success'
+                            });
+                        } else {
+                            Swal.fire('Error', data.message || 'Hubo un error al recuperar la información.', 'error');
+                        }
+                    })
+                    .catch(e => {
+                        Swal.fire('Error', 'Error de conexión al importar el escenario.', 'error');
+                    });
+            }
+        });
+    };
+
+    window.exportBudget = async function(format) {
+        Swal.fire({title: 'Generando archivo...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+        
+        // Preparar una tabla clonada para exportar valores reales
+        const originalTable = document.getElementById('budget-table');
+        const clonedTable = originalTable.cloneNode(true);
+        
+        const originalInputs = originalTable.querySelectorAll('input, select');
+        const clonedInputs = clonedTable.querySelectorAll('input, select');
+        
+        for (let i = 0; i < originalInputs.length; i++) {
+            const orig = originalInputs[i];
+            const clone = clonedInputs[i];
+            let val = orig.value;
+            if (orig.tagName === 'SELECT') {
+                const selectedOpt = orig.options[orig.selectedIndex];
+                val = selectedOpt ? selectedOpt.text : '';
+            }
+            if (orig.tagName === 'INPUT' && orig.type === 'number') {
+                val = parseFloat(val || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+            }
+            const span = document.createElement('span');
+            span.innerText = val;
+            span.className = 'text-monospace';
+            clone.parentNode.replaceChild(span, clone);
+        }
+
+        // Eliminar iconos y selects de tipo calculo y fuente
+        clonedTable.querySelectorAll('i').forEach(i => i.remove());
+        
+        const timestamp = new Date().toISOString().slice(0,10);
+        const fileName = `Presupuesto_${timestamp}`;
+
+        if (format === 'xlsx') {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.table_to_sheet(clonedTable, { raw: false });
+            XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto');
+            XLSX.writeFile(wb, `${fileName}.xlsx`);
+            Swal.close();
+            
+        } else if (format === 'word') {
+            const html = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><style>table { border-collapse: collapse; width: 100%; font-size: 10px; } th, td { border: 1px solid #ccc; padding: 4px; text-align: right; } th { background-color: #f8f9fa; text-align: center; font-weight: bold; } td:first-child, th:first-child { text-align: left; } .d-none { display: none; }</style></head><body><h2>Presupuesto Operativo y Financiero</h2>" + clonedTable.outerHTML + "</body></html>";
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${fileName}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            Swal.close();
+            
+        } else if (format === 'pdf') {
+            try {
+                const parent = originalTable.parentNode;
+                parent.replaceChild(clonedTable, originalTable);
+                
+                const opt = {
+                    margin:       [10, 10, 10, 10],
+                    filename:     `${fileName}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                };
+                
+                html2pdf().set(opt).from(clonedTable).save().then(() => {
+                    parent.replaceChild(originalTable, clonedTable);
+                    Swal.close();
+                });
+            } catch (err) {
+                console.error(err);
+                if (clonedTable.parentNode) {
+                    clonedTable.parentNode.replaceChild(originalTable, clonedTable);
+                }
+                Swal.fire('Error', 'No se pudo generar el documento.', 'error');
+            }
+        } else if (format === 'jpg') {
+            try {
+                const parent = originalTable.parentNode;
+                parent.replaceChild(clonedTable, originalTable);
+                
+                const canvas = await html2canvas(clonedTable, {
+                    scale: 1.5,
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                parent.replaceChild(originalTable, clonedTable);
+                
+                const link = document.createElement('a');
+                link.download = `${fileName}.jpg`;
+                link.href = canvas.toDataURL('image/jpeg', 0.9);
+                link.click();
+                Swal.close();
+            } catch (err) {
+                console.error(err);
+                if (clonedTable.parentNode) {
+                    clonedTable.parentNode.replaceChild(originalTable, clonedTable);
+                }
+                Swal.fire('Error', 'No se pudo generar el documento.', 'error');
+            }
+        }
+    };
+
     // Init
     document.addEventListener('DOMContentLoaded', function() {
+        const storedHide = localStorage.getItem('hideZeroRows_budget');
+        const hideZeroRowsEl = document.getElementById('hideZeroRows');
+        if (hideZeroRowsEl && storedHide !== null) {
+            hideZeroRowsEl.checked = (storedHide === 'true');
+        }
+
         if (!window.budgetScriptInitialized) {
             window.budgetScriptInitialized = true;
             setTimeout(loadBudgetData, 400);

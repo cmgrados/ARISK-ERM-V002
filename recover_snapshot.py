@@ -1,0 +1,2 @@
+"    path('plan/<int:plan_id>/api/save_bg_adjustment/', views.api_save_bg_adjustment, name='api_save_bg_adjustment'),\n    path('plan/<int:plan_id>/api/save_bg_snapshot/', views.api_save_bg_snapshot, name='api_save_bg_snapshot'),\n    path('plan/<int:plan_
+<truncated 210 bytes>

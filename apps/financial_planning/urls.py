@@ -44,4 +44,12 @@ urlpatterns = [
     path('plan/<int:plan_id>/api/api_seed_budget_items/', views.api_seed_budget_items, name='api_seed_budget_items'),
     path('plan/<int:plan_id>/api/api_get_historical_account_monthly/', views.api_get_historical_account_monthly, name='api_get_historical_account_monthly'),
     path('plan/<int:plan_id>/api/api_get_projected_balance_data/', views.api_get_projected_balance_data, name='api_get_projected_balance_data'),
+    path('plan/<int:plan_id>/api/toggle_fixed_bg_account/', views.api_toggle_fixed_bg_account, name='api_toggle_fixed_bg_account'),
+    path('plan/<int:plan_id>/api/clear_other_trends/', views.api_clear_other_trends, name='api_clear_other_trends'),
+    path('plan/<int:plan_id>/api/save_bg_adjustment/', views.api_save_bg_adjustment, name='api_save_bg_adjustment'),
+    path('plan/<int:plan_id>/api/save_bg_snapshot/', views.api_save_bg_snapshot, name='api_save_bg_snapshot'),
+    path('plan/<int:plan_id>/api/modify_bg_snapshot/', views.api_modify_bg_snapshot, name='api_modify_bg_snapshot'),
+    path('plan/<int:plan_id>/api/apply_other_trends/', views.api_apply_other_trends, name='api_apply_other_trends'),
+    path('plan/<int:plan_id>/api/api_get_cash_flow_data/', views.api_get_cash_flow_data, name='api_get_cash_flow_data'),
+    path('plan/<int:plan_id>/api/save_cf_adjustment/', views.api_save_cf_adjustment, name='api_save_cf_adjustment'),
 ]

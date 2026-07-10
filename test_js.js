@@ -1,4 +1,3 @@
-
 (function() {
     let currentBudgetData = [];
     let currentVersionStatus = 'DRAFT';
@@ -108,7 +107,6 @@
                         }
                         sourceOpts = `<option value="">-- Cuenta Base --</option>` + 
                             filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
-                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
                     } else if (item.calc_type === 'TREND') {
                         sourceOpts = `<option value="">-- Variable --</option>
                             <option value="cartera" ${sourceVal === 'cartera' ? 'selected' : ''}>Cartera</option>
@@ -118,32 +116,13 @@
                             <option value="aportes" ${sourceVal === 'aportes' ? 'selected' : ''}>Aportaciones</option>
                             <option value="socios" ${sourceVal === 'socios' ? 'selected' : ''}>Nro Socios</option>
                             <option value="mora_soles" ${sourceVal === 'mora_soles' ? 'selected' : ''}>Mora</option>`;
-                        sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
                     } else {
-                        // MANUAL: show historical account selector + % adjustment + load button
-                        let filteredErAccounts = window.erAccounts;
-                        if (item.account_prefix) {
-                            filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(item.account_prefix));
-                        }
-                        sourceOpts = `<option value="">-- Seleccionar Cuenta --</option>` + 
-                            filteredErAccounts.map(a => `<option value="${a.val}" ${sourceVal === a.val ? 'selected' : ''}>${a.label}</option>`).join('');
-                        sourceSelect = `<div class="d-flex align-items-center" style="gap:3px;">
-                            <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${sourceOpts}</select>
-                            <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
-                                <input type="number" class="form-control form-control-sm text-center pct-adjustment" 
-                                    style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5" 
-                                    title="% de ajuste sobre dato histórico">
-                                <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;white-space:nowrap;" 
-                                onclick="loadHistoricalForManual(this)" title="Cargar datos históricos con ajuste %">
-                                <i class="fas fa-download"></i>
-                            </button>
-                        </div>`;
+                        sourceOpts = `<option value="">-- N/A --</option>`;
+                    }
+                    sourceSelect = `<select class="form-control form-control-sm source-select select2" style="font-size:0.75rem;">${sourceOpts}</select>`;
                 }
-            }
 
-            rY1 += item.y1_total * catInfo.sign;
+                rY1 += item.y1_total * catInfo.sign;
                 rY2 += item.y2_total * catInfo.sign;
                 rY3 += item.y3_total * catInfo.sign;
                 if (catInfo.sign === 1) {
@@ -251,113 +230,10 @@
                     <option value="socios">Nro Socios</option>
                     <option value="mora_soles">Mora</option>`;
             } else {
-                // MANUAL: rebuild with historical account selector + % adjustment + load button
-                let filteredErAccounts = window.erAccounts;
-                if (accountPrefix) {
-                    filteredErAccounts = window.erAccounts.filter(a => a.val.startsWith(accountPrefix));
-                }
-                const opts = `<option value="">-- Seleccionar Cuenta --</option>` + 
-                    filteredErAccounts.map(a => `<option value="${a.val}">${a.label}</option>`).join('');
-                
-                // Replace the source cell with the full manual widget
-                const srcCell = srcSelect.closest('td');
-                srcCell.innerHTML = `<div class="d-flex align-items-center" style="gap:3px;">
-                    <select class="form-control form-control-sm source-select select2" style="font-size:0.72rem;min-width:120px;">${opts}</select>
-                    <div class="input-group input-group-sm" style="width:90px;flex-shrink:0;">
-                        <input type="number" class="form-control form-control-sm text-center pct-adjustment" 
-                            style="font-size:0.72rem;padding:2px 4px;" value="0" step="0.5" 
-                            title="% de ajuste sobre dato histórico">
-                        <div class="input-group-append"><span class="input-group-text" style="font-size:0.72rem;padding:2px 4px;">%</span></div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-info" style="font-size:0.7rem;padding:2px 6px;white-space:nowrap;" 
-                        onclick="loadHistoricalForManual(this)" title="Cargar datos históricos con ajuste %">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>`;
-                $(srcCell).find('.select2').select2({ width: 'auto' });
-                return;
+                srcSelect.innerHTML = `<option value="">-- N/A --</option>`;
             }
             $(srcSelect).select2({ width: '100%' });
         }
-    };
-
-    // ── Load historical data for MANUAL rows with % adjustment ──
-    window.loadHistoricalForManual = function(btn) {
-        const tr = btn.closest('tr');
-        const srcSelect = tr.querySelector('.source-select');
-        const pctInput = tr.querySelector('.pct-adjustment');
-        const accountCode = srcSelect ? srcSelect.value : '';
-        const pct = pctInput ? parseFloat(pctInput.value) || 0 : 0;
-        const accountPrefix = tr.dataset.accountPrefix || '';
-        
-        // Use the selected account code, or fallback to the row's account_prefix
-        const prefix = accountCode || accountPrefix;
-        if (!prefix) {
-            Swal.fire('Atención', 'Seleccione una cuenta histórica primero.', 'warning');
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-        fetch(`/planificacion-financiera/plan/${planId}/api/api_get_historical_account_monthly/?account_prefix=${encodeURIComponent(prefix)}&adjustment_pct=${pct}`)
-            .then(r => r.json())
-            .then(data => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i>';
-
-                if (data.status === 'error') {
-                    Swal.fire('Error', data.msg, 'error');
-                    return;
-                }
-                if (data.status === 'warning') {
-                    Swal.fire('Sin datos', data.msg, 'warning');
-                    return;
-                }
-
-                const monthly = data.adjusted_monthly || data.monthly;
-                const monthInputs = tr.querySelectorAll('.month-input');
-                monthInputs.forEach((el, i) => {
-                    const val = monthly[i] || 0;
-                    if (el.tagName === 'INPUT') {
-                        el.value = fmt(val);
-                    } else {
-                        // Convert span to input for manual editing
-                        el.dataset.raw = val;
-                        el.innerText = fmt(val);
-                    }
-                });
-
-                // Update Y2 and Y3 with adjusted annual
-                const annualAdj = data.adjusted_annual || 0;
-                const y2Input = tr.querySelector('.y2-input');
-                const y3Input = tr.querySelector('.y3-input');
-                if (y2Input) {
-                    if (y2Input.tagName === 'INPUT') y2Input.value = fmt(annualAdj);
-                    else { y2Input.dataset.raw = annualAdj; y2Input.innerText = fmt(annualAdj); }
-                }
-                if (y3Input) {
-                    if (y3Input.tagName === 'INPUT') y3Input.value = fmt(annualAdj);
-                    else { y3Input.dataset.raw = annualAdj; y3Input.innerText = fmt(annualAdj); }
-                }
-
-                // Recalculate row and footer totals
-                tr.querySelector('.y1-total').innerText = fmt(monthly.reduce((a, b) => a + b, 0));
-                recalcFooter();
-
-                const pctLabel = pct >= 0 ? `+${pct}%` : `${pct}%`;
-                Swal.fire({
-                    toast: true, position: 'top-end', icon: 'success',
-                    title: `Histórico cargado (${pctLabel})`,
-                    text: `Base: ${fmt(data.annual_total)} → Ajustado: ${fmt(data.adjusted_annual)}`,
-                    showConfirmButton: false, timer: 3000
-                });
-            })
-            .catch(err => {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i>';
-                Swal.fire('Error', 'Error de conexión al cargar datos históricos.', 'error');
-            });
     };
 
     window.updateRowTotal = function(inp) {
@@ -602,7 +478,6 @@
             .then(r => r.json())
             .then(data => {
                 erPanelLoaded = true;
-                window.erData = data;
                 const cont = document.getElementById('er-historico-content');
                 if (data.status !== 'success') {
                     cont.innerHTML = `<div class="alert alert-warning">${data.msg || 'Error cargando E.R. histórico.'}</div>`;
@@ -712,3 +587,4 @@
         }
     });
 })();
+</script>

@@ -1,0 +1,165 @@
+import os
+
+template_code = """<div class="card shadow border-0 rounded-lg mb-4">
+    <div class="card-header bg-white border-bottom-0 pt-4 pb-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="m-0 font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">
+                    <i class="fas fa-balance-scale mr-2"></i>BALANCE GENERAL PROYECTADO
+                </h4>
+                <p class="text-muted mt-1 mb-0">Vista consolidada del Estado de Situación Financiera proyectado de forma mensual y a {{ plan.horizonte_anios }} años.</p>
+            </div>
+            
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-success font-weight-bold rounded-pill shadow-sm" onclick="exportBGToExcel()">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar a Excel
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 text-nowrap" id="bg-table">
+                <thead class="bg-indigo text-white text-center">
+                    <tr>
+                        <th class="align-middle text-left" style="min-width: 300px;">CUENTA / RUBRO</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Base Histórica</th>
+                        <th class="align-middle bg-secondary text-white">Ene</th>
+                        <th class="align-middle bg-secondary text-white">Feb</th>
+                        <th class="align-middle bg-secondary text-white">Mar</th>
+                        <th class="align-middle bg-secondary text-white">Abr</th>
+                        <th class="align-middle bg-secondary text-white">May</th>
+                        <th class="align-middle bg-secondary text-white">Jun</th>
+                        <th class="align-middle bg-secondary text-white">Jul</th>
+                        <th class="align-middle bg-secondary text-white">Ago</th>
+                        <th class="align-middle bg-secondary text-white">Sep</th>
+                        <th class="align-middle bg-secondary text-white">Oct</th>
+                        <th class="align-middle bg-secondary text-white">Nov</th>
+                        <th class="align-middle bg-secondary text-white">Dic</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 1 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 2 Proy.</th>
+                        <th class="align-middle bg-primary text-white font-weight-bold">Año 3 Proy.</th>
+                    </tr>
+                </thead>
+                <tbody id="bg-table-body">
+                    <tr><td colspan="17" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Cargando Estado de Situación Financiera...</p></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-right">
+        <button type="button" class="btn btn-outline-indigo px-5 rounded-pill font-weight-bold shadow-sm" onclick="handleWizardContinue('?step=9')">
+            Siguiente Paso: ER Proyectado <i class="fas fa-arrow-right ml-2"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    function formatMoney(amount) {
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount || 0);
+    }
+
+    function loadBGTrends() {
+        const tbody = document.getElementById('bg-table-body');
+        
+        fetch(`/planificacion-financiera/plan/{{ plan.id }}/api/api_get_projected_balance_data/?scenario=BASE`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    let html = '';
+                    
+                    const groupIcons = {
+                        'ACTIVO': '<i class="fas fa-plus-circle mr-2"></i>',
+                        'PASIVO': '<i class="fas fa-minus-circle mr-2"></i>',
+                        'PATRIMONIO': '<i class="fas fa-dot-circle mr-2"></i>'
+                    };
+                    
+                    const groupColors = {
+                        'ACTIVO': 'text-success',
+                        'PASIVO': 'text-danger',
+                        'PATRIMONIO': 'text-primary'
+                    };
+
+                    data.groups.forEach(group => {
+                        html += `
+                            <tr class="bg-light font-weight-bold">
+                                <td colspan="17" class="${groupColors[group.name]}">${groupIcons[group.name]}${group.name}</td>
+                            </tr>
+                        `;
+                        
+                        group.accounts.forEach(acc => {
+                            let isNeg = acc.name.includes('(-)');
+                            let textClass = isNeg ? 'text-danger' : '';
+                            html += `<tr>
+                                <td class="pl-4 font-weight-bold ${textClass}">${acc.name}</td>
+                                <td class="text-right ${textClass}">${formatMoney(acc.base)}</td>
+                            `;
+                            acc.m1_12.forEach(m => {
+                                html += `<td class="text-right ${textClass}">${formatMoney(m)}</td>`;
+                            });
+                            html += `
+                                <td class="text-right ${textClass}">${formatMoney(acc.y1)}</td>
+                                <td class="text-right ${textClass}">${formatMoney(acc.y2)}</td>
+                                <td class="text-right ${textClass}">${formatMoney(acc.y3)}</td>
+                            </tr>`;
+                        });
+                        
+                        // Total Row
+                        html += `
+                            <tr class="bg-info text-white font-weight-bold">
+                                <td class="text-right">TOTAL ${group.name}</td>
+                                <td class="text-right">${formatMoney(group.total.base)}</td>
+                        `;
+                        group.total.m1_12.forEach(m => {
+                            html += `<td class="text-right">${formatMoney(m)}</td>`;
+                        });
+                        html += `
+                                <td class="text-right">${formatMoney(group.total.y1)}</td>
+                                <td class="text-right">${formatMoney(group.total.y2)}</td>
+                                <td class="text-right">${formatMoney(group.total.y3)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    const tot = data.total_pasivo_patrimonio;
+                    html += `
+                        <tr class="bg-dark text-white font-weight-bold mt-3">
+                            <td class="text-right text-uppercase">Total Pasivo y Patrimonio</td>
+                            <td class="text-right">${formatMoney(tot.base)}</td>
+                    `;
+                    tot.m1_12.forEach(m => {
+                        html += `<td class="text-right">${formatMoney(m)}</td>`;
+                    });
+                    html += `
+                            <td class="text-right">${formatMoney(tot.y1)}</td>
+                            <td class="text-right">${formatMoney(tot.y2)}</td>
+                            <td class="text-right">${formatMoney(tot.y3)}</td>
+                        </tr>
+                    `;
+                    
+                    tbody.innerHTML = html;
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="17" class="text-center text-danger py-4">Error al cargar datos: ${data.msg || 'Desconocido'}</td></tr>`;
+                }
+            })
+            .catch(error => {
+                console.error("Error loading projected balance:", error);
+                tbody.innerHTML = `<tr><td colspan="17" class="text-center text-danger py-4">Error de conexión al cargar datos.</td></tr>`;
+            });
+    }
+
+    function exportBGToExcel() {
+        const planId = '{{ plan.id }}';
+        window.location.href = `/planificacion-financiera/plan/${planId}/export_bg_proyectado/`;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(loadBGTrends, 400);
+    });
+</script>
+"""
+
+with open('templates/financial_planning/projected_balance.html', 'w', encoding='utf8') as f:
+    f.write(template_code)
+print("Updated projected_balance.html")

@@ -339,3 +339,34 @@ class BudgetLineDetail(TenantAwareModel):
 
     def __str__(self):
         return f"{self.budget_line.item.name} - {self.period_type} {self.period_index}: {self.amount}"
+
+
+class ProjectedBalanceAdjustment(TenantAwareModel):
+    plan = models.ForeignKey('PlanFinanciero', on_delete=models.CASCADE, related_name='bg_adjustments')
+    scenario = models.CharField(max_length=20, default='BASE')
+    account_code = models.CharField(max_length=50)
+    adjustments = models.JSONField(default=dict)
+
+    class Meta:
+        verbose_name = "Ajuste de Balance Proyectado"
+        verbose_name_plural = "Ajustes de Balance Proyectado"
+        unique_together = ('organization', 'plan', 'scenario', 'account_code')
+
+    def __str__(self):
+        return f"{self.plan.nombre} - {self.account_code} ({self.scenario})"
+
+
+class ProjectedBalanceSnapshot(TenantAwareModel):
+    plan = models.ForeignKey('PlanFinanciero', on_delete=models.CASCADE, related_name='bg_snapshots')
+    scenario = models.CharField(max_length=20)
+    data = models.JSONField(verbose_name="Datos Calculados")
+    created_at = models.DateTimeField(auto_now_add=True)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        verbose_name = "Snapshot de Balance Proyectado"
+        verbose_name_plural = "Snapshots de Balance Proyectado"
+        unique_together = ('organization', 'plan', 'scenario')
+
+    def __str__(self):
+        return f"Snapshot BG {self.plan.nombre} ({self.scenario})"

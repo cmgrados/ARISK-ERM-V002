@@ -1,0 +1,2 @@
+"@login_required\ndef api_get_cash_flow_data(request, plan_id):\n    from django.http import JsonResponse\n    from django.shortcuts import get_object_or_404\n    from .models import PlanFinanciero, SimulacionEscenario, ProyeccionMensual, BudgetVersion, Bu
+<truncated 12015 bytes>

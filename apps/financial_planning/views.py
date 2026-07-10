@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponse
@@ -2195,6 +2196,7 @@ def api_get_projected_balance_data(request, plan_id):
     from django.shortcuts import get_object_or_404
     from .models import PlanFinanciero, SimulacionEscenario, ProyeccionMensual, BudgetVersion, BudgetLine, BudgetLineDetail
     from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Max
     
     organization = request.user.organization
     if not organization:
@@ -2204,41 +2206,44 @@ def api_get_projected_balance_data(request, plan_id):
     plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
     scenario = request.GET.get('scenario', 'BASE')
 
-    # 1. Historical Balance (Dec of Base Year)
-    selected_periods = plan.historical_data.get('selected_periods', []) if plan.historical_data else []
-    years = sorted({p.split('-')[0] for p in selected_periods}, reverse=True)
-    base_year = int(years[0]) if years else (plan.anio_base - 1)
+    # 1. Historical Balance (Max Month of Base Year)
+    base_year = plan.anio_base - 1
 
-    dec_qs = LiqBalanceDetail.objects.filter(
+    max_month = LiqBalanceDetail.objects.filter(
         period__year=base_year,
-        period__month=12,
+        upload__status='SUCCESS'
+    ).aggregate(max_month=Max('period__month'))['max_month']
+    
+    if max_month is None:
+        return JsonResponse({'status': 'error', 'message': 'No hay datos base.'})
+
+    qs = LiqBalanceDetail.objects.filter(
+        period__year=base_year,
+        period__month=max_month,
         upload__status='SUCCESS',
-    ).values('account_code', 'balance')
+    ).values('account_code', 'account_name', 'balance')
 
-    hist_bals = {}
-    for row in dec_qs:
-        code = str(row['account_code'])
-        bal = abs(float(row['balance']))
-        hist_bals[code] = bal
-
-    def get_sum(prefix, exclude_prefix=None):
-        return sum(v for k, v in hist_bals.items() if k.startswith(prefix) and (not exclude_prefix or not k.startswith(exclude_prefix)))
-
-    base_cartera = get_sum('14', exclude_prefix='149')
-    base_prov = get_sum('149')
-    base_cxc = get_sum('16')
-    base_af = get_sum('18')
-    base_otros_act = get_sum('1') - (base_cartera + base_prov + base_cxc + base_af)
-
-    base_ahorros = get_sum('211')
-    base_dpf = get_sum('212')
-    base_adeudos = get_sum('24')
-    base_otros_pas = get_sum('2') - (base_ahorros + base_dpf + base_adeudos)
-
-    base_cap_social = get_sum('31')
-    base_reservas = get_sum('32')
-    base_res_acum = get_sum('33')
-    base_otros_pat = get_sum('3') - (base_cap_social + base_reservas + base_res_acum)
+    tree = {}
+    for q in qs:
+        code = str(q['account_code'])
+        if code.startswith(('1', '2', '3')):
+            val = float(q['balance'])
+            is_negative_nature = code.startswith(('2', '3'))
+            
+            # Pasivo and Patrimonio balances are naturally negative in database
+            # We show them as positive in balance sheet
+            if is_negative_nature:
+                val = -val
+            else:
+                val = val
+                
+            tree[code] = {
+                'code': code,
+                'name': q['account_name'],
+                'base': val,
+                'row_vals': [val] * 36,
+                'is_negative_nature': is_negative_nature
+            }
 
     # 2. Get Projections
     sims = SimulacionEscenario.objects.filter(plan=plan, organization=organization)
@@ -2256,8 +2261,30 @@ def api_get_projected_balance_data(request, plan_id):
     proj_cartera = get_proj_vals('cartera')
     proj_ahorros = get_proj_vals('ahorros')
     proj_dpf = get_proj_vals('dpf')
+
+    def get_sum(prefix):
+        return sum(acc['base'] for code, acc in tree.items() if code.startswith(prefix) and len(code) == 2)
+        
+    def get_sum_len4(prefix):
+        return sum(acc['base'] for code, acc in tree.items() if code.startswith(prefix) and len(code) == 4)
+
+    base_cartera = get_sum('14')
+    base_ahorros = get_sum_len4('2101') + get_sum_len4('2102') # 2101 and 2102
+    base_dpf = get_sum_len4('2103')
+
+    def apply_growth(prefix_list, proj_array, base_val):
+        if not proj_array or base_val == 0: return
+        for i in range(36):
+            factor = proj_array[i] / base_val
+            for code, acc in tree.items():
+                if any(code.startswith(p) for p in prefix_list):
+                    acc['row_vals'][i] = acc['base'] * factor
+
+    apply_growth(['14'], proj_cartera, base_cartera)
+    apply_growth(['2101', '2102'], proj_ahorros, base_ahorros)
+    apply_growth(['2103'], proj_dpf, base_dpf)
     
-    # 3. Get Budget Net Income (Resultado del Ejercicio)
+    # 3. Get Budget Net Income (Resultado del Ejercicio) -> 39
     version = BudgetVersion.objects.filter(plan_financiero=plan, organization=organization, scenario=scenario, status='DRAFT').first()
     net_incomes = [0.0] * 36
     if version:
@@ -2265,7 +2292,7 @@ def api_get_projected_balance_data(request, plan_id):
         for line in lines:
             details = list(BudgetLineDetail.objects.filter(budget_line=line).order_by('period_index'))
             cat = line.item.category
-            sign = 1 if cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING'] else -1
+            sign = 1 if cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING', 'VENTAS'] else -1
             for i, d in enumerate(details[:12]):
                 if i < 12:
                     net_incomes[i] += float(d.amount) * sign
@@ -2274,148 +2301,147 @@ def api_get_projected_balance_data(request, plan_id):
             y3 = float(line.total_amount_y3 or 0) * sign
             for i in range(12, 24): net_incomes[i] += y2 / 12
             for i in range(24, 36): net_incomes[i] += y3 / 12
+
+    # Add Net Income to Patrimonio
+    pat_codes = sorted([c for c in tree.keys() if c.startswith('39')])
+    ancestors_to_inc = ['3']
+    if pat_codes:
+        deepest_leaf_pat = max((c for c in pat_codes if c.startswith(pat_codes[0])), key=len)
+        for j in range(2, len(deepest_leaf_pat) + 1, 2):
+            ancestors_to_inc.append(deepest_leaf_pat[:j])
             
-    def build_row(name, base_val, proj_array, is_negative=False):
-        row_vals = []
+    for i in range(36):
+        inc = net_incomes[i]
+        if inc == 0: continue
+        for code in ancestors_to_inc:
+            if code in tree:
+                tree[code]['row_vals'][i] += inc
+                
+    # 4. Plug Account (Fondos Disponibles 11) to square balance
+    # To maintain mathematical hierarchy, we must apply the plug only to ONE leaf and its direct ancestors.
+    cash_codes = sorted([c for c in tree.keys() if c.startswith('11')])
+    if cash_codes:
+        # Find the deepest leaf of the first branch (e.g. 11010101)
+        deepest_leaf = max((c for c in cash_codes if c.startswith(cash_codes[0])), key=len)
+        
+        # Build the list of ancestors (e.g. ['1', '11', '1101', '110101', '11010101'])
+        ancestors_to_plug = ['1']
+        for j in range(2, len(deepest_leaf) + 1, 2):
+            ancestors_to_plug.append(deepest_leaf[:j])
+            
         for i in range(36):
-            val = proj_array[i] if proj_array and i < len(proj_array) else base_val
-            row_vals.append(val)
+            tot_activo = tree['1']['row_vals'][i] if '1' in tree else 0
+            tot_pas_pat = (tree['2']['row_vals'][i] if '2' in tree else 0) + (tree['3']['row_vals'][i] if '3' in tree else 0)
+            plug = tot_pas_pat - tot_activo
             
-        m1_12 = row_vals[:12]
-        y1_total = row_vals[11]
-        y2_total = row_vals[23]
-        y3_total = row_vals[35]
-        return {
-            'name': name,
-            'base': -base_val if is_negative else base_val,
-            'm1_12': [-v if is_negative else v for v in m1_12],
-            'y1': -y1_total if is_negative else y1_total,
-            'y2': -y2_total if is_negative else y2_total,
-            'y3': -y3_total if is_negative else y3_total
-        }
-        
-    cartera_row = build_row('Cartera de Créditos (Bruta)', base_cartera, proj_cartera)
-    prov_row = build_row('(-) Provisiones para Créditos', base_prov, None, is_negative=True)
-    cxc_row = build_row('Cuentas por Cobrar', base_cxc, None)
-    af_row = build_row('Activo Fijo (Neto)', base_af, None)
-    otros_act_row = build_row('Otros Activos', base_otros_act, None)
-    
-    ahorros_row = build_row('Obligaciones con el Público (Ahorros)', base_ahorros, proj_ahorros)
-    dpf_row = build_row('Obligaciones con el Público (Plazo Fijo)', base_dpf, proj_dpf)
-    adeudos_row = build_row('Adeudos y Oblig. Financieras', base_adeudos, None)
-    otros_pas_row = build_row('Otros Pasivos', base_otros_pas, None)
-    
-    cap_social_row = build_row('Capital Social', base_cap_social, None)
-    reservas_row = build_row('Reservas', base_reservas, None)
-    res_acum_row = build_row('Resultados Acumulados', base_res_acum, None)
-    otros_pat_row = build_row('Otros Patrimonio', base_otros_pat, None)
-    
-    res_ej_base = 0.0
-    res_ej_m1_12 = []
-    cum = 0
-    for i in range(12):
-        cum += net_incomes[i]
-        res_ej_m1_12.append(cum)
-    
-    y1_ej = sum(net_incomes[:12])
-    y2_ej = sum(net_incomes[12:24])
-    y3_ej = sum(net_incomes[24:36])
-    
-    res_acum_row['y1'] = base_res_acum
-    res_acum_row['y2'] = base_res_acum + y1_ej
-    res_acum_row['y3'] = base_res_acum + y1_ej + y2_ej
-    
-    res_ej_row = {
-        'name': 'Resultado del Ejercicio',
-        'base': res_ej_base,
-        'm1_12': res_ej_m1_12,
-        'y1': y1_ej,
-        'y2': y2_ej,
-        'y3': y3_ej
-    }
-    
-    def sum_rows(rows, attr):
-        return sum(r[attr] for r in rows)
-        
-    def sum_rows_array(rows, attr):
-        return [sum(r[attr][i] for r in rows) for i in range(12)]
-        
-    pasivo_rows = [ahorros_row, dpf_row, adeudos_row, otros_pas_row]
-    patrimonio_rows = [cap_social_row, reservas_row, res_acum_row, otros_pat_row, res_ej_row]
-    
-    total_pasivo = {
-        'base': sum_rows(pasivo_rows, 'base'),
-        'm1_12': sum_rows_array(pasivo_rows, 'm1_12'),
-        'y1': sum_rows(pasivo_rows, 'y1'),
-        'y2': sum_rows(pasivo_rows, 'y2'),
-        'y3': sum_rows(pasivo_rows, 'y3'),
-    }
-    
-    total_patrimonio = {
-        'base': sum_rows(patrimonio_rows, 'base'),
-        'm1_12': sum_rows_array(patrimonio_rows, 'm1_12'),
-        'y1': sum_rows(patrimonio_rows, 'y1'),
-        'y2': sum_rows(patrimonio_rows, 'y2'),
-        'y3': sum_rows(patrimonio_rows, 'y3'),
-    }
-    
-    total_pas_pat = {
-        'base': total_pasivo['base'] + total_patrimonio['base'],
-        'm1_12': [total_pasivo['m1_12'][i] + total_patrimonio['m1_12'][i] for i in range(12)],
-        'y1': total_pasivo['y1'] + total_patrimonio['y1'],
-        'y2': total_pasivo['y2'] + total_patrimonio['y2'],
-        'y3': total_pasivo['y3'] + total_patrimonio['y3'],
-    }
-    
-    activo_no_fd_rows = [cartera_row, prov_row, cxc_row, af_row, otros_act_row]
-    
-    sub_activo = {
-        'base': sum_rows(activo_no_fd_rows, 'base'),
-        'm1_12': sum_rows_array(activo_no_fd_rows, 'm1_12'),
-        'y1': sum_rows(activo_no_fd_rows, 'y1'),
-        'y2': sum_rows(activo_no_fd_rows, 'y2'),
-        'y3': sum_rows(activo_no_fd_rows, 'y3'),
-    }
-    
-    fondos_row = {
-        'name': 'Fondos Disponibles',
-        'base': total_pas_pat['base'] - sub_activo['base'],
-        'm1_12': [total_pas_pat['m1_12'][i] - sub_activo['m1_12'][i] for i in range(12)],
-        'y1': total_pas_pat['y1'] - sub_activo['y1'],
-        'y2': total_pas_pat['y2'] - sub_activo['y2'],
-        'y3': total_pas_pat['y3'] - sub_activo['y3'],
-    }
-    
-    activo_rows = [fondos_row, cartera_row, prov_row, cxc_row, af_row, otros_act_row]
-    total_activo = {
-        'base': sum_rows(activo_rows, 'base'),
-        'm1_12': sum_rows_array(activo_rows, 'm1_12'),
-        'y1': sum_rows(activo_rows, 'y1'),
-        'y2': sum_rows(activo_rows, 'y2'),
-        'y3': sum_rows(activo_rows, 'y3'),
-    }
-    
-    data = {
+            for code in ancestors_to_plug:
+                if code in tree:
+                    tree[code]['row_vals'][i] += plug
+
+    # Build response format
+    accounts_list = []
+    for code in sorted(tree.keys()):
+        acc = tree[code]
+        row_vals = acc['row_vals']
+        accounts_list.append({
+            'code': code,
+            'name': acc['name'],
+            'base': acc['base'],
+            'm1_12': row_vals[:12],
+            'y1': row_vals[11],
+            'y2': row_vals[23],
+            'y3': row_vals[35]
+        })
+
+    # Optional: ensure we have version info
+    plan_version = getattr(plan, 'status', 'DRAFT')
+
+    return JsonResponse({
         'status': 'success',
-        'groups': [
-            {
-                'name': 'ACTIVO',
-                'accounts': activo_rows,
-                'total': total_activo
-            },
-            {
-                'name': 'PASIVO',
-                'accounts': pasivo_rows,
-                'total': total_pasivo
-            },
-            {
-                'name': 'PATRIMONIO',
-                'accounts': patrimonio_rows,
-                'total': total_patrimonio
-            }
-        ],
-        'total_pasivo_patrimonio': total_pas_pat
-    }
+        'accounts': accounts_list,
+        'version_status': plan_version,
+    })
+
+
+# Import missing API functions from funcs.py so urls.py can find them here
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from funcs import (
+    api_save_bg_snapshot,
+    api_modify_bg_snapshot,
+    api_save_bg_adjustment,
+    api_toggle_fixed_bg_account,
+    api_clear_other_trends,
+    api_get_cash_flow_data,
+    api_save_cf_adjustment
+)
+
+
+
+
+@require_http_methods(["POST"])
+def api_apply_other_trends(request, plan_id):
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from .models import PlanFinanciero, ProjectedBalanceAdjustment
+    from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Q
     
-    return JsonResponse(data)
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    base_year = plan.anio_base - 1
+    
+    # Identify first and last month for trend calculation
+    months = list(LiqBalanceDetail.objects.filter(period__year=base_year, upload__status='SUCCESS').values_list('period__month', flat=True).distinct().order_by('period__month'))
+    if not months or len(months) < 2:
+        return JsonResponse({'error': 'No hay suficientes datos historicos para calcular tendencia anual.'}, status=400)
+        
+    first_month = months[0]
+    last_month = months[-1]
+    diff_months = last_month - first_month
+    if diff_months <= 0: diff_months = 1
+    
+    upload_first = LiqBalanceDetail.objects.filter(period__year=base_year, period__month=first_month, upload__status='SUCCESS').order_by('-upload_id').values_list('upload_id', flat=True).first()
+    upload_last = LiqBalanceDetail.objects.filter(period__year=base_year, period__month=last_month, upload__status='SUCCESS').order_by('-upload_id').values_list('upload_id', flat=True).first()
+    
+    qs_first = {x['account_code']: float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_first).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
+    qs_last = {x['account_code']: float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_last).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
+    
+    scenarios = ['PESIMISTA', 'BASE', 'OPTIMISTA', 'MC_PESIMISTA', 'MC_BASE', 'MC_OPTIMISTA']
+    
+    adjustments_to_create = []
+    
+    # Process unhandled accounts
+    for code, val_last in qs_last.items():
+        if code.startswith('14') or code.startswith('21') or code.startswith('3101') or code.startswith('39'):
+            continue
+            
+        val_first = qs_first.get(code, val_last)
+        abs_last = abs(val_last)
+        abs_first = abs(val_first)
+        delta_monthly = (abs_last - abs_first) / diff_months
+        
+        if delta_monthly != 0.0:
+            adj_dict = {str(i): delta_monthly for i in range(1, 37)}
+            for sc in scenarios:
+                ProjectedBalanceAdjustment.objects.filter(plan=plan, organization=organization, scenario=sc, account_code=code).delete()
+                adjustments_to_create.append(
+                    ProjectedBalanceAdjustment(
+                        plan=plan,
+                        organization=organization,
+                        scenario=sc,
+                        account_code=code,
+                        adjustments=adj_dict
+                    )
+                )
+    
+    if adjustments_to_create:
+        ProjectedBalanceAdjustment.objects.bulk_create(adjustments_to_create)
+        
+    return JsonResponse({'status': 'success', 'message': f'Tendencia historica aplicada a {len(adjustments_to_create)//len(scenarios)} cuentas para todos los escenarios.'})
 
