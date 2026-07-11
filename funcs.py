@@ -7,8 +7,9 @@ def api_save_bg_snapshot(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, ProjectedBalanceSnapshot
+    from financial_planning.models import PlanFinanciero, ProjectedBalanceSnapshot
     from django.http import QueryDict
+    from financial_planning.views import api_get_projected_balance_data
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -33,11 +34,10 @@ def api_save_bg_snapshot(request, plan_id):
             plan=plan,
             organization=organization,
             scenario=scenario,
-            defaults={'status': 'APPROVED', 'data': data}
+            defaults={'data': data}
         )
         if not created:
             snapshot.data = data
-            snapshot.status = 'APPROVED'
             snapshot.save()
             
         return JsonResponse({'status': 'success', 'message': 'Snapshot guardado y aprobado.'})
@@ -50,7 +50,7 @@ def api_modify_bg_snapshot(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, ProjectedBalanceSnapshot
+    from financial_planning.models import PlanFinanciero, ProjectedBalanceSnapshot
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -78,7 +78,7 @@ def api_save_bg_adjustment(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, ProjectedBalanceAdjustment
+    from financial_planning.models import PlanFinanciero, ProjectedBalanceAdjustment
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -102,7 +102,7 @@ def api_save_bg_adjustment(request, plan_id):
     
     current = adj.adjustments or {}
     for k, v in adjustments.items():
-        if v is None:
+        if v is None or v == "":
             current.pop(str(k), None)
         else:
             current[str(k)] = v
@@ -118,7 +118,7 @@ def api_toggle_fixed_bg_account(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, ProjectedBalanceAdjustment
+    from financial_planning.models import PlanFinanciero, ProjectedBalanceAdjustment
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -154,7 +154,7 @@ def api_clear_other_trends(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, ProjectedBalanceAdjustment
+    from financial_planning.models import PlanFinanciero, ProjectedBalanceAdjustment
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -165,6 +165,7 @@ def api_clear_other_trends(request, plan_id):
     
     body = json.loads(request.body)
     scenario = body.get('scenario')
+    clear_type = body.get('clear_type', 'auto')
     
     adjs = ProjectedBalanceAdjustment.objects.filter(plan=plan, organization=organization)
     if scenario:
@@ -172,7 +173,17 @@ def api_clear_other_trends(request, plan_id):
         
     count = 0
     for adj in adjs:
-        if not str(adj.adjustments.get('is_fixed', '')).lower() in ['true', '1']:
+        is_fixed = str(adj.adjustments.get('is_fixed', '')).lower() in ['true', '1']
+        should_delete = False
+        
+        if clear_type == 'auto' and not is_fixed:
+            should_delete = True
+        elif clear_type == 'sync' and is_fixed:
+            should_delete = True
+        elif clear_type == 'all':
+            should_delete = True
+            
+        if should_delete:
             adj.delete()
             count += 1
             
@@ -185,7 +196,7 @@ def api_get_cash_flow_data(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero, SimulacionEscenario, ProyeccionMensual, BudgetVersion, BudgetLine, BudgetLineDetail
+    from financial_planning.models import PlanFinanciero, SimulacionEscenario, ProyeccionMensual, BudgetVersion, BudgetLine, BudgetLineDetail
     from liquidity_risk.models import LiqBalanceDetail
     
     organization = getattr(request.user, 'organization', None)
@@ -205,11 +216,11 @@ def api_get_cash_flow_data(request, plan_id):
     ).aggregate(max_month=Max('period__month'))
     max_month = max_month_dict['max_month'] if max_month_dict['max_month'] else 12
 
-    dec_qs = LiqBalanceDetail.objects.filter(
+    dec_qs = list(LiqBalanceDetail.objects.filter(
         period__year=base_year, 
         period__month=max_month, 
         upload__status='SUCCESS'
-    ).values('account_code', 'balance')
+    ).values('account_code', 'balance'))
     
     saldo_inicial_caja = 0.0
     for r in dec_qs:
@@ -258,9 +269,9 @@ def api_get_cash_flow_data(request, plan_id):
     ingresos_op = [0.0]*36
     egresos_op = [0.0]*36
     if version:
-        lines = BudgetLine.objects.filter(version=version).select_related('item')
+        lines = BudgetLine.objects.filter(version=version).select_related('item').prefetch_related('details')
         for line in lines:
-            details = list(BudgetLineDetail.objects.filter(budget_line=line).order_by('period_index'))
+            details = sorted(list(line.details.all()), key=lambda d: d.period_index)
             cat = line.item.category
             is_income = cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING']
             for i in range(12):
@@ -388,7 +399,7 @@ def api_save_cf_adjustment(request, plan_id):
     import json
     from django.http import JsonResponse
     from django.shortcuts import get_object_or_404
-    from .models import PlanFinanciero
+    from financial_planning.models import PlanFinanciero
     
     organization = getattr(request.user, 'organization', None)
     if not organization:
@@ -411,7 +422,7 @@ def api_save_cf_adjustment(request, plan_id):
     if code not in hist['cf_adjustments'][scenario]: hist['cf_adjustments'][scenario][code] = {}
     
     for k, v in adjustments.items():
-        if v is None:
+        if v is None or v == "":
             hist['cf_adjustments'][scenario][code].pop(str(k), None)
         else:
             hist['cf_adjustments'][scenario][code][str(k)] = v

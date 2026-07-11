@@ -1432,11 +1432,15 @@ def api_get_budget_data(request, plan_id):
     
     items = BudgetItem.objects.filter(organization=organization).order_by('category')
     data = []
-    lines = BudgetLine.objects.filter(version=version)
+    lines = BudgetLine.objects.filter(version=version).prefetch_related('details')
     lines_by_item = {l.item_id: l for l in lines}
     
+    # We will fetch all rules in one query to avoid N+1
+    rules = BudgetCalculationRule.objects.all()
+    rules_by_item = {r.item_id: r for r in rules}
+    
     for item in items:
-        rule = BudgetCalculationRule.objects.filter(item=item).first()
+        rule = rules_by_item.get(item.id)
         line = lines_by_item.get(item.id)
         
         calc_type = line.applied_calculation_type if line else (rule.calculation_type if rule else 'MANUAL')
@@ -1475,7 +1479,7 @@ def api_get_budget_data(request, plan_id):
             item_data['y2_total'] = float(line.total_amount_y2)
             item_data['y3_total'] = float(line.total_amount_y3)
             
-            details = BudgetLineDetail.objects.filter(budget_line=line, period_type='MONTH').order_by('period_index')
+            details = sorted(list(line.details.all()), key=lambda d: d.period_index)
             for d in details:
                 if 1 <= d.period_index <= 12:
                     item_data['monthly_values'][d.period_index - 1] = float(d.amount)
@@ -1790,15 +1794,22 @@ def api_get_historical_account_monthly(request, plan_id):
     # De-accumulate the YTD values into discrete monthly flows.
     # Trial balances for ER accounts (4 and 5) are stored cumulatively (YTD).
     actual_monthly = [0.0] * 12
-    last_ytd = 0.0
-    for i in range(12):
-        curr_ytd = monthly_totals[i]
-        if curr_ytd == 0 and i > 0 and last_ytd > 0:
-            # Missing month data, assume 0 flow
-            actual_monthly[i] = 0.0
-        else:
-            actual_monthly[i] = max(0.0, curr_ytd - last_ytd)
-            last_ytd = curr_ytd
+    
+    non_zeros = [v for v in monthly_totals if v > 0]
+    if len(non_zeros) == 1 and monthly_totals[11] > 0:
+        # Only December data is available, distribute evenly to avoid spikes
+        even_val = monthly_totals[11] / 12
+        actual_monthly = [even_val] * 12
+    else:
+        last_ytd = 0.0
+        for i in range(12):
+            curr_ytd = monthly_totals[i]
+            if curr_ytd == 0 and i > 0 and last_ytd > 0:
+                # Missing month data, assume 0 flow
+                actual_monthly[i] = 0.0
+            else:
+                actual_monthly[i] = max(0.0, curr_ytd - last_ytd)
+                last_ytd = curr_ytd
             
     monthly_totals = [round(v, 2) for v in actual_monthly]
     
@@ -2232,7 +2243,10 @@ def api_get_projected_balance_data(request, plan_id):
     for q in qs:
         code = str(q['account_code'])
         if code.startswith(('1', '2', '3')):
-            val = float(q['balance'])
+            try:
+                val = float(q['balance'])
+            except (ValueError, TypeError):
+                val = 0.0
             is_negative_nature = code.startswith(('2', '3'))
             
             # Pasivo and Patrimonio balances are naturally negative in database
@@ -2264,38 +2278,114 @@ def api_get_projected_balance_data(request, plan_id):
         return [float(getattr(p, field, 0) or 0) for p in projs]
         
     proj_cartera = get_proj_vals('cartera')
+    proj_mora = get_proj_vals('mora_soles')
     proj_ahorros = get_proj_vals('ahorros')
     proj_dpf = get_proj_vals('dpf')
 
+    sorted_keys = sorted(tree.keys())
+    true_leaf_codes = set()
+    for i in range(len(sorted_keys)):
+        if i == len(sorted_keys) - 1 or not sorted_keys[i+1].startswith(sorted_keys[i]):
+            true_leaf_codes.add(sorted_keys[i])
+
     def get_sum(prefix):
-        return sum(acc['base'] for code, acc in tree.items() if code.startswith(prefix) and len(code) == 2)
-        
-    def get_sum_len4(prefix):
-        return sum(acc['base'] for code, acc in tree.items() if code.startswith(prefix) and len(code) == 4)
+        return sum(tree[c]['base'] for c in true_leaf_codes if c.startswith(prefix))
 
-    base_cartera = get_sum('14')
-    base_ahorros = get_sum_len4('2101') + get_sum_len4('2102') # 2101 and 2102
-    base_dpf = get_sum_len4('2103')
+    base_mora = get_sum('1405')
+    base_prov = get_sum('1409')
+    base_cartera = get_sum('14') - base_mora - base_prov
+    base_ahorros = get_sum('2101') + get_sum('2102') # 2101 and 2102
+    base_dpf = get_sum('2103')
 
-    def apply_growth(prefix_list, proj_array, base_val):
+    from .models import ProjectedBalanceAdjustment
+    adjs = ProjectedBalanceAdjustment.objects.filter(plan=plan, organization=organization, scenario=scenario)
+    adj_dict = {a.account_code: (a.adjustments or {}).get('is_fixed', False) for a in adjs}
+    adj_vals = {a.account_code: (a.adjustments or {}) for a in adjs}
+
+    leaf_codes = true_leaf_codes
+
+    # Apply manual numerical adjustments before growth
+    for code, adj in adj_vals.items():
+        if code in tree:
+            cumulative = 0.0
+            for i in range(36):
+                raw_val = adj.get(str(i+1), 0.0)
+                try:
+                    val = float(raw_val) if raw_val != "" else 0.0
+                except (ValueError, TypeError):
+                    val = 0.0
+                cumulative += val
+                if cumulative != 0:
+                    tree[code]['row_vals'][i] += cumulative
+                    # Propagate to ancestors
+                    for j in range(len(code)-2, 0, -2):
+                        anc = code[:j]
+                        if anc in tree:
+                            tree[anc]['row_vals'][i] += cumulative
+                    anc1 = code[:1]
+                    if anc1 in tree:
+                        tree[anc1]['row_vals'][i] += cumulative
+
+    def apply_growth(prefix_list, proj_array, base_val, is_provision=False):
         if not proj_array or base_val == 0: return
-        for i in range(36):
-            factor = proj_array[i] / base_val
-            for code, acc in tree.items():
-                if any(code.startswith(p) for p in prefix_list):
-                    acc['row_vals'][i] = acc['base'] * factor
+        for code in leaf_codes:
+            if any(code.startswith(p) for p in prefix_list):
+                # EXCLUDE mora and provisions from the general cartera growth
+                if '14' in prefix_list and '1405' not in prefix_list and '1409' not in prefix_list:
+                    if code.startswith('1405') or code.startswith('1409'):
+                        continue
+                
+                # Check if the account or any of its ancestors are locked
+                is_locked = False
+                for j in range(len(code), 0, -2):
+                    if adj_dict.get(code[:j], False):
+                        is_locked = True
+                        break
+                        
+                if not is_locked:
+                    prev_val = tree[code]['base']
+                    for i in range(36):
+                        factor = proj_array[i] / base_val
+                        new_val = tree[code]['base'] * factor
+                        
+                        if is_provision and (i + 1) % 12 != 0:
+                            # Provision accounts only increment in December!
+                            # So during the year, they stay flat at previous value.
+                            old_val = tree[code]['row_vals'][i]
+                            tree[code]['row_vals'][i] = prev_val
+                            delta = prev_val - old_val
+                        else:
+                            old_val = tree[code]['row_vals'][i]
+                            tree[code]['row_vals'][i] = new_val
+                            delta = new_val - old_val
+                            prev_val = new_val
+                            
+                        if delta != 0:
+                            for j in range(len(code)-2, 0, -2):
+                                anc = code[:j]
+                                if anc in tree:
+                                    tree[anc]['row_vals'][i] += delta
+                            anc1 = code[:1]
+                            if anc1 in tree:
+                                tree[anc1]['row_vals'][i] += delta
 
     apply_growth(['14'], proj_cartera, base_cartera)
+    apply_growth(['1405'], proj_mora, base_mora)
+    apply_growth(['1409'], proj_mora, base_prov, is_provision=True)
     apply_growth(['2101', '2102'], proj_ahorros, base_ahorros)
     apply_growth(['2103'], proj_dpf, base_dpf)
     
     # 3. Get Budget Net Income (Resultado del Ejercicio) -> 39
-    version = BudgetVersion.objects.filter(plan_financiero=plan, organization=organization, scenario=scenario, status='DRAFT').first()
+    version = BudgetVersion.objects.filter(
+        plan_financiero=plan, 
+        organization=organization, 
+        scenario=scenario
+    ).order_by('-created_at').first()
     net_incomes = [0.0] * 36
     if version:
-        lines = BudgetLine.objects.filter(version=version).select_related('item')
+        lines = BudgetLine.objects.filter(version=version).select_related('item').prefetch_related('details')
         for line in lines:
-            details = list(BudgetLineDetail.objects.filter(budget_line=line).order_by('period_index'))
+            details = sorted(list(line.details.all()), key=lambda d: d.period_index)
             cat = line.item.category
             sign = 1 if cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING', 'VENTAS'] else -1
             for i, d in enumerate(details[:12]):
@@ -2304,14 +2394,71 @@ def api_get_projected_balance_data(request, plan_id):
             
             y2 = float(line.total_amount_y2 or 0) * sign
             y3 = float(line.total_amount_y3 or 0) * sign
-            for i in range(12, 24): net_incomes[i] += y2 / 12
-            for i in range(24, 36): net_incomes[i] += y3 / 12
+            
+            if line.item.code.startswith('ACC_43'):
+                net_incomes[23] += y2
+                net_incomes[35] += y3
+            else:
+                for i in range(12, 24): net_incomes[i] += y2 / 12
+                for i in range(24, 36): net_incomes[i] += y3 / 12
+                
+    # Calculate continuous net incomes to get year-end totals for closing transfers
+    net_incomes_cont = list(net_incomes)
+    for i in range(1, 36):
+        net_incomes_cont[i] += net_incomes_cont[i-1]
+        
+    y1_net_income = net_incomes_cont[11]
+    y2_net_income = net_incomes_cont[23] - net_incomes_cont[11]
+    
+    # Accumulate net incomes WITHIN each year (resets to 0 in Jan of Y2 and Y3)
+    for i in range(1, 12):
+        net_incomes[i] += net_incomes[i-1]
+    for i in range(13, 24):
+        net_incomes[i] += net_incomes[i-1]
+    for i in range(25, 36):
+        net_incomes[i] += net_incomes[i-1]
+
+    # Transfer Historical Base and previous years' Net Incomes to '38' (year-end closing simulation)
+    ret_codes = sorted([c for c in tree.keys() if c.startswith('38')])
+    if ret_codes:
+        leaves_ret = [c for c in ret_codes if len(c) == max(len(x) for x in ret_codes)]
+        deepest_leaf_ret = leaves_ret[0]
+        for leaf in leaves_ret:
+            if tree[leaf]['base'] != 0:
+                deepest_leaf_ret = leaf
+                break
+        ancestors_to_ret = [deepest_leaf_ret[:j] for j in range(2, len(deepest_leaf_ret) + 1, 2) if deepest_leaf_ret[:j].startswith('38')]
+        
+        pat_39_leaves = [c for c in tree.keys() if c.startswith('39') and not any(other.startswith(c) and other != c for other in tree.keys())]
+        total_39_base = sum(tree[leaf]['base'] for leaf in pat_39_leaves)
+        
+        for i in range(36):
+            transfer_amt = total_39_base
+            if i >= 12: transfer_amt += y1_net_income
+            if i >= 24: transfer_amt += y2_net_income
+            
+            if transfer_amt != 0:
+                for code in ancestors_to_ret:
+                    if code in tree:
+                        tree[code]['row_vals'][i] += transfer_amt
+                        
+        all_39_nodes = [c for c in tree.keys() if c.startswith('39')]
+        for code in all_39_nodes:
+            own_base = tree[code]['base']
+            if own_base != 0:
+                for i in range(36):
+                    tree[code]['row_vals'][i] -= own_base
 
     # Add Net Income to Patrimonio
     pat_codes = sorted([c for c in tree.keys() if c.startswith('39')])
     ancestors_to_inc = ['3']
     if pat_codes:
-        deepest_leaf_pat = max((c for c in pat_codes if c.startswith(pat_codes[0])), key=len)
+        leaves = [c for c in pat_codes if len(c) == max(len(x) for x in pat_codes)]
+        deepest_leaf_pat = leaves[0]
+        for leaf in leaves:
+            if tree[leaf]['base'] != 0:
+                deepest_leaf_pat = leaf
+                break
         for j in range(2, len(deepest_leaf_pat) + 1, 2):
             ancestors_to_inc.append(deepest_leaf_pat[:j])
             
@@ -2345,6 +2492,14 @@ def api_get_projected_balance_data(request, plan_id):
 
     # Build response format
     accounts_list = []
+    
+    def is_node_locked(code):
+        if adj_dict.get(code, False): return True
+        for c, locked in adj_dict.items():
+            if locked and c.startswith(code):
+                return True
+        return False
+        
     for code in sorted(tree.keys()):
         acc = tree[code]
         row_vals = acc['row_vals']
@@ -2355,11 +2510,13 @@ def api_get_projected_balance_data(request, plan_id):
             'm1_12': row_vals[:12],
             'y1': row_vals[11],
             'y2': row_vals[23],
-            'y3': row_vals[35]
+            'y3': row_vals[35],
+            'is_locked': is_node_locked(code)
         })
 
-    # Optional: ensure we have version info
-    plan_version = getattr(plan, 'status', 'DRAFT')
+    from financial_planning.models import ProjectedBalanceSnapshot
+    snapshot_exists = ProjectedBalanceSnapshot.objects.filter(plan=plan, scenario=scenario).exists()
+    plan_version = 'APPROVED' if snapshot_exists else 'DRAFT'
 
     return JsonResponse({
         'status': 'success',
@@ -2414,8 +2571,12 @@ def api_apply_other_trends(request, plan_id):
     upload_first = LiqBalanceDetail.objects.filter(period__year=base_year, period__month=first_month, upload__status='SUCCESS').order_by('-upload_id').values_list('upload_id', flat=True).first()
     upload_last = LiqBalanceDetail.objects.filter(period__year=base_year, period__month=last_month, upload__status='SUCCESS').order_by('-upload_id').values_list('upload_id', flat=True).first()
     
-    qs_first = {x['account_code']: float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_first).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
-    qs_last = {x['account_code']: float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_last).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
+    def to_float(val):
+        try: return float(val)
+        except (ValueError, TypeError): return 0.0
+        
+    qs_first = {x['account_code']: to_float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_first).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
+    qs_last = {x['account_code']: to_float(x['balance']) for x in LiqBalanceDetail.objects.filter(upload_id=upload_last).filter(Q(account_code__startswith='1') | Q(account_code__startswith='2') | Q(account_code__startswith='3')).values('account_code', 'balance')}
     
     scenarios = ['PESIMISTA', 'BASE', 'OPTIMISTA', 'MC_PESIMISTA', 'MC_BASE', 'MC_OPTIMISTA']
     
@@ -2449,4 +2610,177 @@ def api_apply_other_trends(request, plan_id):
         ProjectedBalanceAdjustment.objects.bulk_create(adjustments_to_create)
         
     return JsonResponse({'status': 'success', 'message': f'Tendencia historica aplicada a {len(adjustments_to_create)//len(scenarios)} cuentas para todos los escenarios.'})
+
+def api_sync_core_trends_bg(request, plan_id):
+    import json
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from .models import PlanFinanciero, ProjectedBalanceAdjustment, SimulacionEscenario, ProyeccionMensual
+    from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Max
+    
+    organization = request.user.organization
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    
+    scenario = 'BASE'
+    if request.method == 'POST':
+        try:
+            body = json.loads(request.body)
+            scenario = body.get('scenario', 'BASE')
+        except Exception:
+            scenario = request.POST.get('scenario', 'BASE')
+            
+    base_year = plan.anio_base - 1
+    max_month = LiqBalanceDetail.objects.filter(
+        period__year=base_year,
+        upload__status='SUCCESS'
+    ).aggregate(max_month=Max('period__month'))['max_month']
+    
+    if max_month is None:
+        return JsonResponse({'status': 'error', 'message': 'No hay datos historicos base.'})
+        
+    qs = LiqBalanceDetail.objects.filter(
+        period__year=base_year,
+        period__month=max_month,
+        upload__status='SUCCESS'
+    ).values('account_code', 'balance')
+    
+    def to_float(val):
+        try: return float(val)
+        except (ValueError, TypeError): return 0.0
+        
+    base_dict = {str(q['account_code']): to_float(q['balance']) for q in qs}
+    
+    def get_sum(prefix):
+        return sum(val for code, val in base_dict.items() if code.startswith(prefix))
+
+    base_mora = get_sum('1405')
+    base_prov = get_sum('1409')
+    base_cartera = get_sum('14') - base_mora - base_prov
+    base_ahorros = get_sum('2101') + get_sum('2102')
+    base_dpf = get_sum('2103')
+    base_aportes = get_sum('3101')
+    
+    mapping = {
+        'cartera': ('14', base_cartera, ['cartera']),
+        'mora': ('1405', base_mora, ['mora_soles']),
+        'provisiones': ('1409', base_prov, ['mora_soles']),
+        'ahorros': ('2101', base_ahorros, ['ahorros', 'ahorros_usd']),
+        'dpf': ('2103', base_dpf, ['dpf', 'dpf_usd']),
+        'aportes': ('3101', base_aportes, ['aportes'])
+    }
+
+    field = 'valor_base'
+    mc_field = 'valor_base'
+    if scenario == 'OPTIMISTIC': 
+        field = 'valor_optimista'
+        mc_field = 'valor_optimista'
+    elif scenario == 'PESSIMISTIC': 
+        field = 'valor_pesimista'
+        mc_field = 'valor_pesimista'
+    elif scenario == 'MC_BASE': 
+        field = 'valor_base'
+        mc_field = 'mc_valor_base'
+    elif scenario == 'MC_OPTIMISTIC': 
+        field = 'valor_optimista'
+        mc_field = 'mc_valor_optimista'
+    elif scenario == 'MC_PESSIMISTIC': 
+        field = 'valor_pesimista'
+        mc_field = 'mc_valor_pesimista'
+
+    adjustments_to_create = []
+    
+    ProjectedBalanceAdjustment.objects.filter(
+        plan=plan, 
+        organization=organization, 
+        scenario=scenario, 
+        account_code__in=['14', '1405', '2101', '2102', '2103', '3101']
+    ).delete()
+
+    for key, (code, b_val, var_ids) in mapping.items():
+        proj_vals = [0.0] * 36
+        found_any = False
+        for var_id in var_ids:
+            sim = SimulacionEscenario.objects.filter(plan=plan, organization=organization, variable_id=var_id).first()
+            if not sim: continue
+            projs = list(ProyeccionMensual.objects.filter(escenario=sim).order_by('mes_proyeccion'))
+            if len(projs) >= 36:
+                found_any = True
+                for i in range(36):
+                    val = getattr(projs[i], mc_field, None)
+                    if val is None:
+                        val = getattr(projs[i], field, 0)
+                    proj_vals[i] += float(val or 0)
+        
+        if not found_any: continue
+        if not proj_vals or len(proj_vals) < 36: continue
+        if b_val == 0: continue
+        
+        adj_dict = {}
+        prev = abs(b_val)
+        for i in range(36):
+            factor = proj_vals[i] / abs(b_val)
+            new_val = abs(b_val) * factor
+            delta = new_val - prev
+            adj_dict[str(i+1)] = delta
+            prev = new_val
+            
+        codes_to_apply = [code]
+        if code == '2101':
+            codes_to_apply = ['2101', '2102']
+            
+        for c in codes_to_apply:
+            # Find all leaf nodes under this parent code
+            leaf_codes = [k for k in base_dict.keys() if k.startswith(c) and not any(other.startswith(k) and len(other) > len(k) for other in base_dict.keys())]
+            
+            # Exclude mora and provisions from the general cartera group
+            if c == '14':
+                leaf_codes = [k for k in leaf_codes if not k.startswith('1405') and not k.startswith('1409')]
+                
+            if not leaf_codes:
+                leaf_codes = [c]
+                
+            for leaf in leaf_codes:
+                leaf_b_val = base_dict.get(leaf, 0)
+                if leaf_b_val == 0:
+                    continue
+                    
+                leaf_adj_dict = {}
+                prev_leaf = abs(leaf_b_val)
+                for i in range(36):
+                    # Proportional factor relative to this leaf's base value
+                    factor = proj_vals[i] / abs(b_val)
+                    new_val_leaf = abs(leaf_b_val) * factor
+                    
+                    if c == '1409' and (i + 1) % 12 != 0:
+                        # For provisions, only increment in December (months 12, 24, 36)
+                        delta_leaf = 0.0
+                    else:
+                        delta_leaf = new_val_leaf - prev_leaf
+                        prev_leaf = new_val_leaf
+                        
+                    leaf_adj_dict[str(i+1)] = delta_leaf
+                    
+                leaf_adj_dict['is_fixed'] = True
+                
+                adjustments_to_create.append(
+                    ProjectedBalanceAdjustment(
+                        plan=plan,
+                        organization=organization,
+                        scenario=scenario,
+                        account_code=leaf,
+                        adjustments=leaf_adj_dict
+                    )
+                )
+
+    if adjustments_to_create:
+        leaf_codes_to_delete = [adj.account_code for adj in adjustments_to_create]
+        ProjectedBalanceAdjustment.objects.filter(plan=plan, organization=organization, scenario=scenario, account_code__in=leaf_codes_to_delete).delete()
+        ProjectedBalanceAdjustment.objects.bulk_create(adjustments_to_create)
+        
+    return JsonResponse({'status': 'success', 'message': f'Sincronizado correctamente para {len(adjustments_to_create)} cuentas hoja en {scenario}.'})
 

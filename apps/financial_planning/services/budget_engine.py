@@ -734,9 +734,14 @@ class BudgetEngine:
                     if tasa_list:
                         default_growth = sum(tasa_list) / len(tasa_list)
 
-                monthly_val = hist_annual / 12 if hist_annual else Decimal('0')
+                if item.code.startswith('ACC_43'):
+                    monthly_vals = [Decimal('0')]*11 + [Decimal(str(round(hist_annual, 2)))] if hist_annual else [Decimal('0')] * 12
+                else:
+                    monthly_val = hist_annual / 12 if hist_annual else Decimal('0')
+                    monthly_vals = [monthly_val] * 12
+                    
                 total_y1 = Decimal(str(round(hist_annual, 2)))
-                self._save_monthly_details(budget_line, [monthly_val] * 12)
+                self._save_monthly_details(budget_line, monthly_vals)
                 budget_line.total_amount_y1 = total_y1
                 
                 y2_val = round(float(total_y1) * (1 + default_growth / 100.0), 2)
@@ -771,9 +776,14 @@ class BudgetEngine:
                     if tasa_list:
                         default_growth = sum(tasa_list) / len(tasa_list)
 
-                monthly_val = hist_annual / 12 if hist_annual else Decimal('0')
+                if item.code.startswith('ACC_43'):
+                    monthly_vals = [Decimal('0')]*11 + [Decimal(str(round(hist_annual, 2)))] if hist_annual else [Decimal('0')] * 12
+                else:
+                    monthly_val = hist_annual / 12 if hist_annual else Decimal('0')
+                    monthly_vals = [monthly_val] * 12
+                    
                 total_y1 = Decimal(str(round(hist_annual, 2)))
-                self._save_monthly_details(budget_line, [monthly_val] * 12)
+                self._save_monthly_details(budget_line, monthly_vals)
                 budget_line.total_amount_y1 = total_y1
                 
                 y2_val = round(float(total_y1) * (1 + default_growth / 100.0), 2)
@@ -811,6 +821,9 @@ class BudgetEngine:
 
             # Monthly values: distribute proportionally to monthly volumes
             def distribute(annual_total, monthly_vols):
+                if item.code.startswith('ACC_43'):
+                    return [0.0]*11 + [float(annual_total)]
+                
                 total_vol = sum(monthly_vols) if monthly_vols else 0
                 if total_vol == 0 or annual_total == 0:
                     return [annual_total / 12] * 12
