@@ -294,6 +294,9 @@ def api_get_cash_flow_data(request, plan_id):
         r = {
             "code": code,
             "name": name,
+            "cat": "Flujo de Caja",
+            "is_total": False,
+            "base": sum(values[:12]) / 12 if values else 0,
             "m1_12": values[:12],
             "y1": sum(values[:12]),
             "y2": sum(values[12:24]),
@@ -312,6 +315,7 @@ def api_get_cash_flow_data(request, plan_id):
             else: y3_actual += val
             
         r["m1_12"] = m1_12_actual
+        r["months"] = m1_12_actual
         r["y1"] = sum(m1_12_actual)
         r["y2"] = y2_actual
         r["y3"] = y3_actual
@@ -321,7 +325,7 @@ def api_get_cash_flow_data(request, plan_id):
     ingresos_arr = add_row('ING', 'Ingresos Operativos', ingresos_op)
     egresos_arr = add_row('EGR', '(-) Egresos Operativos', [-x for x in egresos_op])
     
-    prev_c = sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('14') and not str(x['account_code']).startswith('149'))
+    prev_c = float(sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('14') and not str(x['account_code']).startswith('149')))
     recup = [0.0]*36
     desem = [0.0]*36
     for i in range(36):
@@ -334,7 +338,7 @@ def api_get_cash_flow_data(request, plan_id):
     recup_arr = add_row('RECUP', 'Recuperación de Cartera', recup)
     desem_arr = add_row('DESEM', '(-) Desembolsos de Cartera', desem)
     
-    prev_p = sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('211') or str(x['account_code']).startswith('212'))
+    prev_p = float(sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('211') or str(x['account_code']).startswith('212')))
     ing_pas = [0.0]*36
     ret_pas = [0.0]*36
     for i in range(36):
@@ -351,30 +355,36 @@ def api_get_cash_flow_data(request, plan_id):
     
     flujo_neto = {
         "name": "Flujo Neto Mensual",
-        "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0
+        "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0,
+        "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
     
     for i in range(12):
         s = sum(r["m1_12"][i] for r in rows)
         flujo_neto["m1_12"][i] = s
+        flujo_neto["months"][i] = s
     flujo_neto["y1"] = sum(r["y1"] for r in rows)
     flujo_neto["y2"] = sum(r["y2"] for r in rows)
     flujo_neto["y3"] = sum(r["y3"] for r in rows)
     
     saldo_inicial = {
         "name": "Saldo Inicial de Caja",
-        "m1_12": [0]*12, "y1": saldo_inicial_caja, "y2": 0, "y3": 0
+        "m1_12": [0]*12, "y1": saldo_inicial_caja, "y2": 0, "y3": 0,
+        "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
     saldo_final = {
         "name": "Saldo Final de Caja",
-        "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0
+        "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0,
+        "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
     
     current_saldo = saldo_inicial_caja
     for i in range(12):
         saldo_inicial["m1_12"][i] = current_saldo
+        saldo_inicial["months"][i] = current_saldo
         current_saldo += flujo_neto["m1_12"][i]
         saldo_final["m1_12"][i] = current_saldo
+        saldo_final["months"][i] = current_saldo
         
     saldo_final["y1"] = current_saldo
     saldo_inicial["y2"] = current_saldo
@@ -384,6 +394,10 @@ def api_get_cash_flow_data(request, plan_id):
     saldo_inicial["y3"] = current_saldo
     current_saldo += flujo_neto["y3"]
     saldo_final["y3"] = current_saldo
+    
+    rows.append(saldo_inicial)
+    rows.append(flujo_neto)
+    rows.append(saldo_final)
     
     return JsonResponse({
         "status": "success",

@@ -264,7 +264,7 @@
         .then(response => response.json())
         .then(res => {
             if (res.status === 'success') {
-                currentCFData = res.data;
+                currentCFData = res.rows;
                 renderCFTable(currentCFData);
             } else {
                 Swal.fire('Error', res.message || 'Error al cargar los datos del flujo de caja.', 'error');
