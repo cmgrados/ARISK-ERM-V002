@@ -2112,95 +2112,40 @@ def export_bg_proyectado(request, plan_id):
     
     scenario = request.GET.get('scenario', 'BASE')
     
-    # Obtener simulaciones del paso 6
-    simulaciones = SimulacionEscenario.objects.filter(plan=plan, organization=organization, agencia='Consolidado')
-    
-    sim_dict = {}
-    for sim in simulaciones:
-        proy_anuales = []
-        for year in range(1, 4):
-            # Tomamos el valor del mes 12 de cada año proyectado (ej. mes 12, 24, 36)
-            pm = ProyeccionMensual.objects.filter(escenario=sim, mes_proyeccion=year*12).first()
-            if pm:
-                if scenario == 'PESIMISTA': val = pm.valor_pesimista
-                elif scenario == 'OPTIMISTA': val = pm.valor_optimista
-                else: val = pm.valor_base
-                proy_anuales.append(float(val))
-            else:
-                proy_anuales.append(0.0)
-        sim_dict[sim.variable_id] = proy_anuales
+    import json
+    api_response = api_get_projected_balance_data(request, plan_id)
+    if api_response.status_code != 200:
+        return api_response
         
-    hist_data = plan.historical_data or {}
-    step6_data = hist_data.get('step6_data', {})
+    resp_data = json.loads(api_response.content)
+    accounts = resp_data.get('accounts', [])
     
-    def get_hist_val(var_id):
-        if 'datasets_by_agency' in step6_data:
-            variables = step6_data['datasets_by_agency'].get('Consolidado', {}).get('variables', [])
-            for v in variables:
-                if v.get('id') == var_id:
-                    hist_arr = v.get('hist', [])
-                    return hist_arr[-1] if hist_arr else 0.0
-        return 0.0
-
-    cartera_hist = get_hist_val('cartera')
-    mora_hist = get_hist_val('mora_soles')
-    ahorros_hist = get_hist_val('ahorros')
-    dpf_hist = get_hist_val('dpf')
-    aportes_hist = get_hist_val('aportes')
-    
-    # Asumimos que Fondos Disponibles es aprox 15-20% del total pasivo o un valor predeterminado si no hay
-    fondos_hist = 15000000.0
-    
-    data = [
-        {"Rubro": "ACTIVO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
-        {"Rubro": "Fondos Disponibles", "Base Histórica": fondos_hist, "Año 1 Proy.": fondos_hist*1.05, "Año 2 Proy.": fondos_hist*1.10, "Año 3 Proy.": fondos_hist*1.15},
-        {"Rubro": "Cartera de Créditos (Bruta)", 
-         "Base Histórica": cartera_hist, 
-         "Año 1 Proy.": sim_dict.get('cartera', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('cartera', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('cartera', [0,0,0])[2]},
-        {"Rubro": "(-) Provisiones para Créditos", 
-         "Base Histórica": -mora_hist, 
-         "Año 1 Proy.": -sim_dict.get('mora_soles', [0,0,0])[0], 
-         "Año 2 Proy.": -sim_dict.get('mora_soles', [0,0,0])[1], 
-         "Año 3 Proy.": -sim_dict.get('mora_soles', [0,0,0])[2]},
-        {"Rubro": "TOTAL ACTIVO", "Base Histórica": fondos_hist + cartera_hist - mora_hist, 
-         "Año 1 Proy.": (fondos_hist*1.05) + sim_dict.get('cartera', [0,0,0])[0] - sim_dict.get('mora_soles', [0,0,0])[0], 
-         "Año 2 Proy.": (fondos_hist*1.10) + sim_dict.get('cartera', [0,0,0])[1] - sim_dict.get('mora_soles', [0,0,0])[1], 
-         "Año 3 Proy.": (fondos_hist*1.15) + sim_dict.get('cartera', [0,0,0])[2] - sim_dict.get('mora_soles', [0,0,0])[2]},
+    data = []
+    for acc in accounts:
+        data.append({
+            "Código": acc['code'],
+            "Rubro": acc['name'],
+            "Base Histórica": acc['base'],
+            "Ene": acc['m1_12'][0],
+            "Feb": acc['m1_12'][1],
+            "Mar": acc['m1_12'][2],
+            "Abr": acc['m1_12'][3],
+            "May": acc['m1_12'][4],
+            "Jun": acc['m1_12'][5],
+            "Jul": acc['m1_12'][6],
+            "Ago": acc['m1_12'][7],
+            "Sep": acc['m1_12'][8],
+            "Oct": acc['m1_12'][9],
+            "Nov": acc['m1_12'][10],
+            "Dic": acc['m1_12'][11],
+            "Año 1 Proy.": acc['y1'],
+            "Año 2 Proy.": acc['y2'],
+            "Año 3 Proy.": acc['y3'],
+        })
         
-        {"Rubro": "PASIVO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
-        {"Rubro": "Obligaciones con el Público (Ahorros)", 
-         "Base Histórica": ahorros_hist, 
-         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2]},
-        {"Rubro": "Obligaciones con el Público (Plazo Fijo)", 
-         "Base Histórica": dpf_hist, 
-         "Año 1 Proy.": sim_dict.get('dpf', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('dpf', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('dpf', [0,0,0])[2]},
-        {"Rubro": "TOTAL PASIVO", "Base Histórica": ahorros_hist + dpf_hist, 
-         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0] + sim_dict.get('dpf', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1] + sim_dict.get('dpf', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2] + sim_dict.get('dpf', [0,0,0])[2]},
-        
-        {"Rubro": "PATRIMONIO", "Base Histórica": "", "Año 1 Proy.": "", "Año 2 Proy.": "", "Año 3 Proy.": ""},
-        {"Rubro": "Capital Social (Aportes)", 
-         "Base Histórica": aportes_hist, 
-         "Año 1 Proy.": sim_dict.get('aportes', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('aportes', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('aportes', [0,0,0])[2]},
-        {"Rubro": "TOTAL PATRIMONIO", "Base Histórica": aportes_hist, "Año 1 Proy.": sim_dict.get('aportes', [0,0,0])[0], "Año 2 Proy.": sim_dict.get('aportes', [0,0,0])[1], "Año 3 Proy.": sim_dict.get('aportes', [0,0,0])[2]},
-        
-        {"Rubro": "Total Pasivo y Patrimonio", "Base Histórica": ahorros_hist + dpf_hist + aportes_hist, 
-         "Año 1 Proy.": sim_dict.get('ahorros', [0,0,0])[0] + sim_dict.get('dpf', [0,0,0])[0] + sim_dict.get('aportes', [0,0,0])[0], 
-         "Año 2 Proy.": sim_dict.get('ahorros', [0,0,0])[1] + sim_dict.get('dpf', [0,0,0])[1] + sim_dict.get('aportes', [0,0,0])[1], 
-         "Año 3 Proy.": sim_dict.get('ahorros', [0,0,0])[2] + sim_dict.get('dpf', [0,0,0])[2] + sim_dict.get('aportes', [0,0,0])[2]},
-    ]
     df = pd.DataFrame(data)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename="BG_Proyectado_{plan.name}.xlsx"'
+    response['Content-Disposition'] = f'attachment; filename="BG_Proyectado_{plan.nombre}.xlsx"'
     df.to_excel(response, index=False)
     return response
 
@@ -2265,8 +2210,8 @@ def api_get_projected_balance_data(request, plan_id):
             }
 
     # 2. Get Projections
-    sims = SimulacionEscenario.objects.filter(plan=plan, organization=organization)
-    
+    sims = SimulacionEscenario.objects.filter(plan=plan, organization=organization, agencia='Consolidado')
+
     def get_proj_vals(variable_id):
         sim = sims.filter(variable_id=variable_id).first()
         if not sim:
@@ -2275,7 +2220,19 @@ def api_get_projected_balance_data(request, plan_id):
         field = 'valor_base'
         if scenario == 'OPTIMISTIC': field = 'valor_optimista'
         elif scenario == 'PESSIMISTIC': field = 'valor_pesimista'
-        return [float(getattr(p, field, 0) or 0) for p in projs]
+        elif scenario == 'MC_BASE': field = 'mc_valor_base'
+        elif scenario == 'MC_OPTIMISTIC': field = 'mc_valor_optimista'
+        elif scenario == 'MC_PESSIMISTIC': field = 'mc_valor_pesimista'
+        
+        vals = []
+        for p in projs:
+            val = getattr(p, field, None)
+            if val is None:
+                # Fallback to standard trend if MC values are not generated
+                fallback_field = field.replace('mc_', '')
+                val = getattr(p, fallback_field, 0)
+            vals.append(float(val or 0))
+        return vals
         
     proj_cartera = get_proj_vals('cartera')
     proj_mora = get_proj_vals('mora_soles')
@@ -2536,7 +2493,8 @@ from funcs import (
     api_toggle_fixed_bg_account,
     api_clear_other_trends,
     api_get_cash_flow_data,
-    api_save_cf_adjustment
+    api_save_cf_adjustment,
+    api_generate_cf_trend
 )
 
 
