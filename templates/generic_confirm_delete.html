@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title_header %}{{ page_title|default:"Confirmar Eliminación" }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card elevation-3 border-0">
+                <div class="card-header bg-danger text-white py-3">
+                    <h5 class="card-title mb-0 font-weight-bold">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>¿Está seguro de eliminar este registro?
+                    </h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <p class="lead mb-4">Esta acción no se puede deshacer.</p>
+                    
+                    <div class="alert alert-light border mb-4">
+                        <strong class="d-block text-uppercase small text-muted mb-1">Registro a eliminar:</strong>
+                        <span class="h5 font-weight-bold text-dark">{{ item }}</span>
+                    </div>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url cancel_url %}" class="btn btn-light px-4 font-weight-bold">
+                                <i class="fas fa-times mr-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger px-4 font-weight-bold shadow-sm">
+                                <i class="fas fa-trash-alt mr-2"></i>Eliminar Permanentemente
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-light { background: #f8f9fa; border: 1px solid #dee2e6; }
+    .btn-light:hover { background: #e9ecef; }
+</style>
+{% endblock %}

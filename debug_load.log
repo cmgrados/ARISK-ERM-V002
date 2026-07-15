@@ -1,0 +1,25 @@
+--- NUEVA CARGA: plantilla_carga_creditos_202412.xlsx ---
+Columnas detectadas: SBS=None, ID=None, OP=None, Bal=None, Type=None, Prod=None
+Muestra de primeras 5 filas:
+   N                           NCL      FNAC GEN EC  EMP          CSOC   PR TID       NID TPER                                           DOM RCO CAL CALINT CAGE MON              CCR TCR STCR       FOT   MORG    TEA      SKCR        CC      KVI KRE       KRF KVE KJU KCO  CCO DAK SGP SGA      PVR      PCI SCC  CCC     SIN SIS SID           TPR NCPR NCPA PCUO DGR      FVGO      FVGA SSC       SSG SCR SKCO SCOR SINC SCS                CORTE         _SHEET_NAME
+0  1        HUAMAN MAMANI CORNELIA  19620916   F  S  NaN  101010001067  NaN   1  24943221    1                              26 DE JULIO  896   0   0      0  101  01    01-0001931-24  12   99  20240911   3000  29.84   2086.12  14110306  2086.12   0         0   0   0   0  NaN   0   0   0    20.86    20.86   0  NaN       0   0   0       CONSUMO   12    4   30   0  20251011  20250911   0   2086.12   0    0  NaN    0   0  2024-12-31 00:00:00  Plantilla_Creditos
+1  2      TOLEDO SUAREZ FLOR MARIA  19870930   F  S  NaN  101010001778  NaN   1  44786119    1  CP HUYRO , HUAYOPATA , LA CONVENCION , CUSCO   0   0      0  101  01    01-0001252-22  12   99  20221119  20000  29.84   8590.41  14110306  8590.41   0         0   0   0   0  NaN   0   0   0     85.9     85.9   0  NaN  163.55   0   0       CONSUMO   36   24   30   0  20260105  20251205   0   8590.41   0    0  NaN    0   0  2024-12-31 00:00:00  Plantilla_Creditos
+2  3  CHIRINOS CASAVERDE ROE SIXTO  19930726   M  S  NaN  101010001812  NaN   1  48040925    1                 GR, GAMARRA JR. KORIBENI M-08   0   0      0  101  01  188011100013055  10   09  20241202   6500  29.84      6500  14110206     6500   0         0   0   0   0  NaN   0   0   0       65       65   0  NaN  138.18   0   0  MICROEMPRESA   12    0   30   0  20251205  20251205   0      6500   0    0  NaN    0   0  2024-12-31 00:00:00  Plantilla_Creditos
+3  4     ALVAREZ SIMARAURA ALFREDO  20030723   M  S  NaN  101010001814  NaN   1  75522013    1                           SABAS SARAZOLA C-20   0   0      0  101  01  188005100013077  12   99  20241212   6000  29.84      6000  14110306     6000   0         0   0   0   0  NaN   0   0   0       60       60   0  NaN   83.26   0   0       CONSUMO   12    0   30   0  20251212  20251212   0      6000   0    0  NaN    0   0  2024-12-31 00:00:00  Plantilla_Creditos
+4  5           BALTA TROCONES LINA  19770920   F  S  NaN  101010001212  NaN   1  25009491    1                                       TACNA A   0   1      1  101  01    01-0000653-23  10   01  20230630  43000  29.84  35030.78  14140206        0   0  35030.78   0   0   0  NaN   0   0   0  1751.54  1751.54   0  NaN       0   0   0  CREDINEGOCIO   60   17   30   0  20280802  20280703   0  35030.78   0    0  NaN    0   0  2024-12-31 00:00:00  Plantilla_Creditos
+-----------------------------
+Procesando fecha 2024-12-31: 856 filas encontradas.
+--- NUEVA CARGA: plantilla_carga_creditos_202412.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202412.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202501.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202502.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202503.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202504.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202505.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202506.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202507.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202508.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202509.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202510.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202511.xlsx ---
+--- NUEVA CARGA: plantilla_carga_creditos_202512.xlsx ---

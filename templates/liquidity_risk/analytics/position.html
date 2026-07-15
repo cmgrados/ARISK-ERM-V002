@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0 font-weight-bold">Seleccionar Periodo</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="." id="periodForm">
+                    <div class="form-group mb-0">
+                        <select name="upload_id" class="form-control select2" onchange="this.form.submit()">
+                            {% for up in all_uploads %}
+                                <option value="{{ up.id }}" {% if upload.id == up.id %}selected{% endif %}>
+                                    Balance {{ up.period|date:"m/Y" }} ({{ up.created_at|date:"d/m/Y" }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if upload %}
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0 font-weight-bold">Resumen de Carga</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <th class="pl-3 py-2 text-muted small uppercase">Periodo:</th>
+                        <td class="pr-3 py-2 font-weight-bold text-right">{{ upload.period|date:"m/Y" }}</td>
+                    </tr>
+                    <tr>
+                        <th class="pl-3 py-2 text-muted small uppercase">Fecha Carga:</th>
+                        <td class="pr-3 py-2 text-right">{{ upload.created_at|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th class="pl-3 py-2 text-muted small uppercase">Registros:</th>
+                        <td class="pr-3 py-2 text-right">{{ upload.details.count }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="card-footer bg-white border-top">
+                <form action="{% url 'utilities:delete_balance' upload.id %}" method="POST" onsubmit="return confirm('¿Eliminar esta carga?')">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm btn-block">
+                        <i class="fas fa-trash mr-1"></i> Eliminar esta Carga
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h5 class="card-title mb-0 font-weight-bold">Composición del Balance</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Rubro de Liquidez</th>
+                                <th class="text-right">Saldo Total</th>
+                                <th class="text-center">Tipo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for res in results %}
+                            <tr>
+                                <td class="font-weight-bold">{{ res.item }}</td>
+                                <td class="text-right">{{ res.total|floatformat:2 }}</td>
+                                <td class="text-center">
+                                    {% if res.type == 'ACT' %}
+                                        <span class="badge badge-success">Activo</span>
+                                    {% else %}
+                                        <span class="badge badge-primary">Pasivo</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5 text-muted">No hay datos procesados para este periodo.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

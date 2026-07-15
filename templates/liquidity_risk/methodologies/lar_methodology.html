@@ -1,0 +1,505 @@
+{% extends 'base.html' %}
+{% load humanize l10n %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-lar {
+        border-left: 4px solid #4f46e5 !important;
+        transition: transform 0.2s;
+    }
+    .card-lar:hover { transform: translateY(-2px); }
+    .metric-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; margin-bottom: 4px; }
+    .metric-value { font-size: 1.45rem; font-weight: 800; color: #1e293b; line-height: 1.1; }
+    .metric-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 2px; }
+    .table-history th { font-size: 0.7rem; text-transform: uppercase; background: #f8fafc; font-weight: 700; }
+    .table-history td { font-size: 0.8rem; vertical-align: middle !important; }
+    .analysis-card { border: none; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border-radius: 12px; height: 100%; border-top: 3px solid transparent; }
+    .analysis-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- FILTERS & ACTIONS -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body bg-light d-flex justify-content-between align-items-center py-2">
+                <form method="GET" class="form-inline w-100 justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <div class="form-group mr-3">
+                            <label class="mr-2 small font-weight-bold">Periodo:</label>
+                            <select name="period" class="form-control form-control-sm border-primary" onchange="this.form.submit()">
+                                {% for p in all_periods %}
+                                    <option value="{{ p|date:'Y-m-d' }}" {% if p == period %}selected{% endif %}>{{ p|date:'d/m/Y' }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group mr-3">
+                            <label class="mr-2 small font-weight-bold">Moneda:</label>
+                            <select name="currency" class="form-control form-control-sm border-primary" onchange="this.form.submit()">
+                                <option value="MN" {% if currency == 'MN' %}selected{% endif %}>Soles (MN)</option>
+                                <option value="ME" {% if currency == 'ME' %}selected{% endif %}>Dólares (ME)</option>
+                            </select>
+                        </div>
+                        <div class="form-group mr-3">
+                            <label class="mr-2 small font-weight-bold">Segmento:</label>
+                            <select name="segment" class="form-control form-control-sm border-primary" onchange="this.form.submit()">
+                                <option value="TODOS" {% if selected_segment == 'TODOS' %}selected{% endif %}>Todos los segmentos</option>
+                                {% for s in segments %}
+                                    <option value="{{ s }}" {% if s == selected_segment %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="mr-2 small font-weight-bold">Productos:</label>
+                            <select name="products" class="form-control form-control-sm border-primary" multiple size="1" style="min-width: 150px;" onchange="this.form.submit()">
+                                {% for p in all_products %}
+                                    <option value="{{ p }}" {% if p in selected_products %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal" data-target="#modalCalculate">
+                        <i class="fas fa-calculator mr-1"></i> Ejecutar Cálculo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if lar_data %}
+<!-- METRIC CARDS -->
+<div class="row mb-2">
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100">
+            <div class="card-body p-2">
+                <div class="metric-label">Saldo al Corte</div>
+                <div class="metric-value">{% localize off %}{{ lar_data.total_balance|floatformat:0|intcomma }}{% endlocalize %}</div>
+                <div class="metric-sub">{{ currency }} - {{ period|date:'d/m/y' }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100" style="border-left-color: #ef4444 !important;">
+            <div class="card-body p-2">
+                <div class="metric-label">Saldo Volátil</div>
+                <div class="metric-value text-danger">{% localize off %}{{ lar_data.lar_amount|floatformat:0|intcomma }}{% endlocalize %}</div>
+                <div class="metric-sub">Stress al 95%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100" style="border-left-color: #f59e0b !important;">
+            <div class="card-body p-2">
+                <div class="metric-label">Volatilidad %</div>
+                <div class="metric-value text-warning">{% localize off %}{{ lar_data.lar_percentage|floatformat:2 }}%{% endlocalize %}</div>
+                <div class="metric-sub">Impacto s/Total</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100" style="border-left-color: #10b981 !important;">
+            <div class="card-body p-2">
+                <div class="metric-label">Desv. Mensual</div>
+                <div class="metric-value text-success">{% localize off %}{{ lar_data.std_dev|floatformat:0|intcomma }}{% endlocalize %}</div>
+                <div class="metric-sub">Variabilidad (σ)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100" style="border-left-color: #3b82f6 !important;">
+            <div class="card-body p-2">
+                <div class="metric-label">Desv. Diaria</div>
+                <div class="metric-value text-primary">{% localize off %}{{ lar_data.std_dev_day|floatformat:0|intcomma }}{% endlocalize %}</div>
+                <div class="metric-sub">σ / √30</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 px-1">
+        <div class="card shadow-sm card-lar h-100" style="border-left-color: #6366f1 !important;">
+            <div class="card-body p-2">
+                <div class="metric-label">Var. Promedio</div>
+                <div class="metric-value {% if lar_data.avg_variation < 0 %}text-danger{% else %}text-success{% endif %}">
+                    {% localize off %}{{ lar_data.avg_variation|floatformat:0|intcomma }}{% endlocalize %}
+                </div>
+                <div class="metric-sub">Histórico Neto</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if lar_data.analysis %}
+<!-- INTERPRETATIVE ANALYSIS -->
+<div class="row mb-2">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0" style="background: #f1f5f9;">
+            <div class="card-body p-2">
+                <div class="d-flex align-items-center justify-content-between mb-2 px-1">
+                    <div>
+                        <i class="fas fa-microscope mr-2 text-primary"></i>
+                        <h6 class="mb-0 font-weight-bold text-dark small text-uppercase d-inline">Análisis Interpretativo de Liquidez</h6>
+                    </div>
+                    {% if lar_data.id %}
+                        {% if not lar_data.is_official %}
+                        <a href="{% url 'liquidity_risk:apply_lar_to_gap' lar_data.id %}" class="btn btn-xs btn-success shadow-sm py-1" style="font-size: 0.65rem;">
+                            <i class="fas fa-check-circle mr-1"></i> RESCATAR BANDA (APLICAR A BRECHAS)
+                        </a>
+                        {% else %}
+                        <span class="badge badge-success py-1 px-2" style="font-size: 0.6rem;">
+                            <i class="fas fa-check-double mr-1"></i> METODOLOGÍA APLICADA AL GAP
+                        </span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="row no-gutters">
+                    {% for item in lar_data.analysis %}
+                    <div class="col px-2">
+                        <div class="analysis-card p-3" style="border-top-color: var(--{{ item.color }}, #{{ item.color }});">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="analysis-icon bg-{{ item.color }} text-white mr-2 shadow-sm">
+                                    <i class="fas {{ item.icon }}"></i>
+                                </div>
+                                <div class="text-uppercase" style="font-size: 0.65rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">{{ item.title }}</div>
+                            </div>
+                            <div class="font-weight-bold mb-2 text-{{ item.color }}" style="font-size: 1rem;">{{ item.value }}</div>
+                            <p class="mb-0" style="font-size: 0.75rem; line-height: 1.3; color: #334155;">{{ item.text }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- PROJECTIONS SECTION: REGULATORY BANDS -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 font-weight-bold"><i class="fas fa-table mr-1"></i> Proyección de Saldos por Bandas de Liquidez (Metodología LaR)</h6>
+                <button class="btn btn-xs btn-light" onclick="copyProjectionsToClipboard()">
+                    <i class="fas fa-copy mr-1"></i> Copiar Datos
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0 text-center" id="projectionsTable">
+                        <thead class="bg-dark text-white">
+                            <tr style="font-size: 0.75rem;">
+                                <th class="align-middle bg-secondary">BANDA</th>
+                                {% for proj in lar_data.projections %}
+                                <th>{{ proj.label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="font-weight-bold bg-light text-left" style="font-size: 0.75rem;">% ESTABLE</td>
+                                {% for proj in lar_data.projections %}
+                                <td class="font-weight-bold text-success" style="font-size: 0.85rem;">{% localize off %}{{ proj.retention_pct|floatformat:2 }}%{% endlocalize %}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold bg-light text-left" style="font-size: 0.75rem;">SALDO ESTABLE</td>
+                                {% for proj in lar_data.projections %}
+                                <td class="text-primary" style="font-size: 0.8rem;">{% localize off %}{{ proj.remaining_balance|floatformat:0|intcomma }}{% endlocalize %}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold bg-light text-left" style="font-size: 0.75rem;">SALDO VOLÁTIL</td>
+                                {% for proj in lar_data.projections %}
+                                <td class="text-danger" style="font-size: 0.8rem;">{% localize off %}{{ proj.volatility|floatformat:0|intcomma }}{% endlocalize %}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold bg-light text-left" style="font-size: 0.75rem;">SALDO CONTRACTUAL</td>
+                                {% for proj in lar_data.projections %}
+                                <td class="text-secondary" style="font-size: 0.8rem;">{% localize off %}{{ proj.contractual_remaining|floatformat:0|intcomma }}{% endlocalize %}</td>
+                                {% endfor %}
+                            </tr>
+                            <tr>
+                                <td class="font-weight-bold bg-light text-left" style="font-size: 0.75rem;">VENCIMIENTOS</td>
+                                {% for proj in lar_data.projections %}
+                                <td class="text-dark" style="font-size: 0.8rem;">{% localize off %}{{ proj.contractual_discrete|floatformat:0|intcomma }}{% endlocalize %}</td>
+                                {% endfor %}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white py-2">
+                <p class="mb-0 small text-muted">
+                    <i class="fas fa-info-circle mr-1"></i> <strong>Nota Metodológica:</strong> El saldo estable se proyecta como <code>Saldo Actual - (Volatilidad Mensual * Z-Score * √T)</code>. Útil para la distribución de pasivos sin vencimiento en el Análisis de Brechas.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyProjectionsToClipboard() {
+    const table = document.getElementById('projectionsTable');
+    let text = "";
+    for (let i = 0; i < table.rows.length; i++) {
+        let row = table.rows[i];
+        for (let j = 0; j < row.cells.length; j++) {
+            text += row.cells[j].innerText.trim() + (j === row.cells.length - 1 ? "" : "\t");
+        }
+        text += "\n";
+    }
+    
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Datos copiados al portapapeles. Puede pegarlos en Excel.");
+    });
+}
+</script>
+
+<!-- CHARTS & HISTORY -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 font-weight-bold"><i class="fas fa-chart-area mr-1 text-primary"></i> Evolución Histórica de Saldos y Variaciones</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="larChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header">
+                <h6 class="mb-0 font-weight-bold"><i class="fas fa-list mr-1 text-primary"></i> Detalle de la Serie</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-sm table-history mb-0 text-center">
+                        <thead>
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Saldo</th>
+                                <th>Variación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in lar_data.history %}
+                            <tr>
+                                <td>{{ item.period }}</td>
+                                <td class="text-right">{% localize off %}{{ item.balance|floatformat:2|intcomma }}{% endlocalize %}</td>
+                                <td class="text-right {% if item.variation < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {% localize off %}{{ item.variation|floatformat:2|intcomma }}{% endlocalize %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="alert alert-info shadow-sm border-0">
+            <i class="fas fa-info-circle mr-2"></i> No se han encontrado resultados de LaR para los parámetros seleccionados. Por favor, ejecute un nuevo cálculo.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- HISTORIAL DE RESULTADOS -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white">
+                <h6 class="mb-0 font-weight-bold"><i class="fas fa-history mr-1"></i> Historial de Ejecuciones LaR</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0 text-center small">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>F. Cálculo</th>
+                                <th>Segmento</th>
+                                <th>Moneda</th>
+                                <th>Saldo Total</th>
+                                <th>Saldo Volátil</th>
+                                <th>% Volatilidad</th>
+                                <th>Ejecutado por</th>
+                                <th>F. Ejecución</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                                   {% for res in results %}
+                             <tr {% if res.is_official %}class="table-success"{% endif %}>
+                                 <td>
+                                     {{ res.period|date:'d/m/Y' }}
+                                     {% if res.is_official %}
+                                     <span class="badge badge-success ml-1" title="Aplicado al Análisis de Brechas">
+                                         <i class="fas fa-check"></i> Oficial
+                                     </span>
+                                     {% endif %}
+                                 </td>
+                                 <td><span class="badge badge-info">{{ res.segment }}</span></td>
+                                 <td>{{ res.currency }}</td>
+                                 <td>{{ res.total_balance|floatformat:2|intcomma }}</td>
+                                 <td class="font-weight-bold text-danger">{{ res.lar_amount|floatformat:2|intcomma }}</td>
+                                 <td>{{ res.lar_percentage|floatformat:2 }}%</td>
+                                 <td>{{ res.user.username }}</td>
+                                 <td>{{ res.executed_at|date:'d/m/Y H:i' }}</td>
+                                 <td>
+                                     <div class="btn-group">
+                                         <a href="?period={{ res.period|date:'Y-m-d' }}&currency={{ res.currency }}&segment={{ res.segment }}" class="btn btn-sm btn-outline-primary px-2" title="Visualizar" style="padding: 2px 5px; font-size: 0.7rem;">
+                                             <i class="fas fa-eye"></i>
+                                         </a>
+                                         {% if not res.is_official %}
+                                         <a href="{% url 'liquidity_risk:apply_lar_to_gap' res.id %}" class="btn btn-sm btn-success px-2" title="Rescatar Banda (Aplicar a Brechas)" style="padding: 2px 5px; font-size: 0.7rem;">
+                                             <i class="fas fa-check-circle"></i>
+                                         </a>
+                                         {% endif %}
+                                         <form action="{% url 'liquidity_risk:delete_lar_result' res.id %}" method="POST" style="display:inline;" onsubmit="return confirm('¿Eliminar cálculo?')">
+                                             {% csrf_token %}
+                                             <button type="submit" class="btn btn-sm btn-danger px-2" title="Eliminar este resultado" style="padding: 2px 5px; font-size: 0.7rem;">
+                                                 <i class="fas fa-trash"></i>
+                                             </button>
+                                         </form>
+                                     </div>
+                                 </td>
+                             </tr>
+                             {% empty %}
+                             <tr>
+                                 <td colspan="9" class="py-4 text-muted">No hay ejecuciones registradas.</td>
+                             </tr>
+                             {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CALCULATE -->
+<div class="modal fade" id="modalCalculate" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title font-weight-bold">Calcular Saldo Volátil (LaR)</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning small">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> El cálculo se realizará sobre la serie histórica disponible en el sistema para el segmento y productos seleccionados.
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Segmento:</label>
+                        <select name="segment" class="form-control">
+                            <option value="TODOS">Todos los segmentos</option>
+                            {% for s in segments %}
+                                <option value="{{ s }}" {% if s == selected_segment %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Productos (Opcional):</label>
+                        <select name="products" class="form-control" multiple size="4">
+                            {% for p in all_products %}
+                                <option value="{{ p }}" {% if p in selected_products %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Mantenga Ctrl presionado para seleccionar varios.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Nivel de Confianza:</label>
+                        <select name="confidence" class="form-control">
+                            <option value="0.90">90%</option>
+                            <option value="0.95" selected>95% (Estándar)</option>
+                            <option value="0.99">99%</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="small font-weight-bold">Profundidad Histórica (Meses):</label>
+                        <input type="number" name="depth" class="form-control" value="12" min="3" max="60">
+                    </div>
+                    <p class="text-muted small">Al procesar, los resultados se guardarán y se aplicarán automáticamente al <b>Análisis de Brechas</b> para este periodo.</p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Procesar Metodología</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if lar_data %}
+    const historyData = {{ lar_data.history|safe }};
+    const labels = historyData.map(item => item.period);
+    const balances = historyData.map(item => item.balance);
+    const variations = historyData.map(item => item.variation);
+
+    const ctx = document.getElementById('larChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Saldo Total',
+                    data: balances,
+                    borderColor: '#4f46e5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                    yAxisID: 'y',
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Variación Mensual',
+                    data: variations,
+                    type: 'bar',
+                    backgroundColor: variations.map(v => v < 0 ? 'rgba(239, 68, 68, 0.5)' : 'rgba(16, 185, 129, 0.5)'),
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Saldo ({{ currency }})' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    title: { display: true, text: 'Variación' }
+                }
+            },
+            plugins: {
+                legend: { position: 'top' }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

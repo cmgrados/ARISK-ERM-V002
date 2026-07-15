@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row text-center">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-sitemap fa-3x text-info mb-3"></i>
+            <h4>Maestro de Cuentas</h4>
+            <p class="text-muted small">Configurar la vinculación de cuentas contables con los rubros de liquidez y SBS.</p>
+            <a href="{% url 'utilities:account_mapping' %}" class="btn btn-outline-dark mt-auto">Gestionar Maestro</a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-file-invoice fa-3x text-secondary mb-3"></i>
+            <h4>Balance de Comprobación</h4>
+            <p class="text-muted small">Cargar saldos contables detallados para el cálculo de brechas y solvencia.</p>
+            <a href="{% url 'utilities:load_balance' %}" class="btn btn-outline-dark mt-auto">Cargar Balance</a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-file-invoice-dollar fa-3x text-dark mb-3"></i>
+            <h4>Carga de Pasivos</h4>
+            <p class="text-muted small">Cargar carta de pasivos (Depósitos, Plazos Fijos) para análisis de brechas de liquidez.</p>
+            <a href="{% url 'utilities:bulk_load_liability' %}" class="btn btn-outline-dark mt-auto">Iniciar Carga Pasivos</a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-file-import fa-3x text-primary mb-3"></i>
+            <h4>Carga de Cartera</h4>
+            <p class="text-muted small">Cargar cartera de créditos, KRIs y otros datos maestros desde Excel/CSV.</p>
+            <a href="{% url 'utilities:bulk_load_credit' %}" class="btn btn-outline-dark mt-auto">Iniciar Carga Cartera</a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-users fa-3x text-success mb-3"></i>
+            <h4>Carga de Socios y Aportes</h4>
+            <p class="text-muted small">Cargar base de datos de socios y sus aportes para visualización e integración.</p>
+            <a href="{% url 'utilities:bulk_load_socios' %}" class="btn btn-outline-dark mt-auto">Iniciar Carga</a>
+        </div>
+    </div>
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-database fa-3x text-primary mb-3"></i>
+            <h4>Backups de Base de Datos</h4>
+            <p class="text-muted small">Programar y descargar copias de seguridad de Supabase localmente.</p>
+            <a href="{% url 'utilities:backup_manager' %}" class="btn btn-outline-dark mt-auto">Gestionar Backups</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-history fa-3x text-warning mb-3"></i>
+            <h4>Logs de Actividad</h4>
+            <p class="text-muted small">Auditoría completa de acciones realizadas por cada usuario en el sistema.</p>
+            <a href="{% url 'audit:log_list' %}" class="btn btn-outline-dark mt-auto">Ver Logs</a>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100 p-4">
+            <i class="fas fa-envelope-open-text fa-3x text-success mb-3"></i>
+            <h4>Configuración SMTP</h4>
+            <p class="text-muted small">Configurar servidor de correos para envío automático de alertas.</p>
+            <button class="btn btn-outline-dark mt-auto">Configurar Mail</button>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4 shadow-sm border-0">
+    <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-microchip mr-2 text-danger"></i>Estado del Servidor</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <span>CPU Usage</span>
+                <div class="progress"><div class="progress-bar bg-success" style="width: 12%">12%</div></div>
+            </div>
+            <div class="col-md-6 mb-2">
+                <span>RAM Usage</span>
+                <div class="progress"><div class="progress-bar bg-warning" style="width: 45%">45%</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

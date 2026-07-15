@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="font-weight-bold mb-0">
+                <i class="fas fa-search-dollar mr-2 text-primary"></i>Detalle de Carga Masiva
+            </h3>
+            <a href="{% url 'utilities:bulk_load_liability' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Volver al Historial
+            </a>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase font-weight-bold">Archivo</small>
+                        <p class="mb-0 font-weight-bold"><code>{{ log.file_name }}</code></p>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase font-weight-bold">Fecha de Carga</small>
+                        <p class="mb-0">{{ log.load_date|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase font-weight-bold">Total Registros</small>
+                        <p class="mb-0 h4 font-weight-bold text-primary">{{ log.records_processed }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <small class="text-muted text-uppercase font-weight-bold">Periodos Cargados</small>
+                        <div class="mt-1">
+                            {% for d in dates %}
+                                <span class="badge badge-info mr-1">{{ d|date:"d/m/Y" }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Records -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white p-0">
+                <ul class="nav nav-tabs border-0" id="recordTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold py-3 px-4" id="savings-tab" data-toggle="tab" href="#savings" role="tab">
+                            <i class="fas fa-piggy-bank mr-2"></i> Ahorros ({{ total_savings }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold py-3 px-4" id="deposits-tab" data-toggle="tab" href="#deposits" role="tab">
+                            <i class="fas fa-file-contract mr-2"></i> Plazos Fijos / DPF ({{ total_deposits }})
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content" id="recordTabsContent">
+                    <!-- Savings Tab -->
+                    <div class="tab-pane fade show active" id="savings" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light small text-uppercase">
+                                    <tr>
+                                        <th>Rubro</th>
+                                        <th>Periodo</th>
+                                        <th>Cuenta</th>
+                                        <th>Cliente</th>
+                                        <th>Producto</th>
+                                        <th>Moneda</th>
+                                        <th class="text-right">Saldo</th>
+                                        <th>Agencia</th>
+                                        <th>Banda</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for s in savings %}
+                                    <tr>
+                                        <td><span class="small text-muted font-weight-bold">{{ s.rubro }}</span></td>
+                                        <td class="small">{{ s.period|date:"d/m/Y" }}</td>
+                                        <td><code>{{ s.account_number }}</code></td>
+                                        <td class="small">{{ s.customer_name }}</td>
+                                        <td class="small">{{ s.product }}</td>
+                                        <td class="text-center">
+                                            <span class="badge {% if s.currency == 'MN' %}badge-soft-primary{% else %}badge-soft-success{% endif %}">
+                                                {{ s.currency }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right font-weight-bold">
+                                            {{ s.balance|floatformat:2|intcomma }}
+                                        </td>
+                                        <td class="small">{{ s.agency }}</td>
+                                        <td><span class="badge badge-secondary">{{ s.band_label }}</span></td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="9" class="text-center py-5 text-muted">No se cargaron registros de ahorros en este proceso.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if total_savings > 200 %}
+                        <div class="p-3 bg-light text-center small text-muted">
+                            Mostrando solo los primeros 200 registros de ahorros de un total de {{ total_savings }}.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Deposits Tab -->
+                    <div class="tab-pane fade" id="deposits" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="bg-light small text-uppercase">
+                                    <tr>
+                                        <th>Rubro</th>
+                                        <th>Periodo</th>
+                                        <th>Certificado</th>
+                                        <th>Cliente</th>
+                                        <th>Producto</th>
+                                        <th>Moneda</th>
+                                        <th class="text-right">Saldo</th>
+                                        <th>Vencimiento</th>
+                                        <th class="text-right">TEA</th>
+                                        <th>Banda</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for d in deposits %}
+                                    <tr>
+                                        <td><span class="small text-muted font-weight-bold">{{ d.rubro }}</span></td>
+                                        <td class="small">{{ d.period|date:"d/m/Y" }}</td>
+                                        <td><code>{{ d.certificate_number }}</code></td>
+                                        <td class="small">{{ d.customer_name }}</td>
+                                        <td class="small">{{ d.product }}</td>
+                                        <td class="text-center">
+                                            <span class="badge {% if d.currency == 'MN' %}badge-soft-primary{% else %}badge-soft-success{% endif %}">
+                                                {{ d.currency }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right font-weight-bold">
+                                            {{ d.balance|floatformat:2|intcomma }}
+                                        </td>
+                                        <td class="small text-danger font-weight-bold">{{ d.due_date|date:"d/m/Y" }}</td>
+                                        <td class="text-right small">{{ d.rate|floatformat:2 }}%</td>
+                                        <td><span class="badge badge-secondary">{{ d.band_label }}</span></td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="10" class="text-center py-5 text-muted">No se cargaron registros de plazos fijos en este proceso.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if total_deposits > 200 %}
+                        <div class="p-3 bg-light text-center small text-muted">
+                            Mostrando solo los primeros 200 registros de plazos fijos de un total de {{ total_deposits }}.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

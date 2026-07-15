@@ -1,0 +1,998 @@
+                
+                <style>
+                    tbody.hide-zeros tr[data-has-budget="false"] {
+                        display: none !important;
+                    }
+                </style>
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">Presupuesto Institucional Mensual ({{ plan.start_date.year }})</h4>
+                    <p class="text-muted">Proyecciones del presupuesto distribuido mensualmente basado en los supuestos.</p>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <!-- Summary Card -->
+                        <div class="card shadow border-0 rounded-lg mb-4">
+                            <div class="card-header bg-white border-bottom-0 pt-3 pb-2">
+                                <h6 class="m-0 font-weight-bold text-success"><i class="fas fa-chart-line mr-2"></i>Resumen Estado de Resultados</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;" id="budget-summary-table">
+                                        <thead class="bg-light text-dark" id="budget-summary-thead">
+                                        </thead>
+                                        <tbody id="budget-summary-tbody">
+                                            <tr><td colspan="15" class="text-center p-3 text-muted">Generando resumen...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Budget Table Card -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="m-0 font-weight-bold text-dark">Detalle del Presupuesto</h5>
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-secondary font-weight-bold shadow-sm mr-2" onclick="copyPreviousYearData()" title="Usar los montos exactos del a±o anterior (0% de variaci¾n global)">
+                                    <i class="fas fa-copy mr-1"></i> Copiar Datos A±o Anterior
+                                </button>
+                                <button type="button" id="btn-apply-trend" class="btn btn-sm btn-outline-info font-weight-bold shadow-sm mr-3" onclick="applyHistoricalTrend()">
+                                    <i class="fas fa-history mr-1"></i> Aplicar Tendencia A±o Anterior
+                                </button>
+                                <div class="input-group input-group-sm mr-3 shadow-sm" style="width: auto;">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-white font-weight-bold text-secondary">Var. desde:</span>
+                                    </div>
+                                    <select class="custom-select font-weight-bold text-indigo" id="apply-var-month" onchange="recalculateStep4()">
+                                        <option value="0">Enero</option>
+                                        <option value="1">Febrero</option>
+                                        <option value="2">Marzo</option>
+                                        <option value="3">Abril</option>
+                                        <option value="4">Mayo</option>
+                                        <option value="5">Junio</option>
+                                        <option value="6">Julio</option>
+                                        <option value="7">Agosto</option>
+                                        <option value="8">Septiembre</option>
+                                        <option value="9">Octubre</option>
+                                        <option value="10">Noviembre</option>
+                                        <option value="11">Diciembre</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary mr-2 shadow-sm font-weight-bold" id="btnSaveAssumptionsTop" onclick="saveAssumptionsFromStep4(this)">
+                                    <i class="fas fa-save mr-1"></i> Guardar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success mr-2 shadow-sm font-weight-bold" data-toggle="modal" data-target="#exportModal">
+                                    <i class="fas fa-file-export mr-1"></i> Exportar
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary mr-3 shadow-sm font-weight-bold" id="toggle-zero-accounts" onclick="toggleZeroAccounts()">
+                                    <i class="fas fa-eye-slash mr-1"></i> Ocultar en Cero
+                                </button>
+                                <div class="btn-group btn-group-sm shadow-sm">
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(1)">1 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(2)">2 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(4)">4 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(6)">6 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(8)">8 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(10)">10 Dg</button>
+                                    <button type="button" class="btn btn-outline-secondary font-weight-bold bg-white" onclick="expandToDigits(99)">Todos</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow border-0 rounded-lg">
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem; table-layout: fixed; min-width: 1800px;" id="budget-monthly-table">
+                                        <thead class="bg-indigo text-white" id="budget-monthly-thead">
+                                            <tr>
+                                                <th style="width: 120px;">C¾digo</th>
+                                                <th style="width: 350px;">Descripci¾n</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="budget-monthly-tbody">
+                                            <tr><td colspan="15" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Generando Presupuesto...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-outline-primary px-5 rounded-pill font-weight-bold shadow-sm mr-2" id="btnSaveAssumptionsStep4" onclick="saveAssumptionsFromStep4(this)">
+                                <i class="fas fa-save mr-1"></i> Guardar Supuestos
+                            </button>
+                            <a href="?step=5" class="btn btn-outline-indigo px-5 rounded-pill font-weight-bold shadow-sm">Siguiente Paso: Grado de Avance <i class="fas fa-arrow-right ml-2"></i></a>
+                        </div>
+                    </div>
+                </div>
+                
+                <script>
+                    const budgetDataJson4 = '{{ budget_data_json|escapejs }}';
+const histDataJson = '{{ historical_data_json|escapejs }}';
+                    document.addEventListener('DOMContentLoaded', function() {
+                        let data = null;
+                        try {
+                            
+data = JSON.parse(budgetDataJson4);
+if (!data || !data.income_statement || data.income_statement.length === 0) {
+    if (histDataJson && histDataJson.trim() !== '') {
+        const histData = JSON.parse(histDataJson);
+        data = data || {};
+        data.income_statement = histData.income_statement || [];
+        data.selected_periods = histData.selected_periods || [];
+    }
+}
+
+                        } catch(e) {}
+                        
+                        if (data && data.income_statement) {
+                            // Filter out accounts other than 4 and 5 (like 'cuenta de orden')
+                            data.income_statement = data.income_statement.filter(item => item.code.startsWith('4') || item.code.startsWith('5'));
+                            
+                            let decPeriods = (data.selected_periods || []).filter(p => p.endsWith('-12')).sort();
+                            
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const applyAssumptions = urlParams.get('apply') !== 'false';
+                            
+                            // Remove apply=false from URL so it doesn't persist on refresh
+                            if (urlParams.has('apply')) {
+                                urlParams.delete('apply');
+                                const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+                                window.history.replaceState({}, '', newUrl);
+                            }
+                            
+                            let assumptions = data.account_assumptions || {};
+                            
+                            let accMap = {};
+                            
+                            // Step 1: Initialize map and calculate leaf projections
+                            data.income_statement.forEach(item => {
+                                let baseBal = 0;
+                                if (decPeriods.length > 0) {
+                                    let lastP = decPeriods[decPeriods.length - 1];
+                                    baseBal = (item.balances && item.balances[lastP]) ? item.balances[lastP] : 0;
+                                }
+                                
+                                let savedAssump = assumptions[item.code];
+                                let val = 0;
+                                let baseTrend = 0;
+                                let monthlyOverrides = {};
+                                let hasSaved = false;
+                                
+                                if (typeof savedAssump === 'object' && savedAssump !== null) {
+                                    val = savedAssump.val !== undefined ? savedAssump.val : 0;
+                                    baseTrend = savedAssump.baseTrend !== undefined ? savedAssump.baseTrend : 0;
+                                    monthlyOverrides = savedAssump.monthlyOverrides || {};
+                                    hasSaved = true;
+                                } else if (savedAssump !== undefined) {
+                                    val = savedAssump;
+                                    baseTrend = savedAssump;
+                                    hasSaved = true;
+                                } else {
+                                    let calculatedTrend = 0;
+                                    if (decPeriods.length >= 2) {
+                                        let lastP = decPeriods[decPeriods.length - 1];
+                                        let prevP = decPeriods[decPeriods.length - 2];
+                                        let lastBal = (item.balances && item.balances[lastP]) ? item.balances[lastP] : 0;
+                                        let prevBal = (item.balances && item.balances[prevP]) ? item.balances[prevP] : 0;
+                                        if (prevBal !== 0) {
+                                            calculatedTrend = ((lastBal - prevBal) / Math.abs(prevBal)) * 100;
+                                            if (calculatedTrend > 999) calculatedTrend = 999;
+                                            if (calculatedTrend < -100) calculatedTrend = -100;
+                                        }
+                                    }
+                                    val = calculatedTrend;
+                                    baseTrend = calculatedTrend;
+                                }
+                                
+                                // Only zero out the value if we are skipping auto-trend AND the user hasn't explicitly saved a value
+                                if (!applyAssumptions && !hasSaved) {
+                                    val = 0;
+                                }
+                                
+                                accMap[item.code] = {
+                                    code: item.code,
+                                    name: item.name,
+                                    depth: item.depth || 0,
+                                    parent_code: item.parent_code,
+                                    children_codes: item.children_codes || [],
+                                    baseBal: baseBal,
+                                    val: val,
+                                    baseTrend: baseTrend,
+                                    monthlyOverrides: monthlyOverrides,
+                                    totalProjected: baseBal * (1 + (val / 100))
+                                };
+                            });
+                            
+                            // Restaurar el mes global de inicio de variaci¾n si se guard¾
+                            if (assumptions._meta && assumptions._meta.startMonth !== undefined) {
+                                $('#apply-var-month').val(assumptions._meta.startMonth);
+                            }
+                            
+                            // Step 1.5: Identify the latest historical year for distribution
+                            let allPeriods = data.selected_periods || [];
+                            let latestYear = 0;
+                            allPeriods.forEach(p => {
+                                let parts = p.split('-');
+                                if(parts.length === 2) {
+                                    let y = parseInt(parts[0]);
+                                    if(y > latestYear) latestYear = y;
+                                }
+                            });
+                            
+                            data.income_statement.forEach(item => {
+                                let node = accMap[item.code];
+                                node.monthlyHistory = [];
+                                let totalHistYear = 0;
+                                
+                                for (let i=1; i<=12; i++) {
+                                    let mStr = i < 10 ? '0'+i : ''+i;
+                                    let currentYTD = (item.balances && item.balances[`${latestYear}-${mStr}`]) ? item.balances[`${latestYear}-${mStr}`] : 0;
+                                    let prevYTD = 0;
+                                    if (i > 1) {
+                                        let prevMStr = (i-1) < 10 ? '0'+(i-1) : ''+(i-1);
+                                        prevYTD = (item.balances && item.balances[`${latestYear}-${prevMStr}`]) ? item.balances[`${latestYear}-${prevMStr}`] : 0;
+                                    }
+                                    let movement = currentYTD - prevYTD;
+                                    node.monthlyHistory.push(movement);
+                                    totalHistYear += movement;
+                                }
+                                node.totalHistYear = totalHistYear;
+                            });
+                            
+                            // Step 2: Render table framework and inputs
+                            function fmt(amt) {
+                                const rounded = Math.round(amt || 0);
+                                if (rounded === 0) return '<span style="color:#adb5bd;">-</span>';
+                                const formatted = Math.abs(rounded).toLocaleString('en-US');
+                                if (rounded < 0) return `<span style="color:#dc3545;">(${formatted})</span>`;
+                                return `<span>${formatted}</span>`;
+                            }
+                            
+                            const projYearRaw = '{{ plan.start_date.year|default:"2026" }}'.replace(/,/g, '');
+                            const projYearFull = parseInt(projYearRaw);
+                            const projYearShort = String(projYearFull).slice(-2);
+                            const prevYearFull = latestYear || (projYearFull - 1);
+                            const prevYearShort = String(prevYearFull).slice(-2);
+                            const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                            
+                            // Generate headers
+                            let theadHtml = `
+                                <tr>
+                                    <th style="width: 120px;">C¾digo</th>
+                                    <th style="width: 350px;">Descripci¾n</th>
+                                    <th class="text-right" style="width: 100px;">Dic-${prevYearShort}</th>
+                                    <th class="text-center" style="width: 100px;">Var (%)</th>
+                            `;
+                            months.forEach(m => {
+                                theadHtml += `<th class="text-right" style="width: 100px;">${m}-${projYearShort}</th>`;
+                            });
+                            theadHtml += `<th class="text-right" style="width: 120px;">Total ${projYearFull}</th></tr>`;
+                            $('#budget-monthly-thead').html(theadHtml);
+                            
+                            let summaryTheadHtml = theadHtml.replace('<th style="width: 120px;">C¾digo</th>', '').replace('<th style="width: 350px;">Descripci¾n</th>', '<th colspan="2">Concepto</th>');
+                            $('#budget-summary-thead').html(summaryTheadHtml);
+
+                            data.income_statement.sort((a, b) => {
+                                let orderA = a.code.startsWith('5') ? 'A' : (a.code.startsWith('4') ? 'B' : 'C');
+                                let orderB = b.code.startsWith('5') ? 'A' : (b.code.startsWith('4') ? 'B' : 'C');
+                                return (orderA + a.code).localeCompare(orderB + b.code);
+                            });
+                            
+                            let html = '';
+                            data.income_statement.forEach(item => {
+                                let node = accMap[item.code];
+                                node.uiChildren = node.children_codes.filter(c => accMap[c]);
+                                const hasChildren = node.uiChildren.length > 0;
+                                
+                                let mHtml = '';
+                                for(let i=0; i<12; i++) {
+                                    mHtml += `<td class="text-right text-monospace cell-m${i}" id="cell-m${i}-${node.code}">-</td>`;
+                                }
+                                
+                                const trClass = hasChildren ? 'font-weight-bold bg-light border-bottom' : '';
+                                const iconHtml = hasChildren ? `<i class="fas fa-chevron-down mr-2 expand-toggle text-primary" style="cursor:pointer; width: 12px;" onclick="toggleRow('${node.code}', this)"></i>` : `<span style="display:inline-block; width:20px;"></span>`;
+                                
+                                let varHtml = '';
+                                let unassignedBase = node.baseBal;
+                                if (hasChildren) {
+                                    let childrenBaseSum = 0;
+                                    node.uiChildren.forEach(c => childrenBaseSum += (accMap[c].baseBal || 0));
+                                    unassignedBase = node.baseBal - childrenBaseSum;
+                                }
+                                node.unassignedBase = unassignedBase;
+
+                                if (hasChildren && Math.abs(unassignedBase) < 0.01) {
+                                    varHtml = `<td class="text-center text-monospace font-weight-bold cell-var" id="cell-var-${node.code}">-</td>`;
+                                } else {
+                                    varHtml = `<td><input type="number" class="form-control form-control-sm text-center step4-input" data-code="${node.code}" value="${parseFloat(node.val).toFixed(2)}" step="0.01"></td>`;
+                                }
+
+                                html += `<tr class="budget-row ${trClass}" data-code="${node.code}" data-parent="${node.parent_code || ''}" id="row-${node.code}">
+                                    <td style="padding-left:${(node.depth || 0) * 14}px;">
+                                        ${iconHtml}
+                                        <span class="badge badge-light border text-monospace text-dark">${node.code || ''}</span>
+                                    </td>
+                                    <td>${node.name || ''}</td>
+                                    <td class="text-right text-monospace text-secondary">${fmt(node.baseBal)}</td>
+                                    ${varHtml}
+                                    ${mHtml}
+                                    <td class="text-right text-monospace font-weight-bold bg-light cell-total" id="cell-total-${node.code}">-</td>
+                                </tr>`;
+                            });
+                            $('#budget-monthly-tbody').html(html);
+
+                            // Store cell references for fast DOM updates
+                            let sortedCodes = Object.keys(accMap).sort((a, b) => b.length - a.length);
+                            sortedCodes.forEach(code => {
+                                let node = accMap[code];
+                                if (node.uiChildren.length === 0 || Math.abs(node.unassignedBase) >= 0.01) {
+                                    node.inputEl = $(`.step4-input[data-code="${code}"]`);
+                                }
+                                if (node.uiChildren.length > 0) {
+                                    node.varCell = $(`#cell-var-${code}`);
+                                }
+                                node.totalCell = $(`#cell-total-${code}`);
+                                node.mCells = [];
+                                for(let i=0; i<12; i++) {
+                                    node.mCells.push($(`#cell-m${i}-${code}`));
+                                }
+                                node.rowEl = $(`#row-${code}`);
+                            });
+
+                            // Rollup and render engine
+                            function recalculateStep4() {
+                                sortedCodes.forEach(code => {
+                                    let node = accMap[code];
+                                    if (node.uiChildren.length > 0) {
+                                        // Parent node rollup
+                                        let sumProjected = 0;
+                                        let monthlySums = new Array(12).fill(0);
+                                        node.uiChildren.forEach(c => {
+                                            sumProjected += accMap[c].totalProjected || 0;
+                                            for(let i=0; i<12; i++) {
+                                                monthlySums[i] += accMap[c].monthlyProjected[i] || 0;
+                                            }
+                                        });
+
+                                        // If parent has unassigned balance, project it and add to rollup
+                                        if (Math.abs(node.unassignedBase) >= 0.01 && node.inputEl) {
+                                            let varVal = parseFloat(node.inputEl.val()) || 0;
+                                            let startMonth = parseInt($('#apply-var-month').val()) || 0;
+                                            
+                                            for(let i=0; i<12; i++) {
+                                                let baseMProj = 0;
+                                                if (node.totalHistYear !== 0) {
+                                                    let weight = node.monthlyHistory[i] / node.totalHistYear;
+                                                    baseMProj = node.unassignedBase * weight;
+                                                } else {
+                                                    baseMProj = node.unassignedBase / 12;
+                                                }
+                                                
+                                                let mProj = baseMProj;
+                                                if (i >= startMonth) {
+                                                    mProj = baseMProj * (1 + (varVal / 100));
+                                                } else {
+                                                    mProj = baseMProj * (1 + ((node.baseTrend || 0) / 100));
+                                                }
+                                                
+                                                if (node.monthlyOverrides && node.monthlyOverrides[i] !== undefined) {
+                                                    mProj = node.monthlyOverrides[i];
+                                                }
+                                                
+                                                monthlySums[i] += mProj;
+                                                sumProjected += mProj;
+                                            }
+                                        }
+
+                                        node.totalProjected = sumProjected;
+                                        node.monthlyProjected = monthlySums;
+                                        
+                                        // Variation calculation
+                                        let newVar = 0;
+                                        if (node.baseBal !== 0) {
+                                            newVar = ((sumProjected / node.baseBal) - 1) * 100;
+                                        }
+                                        if (node.varCell && node.varCell.length) {
+                                            node.varCell.html(newVar.toFixed(2) + '%');
+                                        }
+                                    } else {
+                                        // Leaf node distribution
+                                        let varVal = parseFloat(node.inputEl.val()) || 0;
+                                        let startMonth = parseInt($('#apply-var-month').val()) || 0;
+                                        
+                                        let mProjArr = [];
+                                        let sumProjected = 0;
+                                        for(let i=0; i<12; i++) {
+                                            let baseMProj = 0;
+                                            if (node.totalHistYear !== 0) {
+                                                let weight = node.monthlyHistory[i] / node.totalHistYear;
+                                                baseMProj = node.baseBal * weight;
+                                            } else {
+                                                baseMProj = node.baseBal / 12;
+                                            }
+                                            
+                                            let mProj = baseMProj;
+                                            if (i >= startMonth) {
+                                                mProj = baseMProj * (1 + (varVal / 100));
+                                            } else {
+                                                mProj = baseMProj * (1 + ((node.baseTrend || 0) / 100));
+                                            }
+                                            
+                                            if (node.monthlyOverrides && node.monthlyOverrides[i] !== undefined) {
+                                                mProj = node.monthlyOverrides[i];
+                                            }
+                                            sumProjected += mProj;
+                                            mProjArr.push(mProj);
+                                        }
+                                        node.totalProjected = sumProjected;
+                                        node.monthlyProjected = mProjArr;
+                                    }
+                                    
+                                    // Update DOM Cells
+                                    node.totalCell.html(fmt(node.totalProjected));
+                                    for(let i=0; i<12; i++) {
+                                        let cell = node.mCells[i];
+                                        cell.html(fmt(node.monthlyProjected[i]));
+                                        
+                                        // Visual indicator for manual overrides
+                                        if (node.monthlyOverrides && node.monthlyOverrides[i] !== undefined) {
+                                            cell.addClass('bg-warning-light text-dark font-weight-bold').css('background-color', '#fff3cd');
+                                        } else {
+                                            cell.removeClass('bg-warning-light text-dark font-weight-bold').css('background-color', '');
+                                        }
+                                    }
+                                    
+                                    // Update zero filter data
+                                    let hasBudget = Math.abs(node.totalProjected) > 0.001;
+                                    node.rowEl.attr('data-has-budget', hasBudget ? 'true' : 'false');
+                                });
+
+                                // Update Summary
+                                let incNode = accMap['5'];
+                                let expNode = accMap['4'];
+                                if (incNode && expNode) {
+                                    let incHtml = `<td class="text-right text-monospace text-success">${fmt(incNode.baseBal)}</td><td class="text-center font-weight-bold text-success">${((incNode.totalProjected/incNode.baseBal - 1)*100).toFixed(2)}%</td>`;
+                                    for(let i=0; i<12; i++) incHtml += `<td class="text-right text-monospace text-success">${fmt(incNode.monthlyProjected[i])}</td>`;
+                                    incHtml += `<td class="text-right text-monospace font-weight-bold text-success">${fmt(incNode.totalProjected)}</td>`;
+                                    
+                                    let expHtml = `<td class="text-right text-monospace text-danger">${fmt(expNode.baseBal)}</td><td class="text-center font-weight-bold text-danger">${((expNode.totalProjected/expNode.baseBal - 1)*100).toFixed(2)}%</td>`;
+                                    for(let i=0; i<12; i++) expHtml += `<td class="text-right text-monospace text-danger">${fmt(expNode.monthlyProjected[i])}</td>`;
+                                    expHtml += `<td class="text-right text-monospace font-weight-bold text-danger">${fmt(expNode.totalProjected)}</td>`;
+                                    
+                                    let utilBase = incNode.baseBal - expNode.baseBal;
+                                    let utilTotal = incNode.totalProjected - expNode.totalProjected;
+                                    let utilVar = utilBase !== 0 ? ((utilTotal / utilBase) - 1) * 100 : 0;
+                                    let utilHtml = `<td class="text-right text-monospace font-weight-bold ${utilBase < 0 ? 'text-danger' : ''}">${fmt(utilBase)}</td><td class="text-center font-weight-bold ${utilVar < 0 ? 'text-danger' : ''}">${utilVar.toFixed(2)}%</td>`;
+                                    for(let i=0; i<12; i++) {
+                                        let mUtil = (incNode.monthlyProjected[i] || 0) - (expNode.monthlyProjected[i] || 0);
+                                        utilHtml += `<td class="text-right text-monospace font-weight-bold ${mUtil < 0 ? 'text-danger' : ''}">${fmt(mUtil)}</td>`;
+                                    }
+                                    utilHtml += `<td class="text-right text-monospace font-weight-bold ${utilTotal < 0 ? 'text-danger' : ''}">${fmt(utilTotal)}</td>`;
+                                    
+                                    let sumHtml = `
+                                        <tr><td colspan="2" class="font-weight-bold">Total Ingresos (5)</td>${incHtml}</tr>
+                                        <tr><td colspan="2" class="font-weight-bold">Total Gastos (4)</td>${expHtml}</tr>
+                                        <tr style="background-color: #fff3cd;"><td colspan="2" class="font-weight-bold">Utilidad / PÚrdida Neta</td>${utilHtml}</tr>
+                                    `;
+                                    $('#budget-summary-tbody').html(sumHtml);
+                                }
+                            }
+
+                            recalculateStep4();
+
+                            $('#budget-monthly-tbody').on('dblclick', 'td[id^="cell-m"]', function() {
+                                let cellId = $(this).attr('id');
+                                let match = cellId.match(/^cell-m(\d+)-(.+)$/);
+                                if (!match) return;
+                                
+                                let monthIdx = parseInt(match[1]);
+                                let code = match[2];
+                                
+                                let node = accMap[code];
+                                if (!node || node.uiChildren.length > 0) return; // only for leaf nodes
+                                
+                                if ($(this).find('input').length > 0) return; // Prevent multiple inputs
+                                
+                                let currentVal = node.monthlyProjected[monthIdx] || 0;
+                                let inputHtml = `<input type="number" class="form-control form-control-sm text-right manual-month-override" value="${Math.round(currentVal)}" style="width:100%; min-width:60px; font-size:0.8rem; padding:2px;">`;
+                                $(this).html(inputHtml);
+                                
+                                let inputEl = $(this).find('input');
+                                inputEl.focus().select();
+                                
+                                inputEl.on('blur keypress', function(e) {
+                                    if (e.type === 'keypress' && e.which !== 13) return;
+                                    let newValStr = $(this).val();
+                                    if (newValStr === "") {
+                                        if (node.monthlyOverrides) delete node.monthlyOverrides[monthIdx];
+                                    } else {
+                                        let newVal = parseFloat(newValStr) || 0;
+                                        if (!node.monthlyOverrides) node.monthlyOverrides = {};
+                                        node.monthlyOverrides[monthIdx] = newVal;
+                                    }
+                                    recalculateStep4();
+                                });
+                            });
+
+                            window.copyPreviousYearData = function() {
+                                data.income_statement.forEach(item => {
+                                    let node = accMap[item.code];
+                                    if (node && node.inputEl) {
+                                        node.inputEl.val(0);
+                                        node.baseTrend = 0;
+                                        // clear any manual overrides to reset fully to previous year
+                                        node.monthlyOverrides = {};
+                                    }
+                                });
+                                $('#apply-var-month').val(0); // Reset dropdown
+                                recalculateStep4();
+                            };
+
+                            window.applyHistoricalTrend = function() {
+                                let btn = $('#btn-apply-trend');
+                                let originalText = '<i class="fas fa-history mr-1"></i> Aplicar Tendencia A±o Anterior';
+                                btn.html('<i class="fas fa-spinner fa-spin mr-1"></i> Procesando Series (Pandas)...').prop('disabled', true);
+                                
+                                fetch("{% url 'financial_planning:ml_trend_projection' plan.id %}", {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': '{{ csrf_token }}',
+                                        'Content-Type': 'application/json'
+                                    }
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error('Network response was not ok');
+                                    }
+                                    return response.json();
+                                })
+                                .then(result => {
+                                    if(result.status === 'success' && result.trends) {
+                                        data.income_statement.forEach(item => {
+                                            let node = accMap[item.code];
+                                            if (node && node.inputEl) {
+                                                if (result.trends[item.code] !== undefined) {
+                                                    let t = parseFloat(result.trends[item.code]);
+                                                    node.baseTrend = t; // Guardamos la tendencia como base permanente
+                                                    node.inputEl.val(t.toFixed(2));
+                                                }
+                                            }
+                                        });
+                                        recalculateStep4();
+                                        Swal.fire({
+                                            toast: true,
+                                            position: 'top-end',
+                                            icon: 'success',
+                                            title: 'Proyecci¾n generada vÝa NumPy/Pandas',
+                                            showConfirmButton: false,
+                                            timer: 3000
+                                        });
+                                    } else {
+                                        Swal.fire('Error', result.msg || 'Error al procesar las series', 'error');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    Swal.fire('Error', 'Hubo un error de conexi¾n con el servidor. ┐Estß activo el servidor?', 'error');
+                                })
+                                .finally(() => {
+                                    btn.html(originalText).prop('disabled', false);
+                                });
+                            };
+
+                            let step4Timeout;
+                            $('.step4-input').on('input', function() {
+                                clearTimeout(step4Timeout);
+                                step4Timeout = setTimeout(recalculateStep4, 150);
+                            }).on('blur', function() {
+                                let v = parseFloat($(this).val()) || 0;
+                                $(this).val(v.toFixed(2));
+                                recalculateStep4();
+                            });
+                            
+                            window.saveAssumptionsFromStep4 = function(btnId) {
+                                const btn = $(btnId);
+                                const originalHtml = btn.html();
+                                const originalClasses = btn.attr('class');
+                                
+                                let reqData = {
+                                    _meta: {
+                                        startMonth: parseInt($('#apply-var-month').val()) || 0
+                                    }
+                                };
+                                $('.step4-input').each(function() {
+                                    const code = String($(this).data('code'));
+                                    const val = parseFloat($(this).val()) || 0;
+                                    const node = accMap[code];
+                                    if (node) {
+                                        reqData[code] = {
+                                            val: val,
+                                            baseTrend: node.baseTrend || 0,
+                                            monthlyOverrides: node.monthlyOverrides || {}
+                                        };
+                                    }
+                                });
+                                
+                                console.log("[DEBUG] Sending assumptions payload:", reqData);
+                                
+                                btn.html('<i class="fas fa-spinner fa-spin"></i> Guardando...').prop('disabled', true);
+                                $.ajax({
+                                    url: "{% url 'financial_planning:save_institutional_assumptions' plan.id %}",
+                                    method: "POST",
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(reqData),
+                                    headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                                    success: function(res) {
+                                        if(res.status === 'success') {
+                                            btn.html('<i class="fas fa-check"></i> Guardado exitoso').addClass('btn-success').removeClass('btn-outline-primary btn-primary');
+                                            
+                                            // Toast notification
+                                            let toastHtml = `
+                                            <div class="position-fixed p-3" style="z-index: 1050; right: 0; bottom: 0;">
+                                              <div class="toast hide shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" data-delay="3000">
+                                                <div class="toast-header bg-success text-white">
+                                                  <i class="fas fa-check-circle mr-2"></i>
+                                                  <strong class="mr-auto">╔xito</strong>
+                                                  <button type="button" class="ml-2 mb-1 close text-white" data-dismiss="toast" aria-label="Close">
+                                                    <span aria-hidden="true">&times;</span>
+                                                  </button>
+                                                </div>
+                                                <div class="toast-body font-weight-bold">
+                                                  Presupuesto guardado correctamente.
+                                                </div>
+                                              </div>
+                                            </div>`;
+                                            $(toastHtml).appendTo('body');
+                                            $('.toast').toast('show');
+                                            
+                                            setTimeout(() => {
+                                                btn.attr('class', originalClasses).html(originalHtml).prop('disabled', false);
+                                            }, 2000);
+                                        } else {
+                                            alert('Error: ' + res.msg);
+                                            btn.attr('class', originalClasses).html(originalHtml).prop('disabled', false);
+                                        }
+                                    },
+                                    error: function(xhr, status, error) {
+                                        console.error("[ERROR] saveAssumptions AJAX:", status, error, xhr.responseText);
+                                        alert('Error de conexi¾n al guardar.');
+                                        btn.attr('class', originalClasses).html(originalHtml).prop('disabled', false);
+                                    }
+                                });
+                            };
+                            
+                        } else {
+                            $('#budget-monthly-tbody').html('<tr><td colspan="16" class="text-center text-muted">No se pudo cargar la informaci¾n de proyecci¾n.</td></tr>');
+                        }
+                    });
+                    
+                    window.toggleRow = function(code, icon) {
+                        const $icon = $(icon);
+                        const isExpanded = $icon.hasClass('fa-chevron-down');
+                        
+                        if (isExpanded) {
+                            $icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+                            hideChildren(code);
+                        } else {
+                            $icon.removeClass('fa-chevron-right').addClass('fa-chevron-down');
+                            showChildren(code);
+                        }
+                    };
+
+                    function hideChildren(parentCode) {
+                        $(`.budget-row[data-parent="${parentCode}"]`).each(function() {
+                            const code = $(this).data('code');
+                            $(this).hide();
+                            hideChildren(code);
+                        });
+                    }
+
+                    function showChildren(parentCode) {
+                        $(`.budget-row[data-parent="${parentCode}"]`).each(function() {
+                            const code = $(this).data('code');
+                            $(this).show();
+                            const $childIcon = $(this).find('.expand-toggle');
+                            if ($childIcon.length === 0 || $childIcon.hasClass('fa-chevron-down')) {
+                                showChildren(code);
+                            }
+                        });
+                    }
+                    
+                    window.toggleZeroAccounts = function() {
+                        const $tbody = $('#budget-monthly-tbody');
+                        const $btn = $('#toggle-zero-accounts');
+                        
+                        if ($tbody.hasClass('hide-zeros')) {
+                            $tbody.removeClass('hide-zeros');
+                            $btn.html('<i class="fas fa-eye-slash mr-1"></i> Ocultar en Cero').removeClass('btn-primary').addClass('btn-outline-primary');
+                        } else {
+                            $tbody.addClass('hide-zeros');
+                            $btn.html('<i class="fas fa-eye mr-1"></i> Mostrar en Cero').removeClass('btn-outline-primary').addClass('btn-primary');
+                        }
+                    };
+
+                    window.expandToDigits = function(maxDigits) {
+                        $('.budget-row').each(function() {
+                            let code = String($(this).data('code'));
+                            let parentCode = String($(this).data('parent') || '');
+                            let $icon = $(this).find('.expand-toggle');
+                            
+                            if (parentCode === '' || parentCode.length < maxDigits) {
+                                $(this).show();
+                                if ($icon.length > 0) {
+                                    if (code.length < maxDigits) {
+                                        $icon.removeClass('fa-chevron-right').addClass('fa-chevron-down');
+                                    } else {
+                                        $icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+                                    }
+                                }
+                            } else {
+                                $(this).hide();
+                                if ($icon.length > 0) {
+                                    $icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+                                }
+                            }
+                        });
+                    };
+
+                    window.executeExport = async function() {
+                        const whatToExport = $('input[name="exportOption"]:checked').val();
+                        const format = $('#exportFormat').val();
+                        const digits = parseInt($('#exportDigits').val());
+                        
+                        // Close modal
+                        $('#exportModal').modal('hide');
+                        
+                        let tableId = whatToExport === 'summary' ? 'budget-summary-table' : 'budget-monthly-table';
+                        
+                        if (format === 'pdf') {
+                            // HTML2Canvas + jsPDF
+                            const element = document.getElementById(tableId);
+                            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                            const imgData = canvas.toDataURL('image/png');
+                            const { jsPDF } = window.jspdf;
+                            const pdf = new jsPDF({ orientation: canvas.width > canvas.height ? 'l' : 'p', unit: 'mm', format: 'a4' });
+                            
+                            const pdfWidth = pdf.internal.pageSize.getWidth();
+                            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                            pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+                            pdf.save(`Presupuesto_Institucional_Paso4.pdf`);
+                        } else {
+                            // Excel or CSV (SheetJS)
+                            let aoa = [];
+                            let $table = $(`#${tableId}`);
+                            
+                            // Headers
+                            let headers = [];
+                            $table.find('thead tr').each(function() {
+                                $(this).find('th').each(function() {
+                                    headers.push($(this).text().trim());
+                                });
+                            });
+                            aoa.push(headers);
+                            
+                            // Rows
+                            $table.find('tbody tr').each(function() {
+                                if ($(this).css('display') === 'none') return; // Skip hidden
+                                
+                                let parentCode = $(this).data('parent') || '';
+                                if (whatToExport === 'structure' && digits !== 99 && parentCode.length >= digits) return;
+                                
+                                let rowData = [];
+                                let code = String($(this).data('code') || '');
+                                $(this).find('td').each(function() {
+                                    let text = $(this).text().trim();
+                                    let input = $(this).find('input');
+                                    if (input.length > 0) {
+                                        text = input.val();
+                                    }
+                                    
+                                    // Try parse float
+                                    if (text !== '-') {
+                                        let parsed = parseFloat(text.replace(/,/g, '').replace(/%/g, ''));
+                                        if (!isNaN(parsed) && text !== code) { // Dont parse code like '5' or '51'
+                                            rowData.push(parsed);
+                                        } else {
+                                            rowData.push(text);
+                                        }
+                                    } else {
+                                        rowData.push(0);
+                                    }
+                                });
+                                // Code column fix
+                                if (whatToExport === 'structure' && rowData.length > 0 && String(rowData[0]).includes(code)) {
+                                    rowData[0] = code;
+                                }
+                                aoa.push(rowData);
+                            });
+                            
+                            const wb = XLSX.utils.book_new();
+                            const ws = XLSX.utils.aoa_to_sheet(aoa);
+                            XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+                            
+                            if (format === 'excel') {
+                                XLSX.writeFile(wb, `Presupuesto_Institucional_Paso4.xlsx`);
+                            } else if (format === 'csv') {
+                                XLSX.writeFile(wb, `Presupuesto_Institucional_Paso4.csv`, {bookType: 'csv'});
+                            }
+                        }
+                    };
+                </script>
+                
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+                <!-- Modal Exportar Reporte -->
+                <div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel" aria-hidden="true">
+                  <div class="modal-dialog" role="document">
+                    <div class="modal-content border-0 shadow">
+                      <div class="modal-header bg-light border-bottom-0">
+                        <h5 class="modal-title text-success font-weight-bold" id="exportModalLabel"><i class="fas fa-file-excel mr-2"></i> Exportar Reporte</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                        </button>
+                      </div>
+                      <div class="modal-body pb-0">
+                        <div class="form-group mb-4">
+                            <label class="font-weight-bold text-dark mb-2">┐QuÚ deseas exportar?</label>
+                            <div class="custom-control custom-radio mb-2">
+                                <input type="radio" id="exportOption1" name="exportOption" class="custom-control-input" value="structure" checked>
+                                <label class="custom-control-label font-weight-bold" for="exportOption1">Estructura de Cuentas Contables</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="exportOption2" name="exportOption" class="custom-control-input" value="summary">
+                                <label class="custom-control-label font-weight-bold text-secondary" for="exportOption2">Tabla de Resumen Financiero</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group" id="exportDigitsGroup">
+                            <label class="font-weight-bold text-secondary">DÝgitos de las Cuentas:</label>
+                            <select class="form-control text-secondary" id="exportDigits">
+                                <option value="99">Todos los DÝgitos (Mßximo detalle)</option>
+                                <option value="12">12 DÝgitos</option>
+                                <option value="10">10 DÝgitos</option>
+                                <option value="8">8 DÝgitos</option>
+                                <option value="6">6 DÝgitos</option>
+                                <option value="4">4 DÝgitos</option>
+                                <option value="2">2 DÝgitos</option>
+                                <option value="1">1 DÝgito</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="font-weight-bold text-secondary">Formato de Archivo:</label>
+                            <select class="form-control text-secondary" id="exportFormat">
+                                <option value="excel">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                        </div>
+                      </div>
+                      <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success rounded-pill px-4 font-weight-bold shadow-sm" onclick="executeExport()"><i class="fas fa-download mr-1"></i> Exportar</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {% endif %}
+
+                <!-- STEP 5: Grado de avance Presupuesto vs Ejecutado -->
+                {% if step == 5 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Grado de Avance: Presupuesto vs Ejecutado</h4>
+                    <p class="text-muted">Comparativa del presupuesto proyectado contra la ejecuci¾n real.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-chart-pie fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">M¾dulo en construcci¾n. AquÝ se visualizarß la comparativa de avance.</p>
+                        <a href="?step=6" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 6: Informe Final -->
+                {% if step == 6 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Informe Final de Presupuesto Institucional</h4>
+                    <p class="text-muted">Generaci¾n del documento formal de sustento gerencial.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-body p-5 bg-light rounded">
+                                <i class="fas fa-file-word fa-4x text-primary mb-4"></i>
+                                <h5 class="font-weight-bold text-dark">Informe TÚcnico y Ejecutivo (Word)</h5>
+                                <p class="text-secondary mb-4">
+                                    Descarga el informe profesional con formato institucional. Este documento incluye el resumen ejecutivo, anßlisis de ingresos, gastos, utilidades proyectadas y riesgos financieros, listo para presentar ante el Consejo de Administraci¾n.
+                                </p>
+                                
+                                <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 shadow font-weight-bold" onclick="generateWordReport(this)">
+                                    <i class="fas fa-download mr-2"></i> Generar Informe en Word (.docx)
+                                </button>
+                                
+                                <form id="formWordReport" method="POST" action="{% url 'financial_planning:export_institutional_budget_word' plan.id %}" style="display: none;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="total_ingresos" id="in_total_ingresos" value="0">
+                                    <input type="hidden" name="total_gastos" id="in_total_gastos" value="0">
+                                    <input type="hidden" name="resultado_neto" id="in_resultado_neto" value="0">
+                                </form>
+                            </div>
+                        </div>
+                        <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-outline-secondary px-5 rounded-pill font-weight-bold shadow-sm">Volver al Tablero <i class="fas fa-home ml-2"></i></a>
+                    </div>
+                </div>
+
+                <script>
+                    function generateWordReport(btn) {
+                        const originalHtml = $(btn).html();
+                        $(btn).html('<i class="fas fa-spinner fa-spin mr-2"></i> Procesando Cifras...').prop('disabled', true);
+                        
+                        setTimeout(() => {
+                            try {
+                                let data = JSON.parse('{{ budget_data_json|escapejs }}');
+                                let totalIngresos = 0;
+                                let totalGastos = 0;
+
+                                if (data && data.income_statement) {
+                                    let assumptions = data.account_assumptions || {};
+                                    let decPeriods = (data.selected_periods || []).filter(p => p.endsWith('-12')).sort();
+                                    let lastP = decPeriods.length > 0 ? decPeriods[decPeriods.length - 1] : null;
+
+                                    data.income_statement.forEach(item => {
+                                        // Detectar si es cuenta hoja (sin hijos)
+                                        let isLeaf = !data.income_statement.some(child => child.parent_code === item.code);
+                                        
+                                        if (isLeaf && lastP) {
+                                            let baseBal = item.balances ? (item.balances[lastP] || 0) : 0;
+                                            let varPercent = 0;
+                                            
+                                            let savedAssump = assumptions[item.code];
+                                            if (typeof savedAssump === 'object' && savedAssump !== null) {
+                                                varPercent = savedAssump.val || 0;
+                                            } else if (typeof savedAssump === 'number') {
+                                                varPercent = savedAssump;
+                                            }
+                                            
+                                            // La proyecci¾n anual es la base dic * (1 + % var)
+                                            let projected = baseBal * (1 + (varPercent / 100));
+                                            
+                                            if (item.code.startsWith('4')) {
+                                                totalIngresos += projected;
+                                            } else if (item.code.startsWith('5')) {
+                                                totalGastos += projected;
+                                            }
+                                        }
+                                    });
+                                }
+                                
+                                let resultadoNeto = totalIngresos - Math.abs(totalGastos);
+                                
+                                // Asignar al formulario oculto
+                                $('#in_total_ingresos').val(totalIngresos);
+                                $('#in_total_gastos').val(Math.abs(totalGastos));
+                                $('#in_resultado_neto').val(resultadoNeto);
+                                
+                                // Enviar el formulario directamente
+                                // El navegador manejarß la descarga del archivo sin cambiar de pßgina
+                                $('#formWordReport').submit();
+                                
+                                // Restaurar el bot¾n despuÚs de un breve instante
+                                setTimeout(() => {
+                                    $(btn).html(originalHtml).prop('disabled', false);
+                                }, 2000);
+                                
+                            } catch (e) {
+                                console.error("[ERROR] generateWordReport:", e);
+                                alert("Error al leer los datos del presupuesto o generar el documento.");
+                                $(btn).html(originalHtml).prop('disabled', false);
+                            }
+                        }, 500);
+                    }
+                </script>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+

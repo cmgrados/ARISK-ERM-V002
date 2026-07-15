@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Planes de Acción Correctiva{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-indigo card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Seguimiento de Planes de Respuesta a Excesos</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Acción / Plan</th>
+                            <th>Relacionado a Brecha</th>
+                            <th>Responsable</th>
+                            <th>Vigencia</th>
+                            <th>Estado</th>
+                            <th>Eficacia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in plans %}
+                        <tr>
+                            <td><strong>{{ p.action }}</strong></td>
+                            <td>#{{ p.breach.id }} - {{ p.breach.measurement.kri.name }}</td>
+                            <td>{{ p.responsible.get_full_name }}</td>
+                            <td>{{ p.start_date }} - {{ p.end_date }}</td>
+                            <td>
+                                <span class="badge badge-{% if p.state == 'Completado' %}success{% elif p.state == 'Vencido' %}danger{% else %}info{% endif %}">{{ p.state }}</span>
+                            </td>
+                            <td>{{ p.effectiveness|default:"En evaluación" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center p-4">No hay planes de acción registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

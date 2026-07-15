@@ -1,0 +1,454 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title_header %}Informe Ejecutivo{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        .main-header, .main-sidebar, .main-footer, .btn, .breadcrumb {
+            display: none !important;
+        }
+        .content-wrapper {
+            margin-left: 0 !important;
+            background-color: white !important;
+        }
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        body {
+            background-color: white !important;
+        }
+    }
+    
+    .report-header {
+        border-bottom: 2px solid #0056b3;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 text-right">
+        <a href="{% url 'op_risk:executive_report_pdf' %}" class="btn btn-danger"><i class="fas fa-file-pdf"></i> Descargar PDF</a>
+        <a href="{% url 'op_risk:executive_report_docx' %}" class="btn btn-primary"><i class="fas fa-file-word"></i> Descargar Word</a>
+        <button onclick="window.print();" class="btn btn-info"><i class="fas fa-print"></i> Imprimir</button>
+        <button onclick="window.close();" class="btn btn-default"><i class="fas fa-times"></i> Cerrar</button>
+    </div>
+</div>
+
+<div class="card shadow" id="printable-report">
+    <div class="card-body p-5">
+        <!-- Encabezado del Reporte -->
+        <div class="row report-header">
+            <div class="col-8">
+                <h2 class="font-weight-bold text-primary" style="margin-bottom: 0;">INFORME EJECUTIVO GERENCIAL</h2>
+                <h4 class="text-muted">Gestión de Riesgo Operacional (Basilea)</h4>
+            </div>
+            <div class="col-4 text-right">
+                <p class="mb-0"><strong>Fecha de Emisión:</strong> {{ report_date|date:"d/m/Y" }}</p>
+                <p class="mb-0"><strong>COOPAC</strong> Sistema ERM</p>
+            </div>
+        </div>
+
+        <!-- 1. Perfil de Riesgos Residual -->
+        <h4 class="mt-4 border-bottom pb-2"><i class="fas fa-chart-pie text-secondary"></i> 1. Perfil de Riesgo Residual</h4>
+        <div class="row mt-3">
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box bg-danger">
+                    <span class="info-box-icon"><i class="fas fa-radiation-alt"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Riesgos Críticos</span>
+                        <span class="info-box-number" style="font-size: 1.5rem;">{{ risk_profile.critical }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box bg-warning">
+                    <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Riesgos Altos</span>
+                        <span class="info-box-number" style="font-size: 1.5rem;">{{ risk_profile.high }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box bg-info">
+                    <span class="info-box-icon"><i class="fas fa-minus-circle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Riesgos Medios</span>
+                        <span class="info-box-number" style="font-size: 1.5rem;">{{ risk_profile.medium }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+                <div class="info-box bg-success">
+                    <span class="info-box-icon"><i class="fas fa-check-circle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text">Riesgos Bajos</span>
+                        <span class="info-box-number" style="font-size: 1.5rem;">{{ risk_profile.low }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="text-justify text-muted">A la fecha, la institución mantiene un registro de <strong>{{ risk_profile.total }}</strong> riesgos operativos documentados y evaluados en su etapa residual (post-controles).</p>
+
+        <!-- Top 5 Riesgos -->
+        {% if top_risks %}
+        <div class="card mt-4 mb-4">
+            <div class="card-header bg-light font-weight-bold">
+                Top 5 Riesgos (Severidad)
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for tr in top_risks %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 text-primary font-weight-bold">{{ tr.risk.name }}</h6>
+                        <small class="text-muted">Proceso: {{ tr.risk.process.name }} | P: {{ tr.prob_level }} x I: {{ tr.imp_level }}</small>
+                    </div>
+                    <span class="badge badge-danger p-2" style="font-size: 0.9rem;">Score: {{ tr.score }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- 2. Eventos y Pérdidas -->
+        <h4 class="mt-4 border-bottom pb-2"><i class="fas fa-clipboard-list text-secondary"></i> 2. Materialización de Eventos (Año {{ report_date|date:"Y" }})</h4>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-muted">Total de Pérdidas Registradas</h5>
+                        <h2 class="text-danger font-weight-bold">S/ {{ total_losses|floatformat:2|intcomma }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="text-muted">Incidentes Reportados</h5>
+                        <h2 class="text-primary font-weight-bold">{{ event_count }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Controles y Planes -->
+        <h4 class="mt-4 border-bottom pb-2"><i class="fas fa-shield-alt text-secondary"></i> 3. Mitigación: Controles y Planes de Acción</h4>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <h5 class="text-center font-weight-bold">Efectividad de Controles ({{ control_stats.total }})</h5>
+                <ul class="list-group list-group-unbordered">
+                    <li class="list-group-item">
+                        <b>Efectivos / Adecuados</b> <a class="float-right text-success font-weight-bold">{{ control_stats.effective }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Inefectivos / Con Deficiencias</b> <a class="float-right text-danger font-weight-bold">{{ control_stats.ineffective }}</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h5 class="text-center font-weight-bold">Estado de Planes de Acción ({{ plan_stats.total }})</h5>
+                <ul class="list-group list-group-unbordered">
+                    <li class="list-group-item">
+                        <b>Completados</b> <a class="float-right text-success font-weight-bold">{{ plan_stats.completed }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>En Progreso</b> <a class="float-right text-warning font-weight-bold">{{ plan_stats.in_progress }}</a>
+                    </li>
+                    <li class="list-group-item">
+                        <b>Atrasados</b> <a class="float-right text-danger font-weight-bold">{{ plan_stats.overdue }}</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 4. KRIs y Capital -->
+        <h4 class="mt-4 border-bottom pb-2"><i class="fas fa-chart-line text-secondary"></i> 4. Monitoreo e Indicadores (Basilea)</h4>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <p><strong>Estado de Indicadores Clave de Riesgo (KRIs):</strong> Se monitorean un total de {{ kri_stats.total }} indicadores.</p>
+                <div class="progress-group">
+                    Indicadores en Zona Segura (Verde)
+                    <span class="float-right"><b>{{ kri_stats.green }}</b>/{{ kri_stats.total }}</span>
+                    <div class="progress progress-sm">
+                        <div class="progress-bar bg-success" style="width: {% if kri_stats.total > 0 %}{% widthratio kri_stats.green kri_stats.total 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                <div class="progress-group">
+                    Indicadores en Alerta (Amarillo)
+                    <span class="float-right"><b>{{ kri_stats.yellow }}</b>/{{ kri_stats.total }}</span>
+                    <div class="progress progress-sm">
+                        <div class="progress-bar bg-warning" style="width: {% if kri_stats.total > 0 %}{% widthratio kri_stats.yellow kri_stats.total 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                <div class="progress-group">
+                    Indicadores Excedidos (Rojo)
+                    <span class="float-right"><b>{{ kri_stats.red }}</b>/{{ kri_stats.total }}</span>
+                    <div class="progress progress-sm">
+                        <div class="progress-bar bg-danger" style="width: {% if kri_stats.total > 0 %}{% widthratio kri_stats.red kri_stats.total 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 text-center">
+                <p class="font-weight-bold mb-1">Requerimiento de Patrimonio Efectivo (Riesgo Operacional)</p>
+                <div style="border: 2px solid #28a745; border-radius: 10px; padding: 15px; margin-top: 10px; background-color: #f4fff4;">
+                    {% if capital_calc %}
+                        <p class="mb-0 text-success" style="font-size: 0.9rem;">Cálculo Basado en Año: {{ capital_calc.year }} (Alfa: {{ capital_calc.alfa_factor|floatformat:2 }})</p>
+                        <h2 class="text-success font-weight-bold mb-0">S/ {{ capital_calc.calculated_capital|floatformat:2|intcomma }}</h2>
+                    {% else %}
+                        <h3 class="text-muted">No se han registrado cálculos</h3>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        
+        <!-- DETALLES Y EXCEPCIONES -->
+        <h3 class="mt-5 border-bottom pb-2 text-danger"><i class="fas fa-list-alt"></i> Detalle Completo de Gestión</h3>
+        
+        <!-- Detalle Procesos -->
+        <h5 class="mt-4 font-weight-bold">A. Inventario de Procesos</h5>
+        {% if all_processes %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Nombre del Proceso</th>
+                    <th>Macroproceso Asociado</th>
+                    <th>Criticidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in all_processes %}
+                <tr>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.macroprocess.name|default:"N/A" }}</td>
+                    <td>{{ p.get_criticality_display|default:"Media" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay procesos registrados.</p>
+        {% endif %}
+
+        <!-- Detalle Riesgos -->
+        <h5 class="mt-4 font-weight-bold">B. Matriz de Riesgos</h5>
+        {% if all_risks %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Nombre del Riesgo</th>
+                    <th>Proceso</th>
+                    <th>Categoría</th>
+                    <th>Score Residual</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in all_risks %}
+                <tr>
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.process.name }}</td>
+                    <td>{{ r.get_category_display|default:"Fraude Interno" }}</td>
+                    <td><span class="badge {% if r.score >= 15 %}badge-danger{% elif r.score >= 10 %}badge-warning{% else %}badge-success{% endif %}">Score: {{ r.score }}</span></td>
+                    <td>{{ r.get_status_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay riesgos registrados.</p>
+        {% endif %}
+        
+        <!-- Detalle Controles -->
+        <h5 class="mt-4 font-weight-bold">C. Matriz de Controles</h5>
+        {% if all_controls %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Control</th>
+                    <th>Tipo</th>
+                    <th>Periodicidad</th>
+                    <th>Efectividad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in all_controls %}
+                <tr>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.get_type_display }}</td>
+                    <td>{{ c.get_periodicity_display }}</td>
+                    <td><span class="{% if c.operational_effectiveness < 80 %}text-danger font-weight-bold{% else %}text-success{% endif %}">{{ c.operational_effectiveness }}%</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay controles registrados.</p>
+        {% endif %}
+
+        <!-- Detalle Eventos -->
+        <h5 class="mt-4 font-weight-bold">D. Registro de Eventos (Año Actual)</h5>
+        {% if all_events %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Evento</th>
+                    <th>Tipo</th>
+                    <th>Proceso Afectado</th>
+                    <th>Pérdida (S/)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in all_events %}
+                <tr>
+                    <td>{{ e.date_occurred|date:"d/m/Y" }}</td>
+                    <td>{{ e.title }}</td>
+                    <td>{{ e.get_event_type_display }}</td>
+                    <td>{{ e.process.name|default:"N/A" }}</td>
+                    <td class="{% if e.amount > 0 %}text-danger font-weight-bold{% endif %}">{{ e.amount|floatformat:2|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No se han registrado eventos.</p>
+        {% endif %}
+
+        <!-- Detalle KRIs -->
+        <h5 class="mt-4 font-weight-bold">E. Indicadores Clave de Riesgo (KRI)</h5>
+        {% if all_kris %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>KRI</th>
+                    <th>Límite Verde</th>
+                    <th>Límite Rojo</th>
+                    <th>Periodicidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in all_kris %}
+                <tr>
+                    <td>{{ k.name }}</td>
+                    <td class="text-success font-weight-bold">{{ k.green_threshold }}</td>
+                    <td class="text-danger font-weight-bold">{{ k.red_threshold }}</td>
+                    <td>{{ k.get_frequency_display|default:"Mensual" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay KRIs registrados.</p>
+        {% endif %}
+
+        <!-- Detalle Planes de Acción -->
+        <h5 class="mt-4 font-weight-bold">F. Planes de Acción</h5>
+        {% if all_plans %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Plan / Título</th>
+                    <th>Compromiso</th>
+                    <th>Estado</th>
+                    <th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in all_plans %}
+                <tr>
+                    <td>{{ p.title }}</td>
+                    <td>{{ p.commitment_date|date:"d/m/Y" }}</td>
+                    <td><span class="badge {% if p.status == 'OVERDUE' %}badge-danger{% elif p.status == 'IN_PROGRESS' %}badge-warning{% else %}badge-success{% endif %}">{{ p.get_status_display }}</span></td>
+                    <td>{{ p.owner.get_full_name|default:"No asignado" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay planes de acción.</p>
+        {% endif %}
+
+        <!-- Detalle Gestión Documental -->
+        <h5 class="mt-4 font-weight-bold">G. Gestión Documental</h5>
+        {% if all_docs %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Título del Documento</th>
+                    <th>Versión</th>
+                    <th>Fecha de Subida</th>
+                    <th>Subido por</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in all_docs %}
+                <tr>
+                    <td>{{ d.title }}</td>
+                    <td>{{ d.version }}</td>
+                    <td>{{ d.created_at|date:"d/m/Y" }}</td>
+                    <td>{{ d.uploaded_by.get_full_name|default:"No asignado" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay documentos registrados.</p>
+        {% endif %}
+
+        <!-- Matriz Integral -->
+        <h5 class="mt-4 font-weight-bold">H. Matriz Integral de Riesgos y Controles</h5>
+        {% if all_risks %}
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Proceso</th>
+                    <th>Riesgo</th>
+                    <th>Controles Asociados (Mitigadores)</th>
+                    <th>Score Residual</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in all_risks %}
+                <tr>
+                    <td>{{ r.process.name }}</td>
+                    <td>{{ r.name }}</td>
+                    <td>
+                        <ul class="mb-0 pl-3">
+                            {% for c in r.controls.all %}
+                            <li>{{ c.name }} <small class="text-muted">({{ c.operational_effectiveness }}%)</small></li>
+                            {% empty %}
+                            <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Sin controles</span>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                    <td><span class="badge {% if r.score >= 15 %}badge-danger{% elif r.score >= 10 %}badge-warning{% else %}badge-success{% endif %}">{{ r.score }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted"><i class="fas fa-info-circle"></i> No hay matriz disponible.</p>
+        {% endif %}
+
+        <div class="row mt-5 pt-5 text-center" style="page-break-inside: avoid;">
+            <div class="col-4 offset-2 border-top pt-2">
+                <strong>Firma y Sello</strong><br>
+                Oficial de Riesgos
+            </div>
+            <div class="col-4 border-top pt-2">
+                <strong>Firma y Sello</strong><br>
+                Gerencia General
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

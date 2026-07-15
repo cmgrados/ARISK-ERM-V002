@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Calculation parameters -->
+    <div class="col-md-7">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold">Motor de Cálculo (VaR / EaR / EVE)</h3>
+            </div>
+            <div class="card-body">
+                <p>Seleccione la metodología de valoración para revisar los componentes analíticos por factor de riesgo.</p>
+                <form>
+                  <div class="row">
+                    <div class="col-sm-6">
+                      <div class="form-group">
+                        <label>Modelo Value at Risk (VaR)</label>
+                        <select class="form-control">
+                            <option>VaR Paramétrico (Varianza-Covarianza)</option>
+                            <option selected>VaR Histórico (250 días)</option>
+                            <option>Monte Carlo (Simulación)</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="col-sm-6">
+                      <div class="form-group">
+                        <label>Nivel de Confianza</label>
+                        <select class="form-control">
+                            <option>95%</option>
+                            <option selected>99%</option>
+                            <option>99.9%</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" class="btn text-white w-100" style="background-color: #161065;"><i class="fas fa-play mr-2"></i>Recalcular VaR e Indicadores EVE/EaR</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm border mt-3">
+            <div class="card-header bg-light">
+                <h3 class="card-title font-weight-bold">Resultados Earnings at Risk (EaR) & EVE</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover table-striped">
+                    <thead style="background-color: #f4f6f9;">
+                        <tr><th>Indicador</th><th>Horizonte</th><th>Impacto (Soles Base)</th><th>Variación Patrimonio</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Sensibilidad del Margen (EaR)</strong></td><td>12 Meses</td><td class="text-danger font-weight-bold">- S/ 450,200</td><td>- 1.2%</td></tr>
+                        <tr><td><strong>Sensibilidad del Valor (EVE)</strong></td><td>Vida Media</td><td class="text-success font-weight-bold">+ S/ 850,500</td><td>+ 2.1%</td></tr>
+                        <tr><td><strong>Posición Cambiaria Neta</strong></td><td>Diario</td><td>S/ 3,500,000</td><td>0.5% límite max</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sensibilidad Insturmentos -->
+    <div class="col-md-5">
+        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+            <div class="card-header">
+                <h3 class="card-title" style="color: #141313;">Sensibilidad por Instrumento (Bps)</h3>
+            </div>
+            <div class="card-body p-0 table-responsive" style="max-height: 400px;">
+                <table class="table table-striped table-valign-middle text-sm">
+                    <thead>
+                        <tr>
+                            <th>Categoría Instrumento</th>
+                            <th>Moneda</th>
+                            <th>DV01 (Sensibilidad)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Crédito Corporativo Fijo</td><td>PEN</td><td><span class="badge badge-info">S/ 4,500</span></td></tr>
+                        <tr><td>Crédito Consumo</td><td>PEN</td><td><span class="badge badge-primary">S/ 2,100</span></td></tr>
+                        <tr><td>Inversión Bonos Soberanos</td><td>PEN</td><td><span class="badge badge-danger">S/ -1,500</span></td></tr>
+                        <tr><td>Depósitos Plazo</td><td>USD</td><td><span class="badge badge-warning">S/ 1,200</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

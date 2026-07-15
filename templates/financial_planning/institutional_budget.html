@@ -1,0 +1,1389 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Premium Glassmorphic Design overrides */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .glass-card:hover {
+        box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .dark-mode .glass-card {
+        background: rgba(30, 30, 45, 0.65);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Tabs & Controls Style */
+    .nav-pills .nav-link {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+        padding: 10px 20px;
+    }
+    
+    .nav-pills .nav-link.active {
+        background: linear-gradient(135deg, #28a745, #218838);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* Cumulative vs Monthly Toggle switch */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 30px;
+        padding: 4px;
+        width: fit-content;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .dark-mode .toggle-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .toggle-btn {
+        border: none;
+        background: none;
+        padding: 8px 18px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        color: #6c757d;
+    }
+
+    .toggle-btn.active {
+        background: #fff;
+        color: #212529;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .dark-mode .toggle-btn.active {
+        background: #3f4056;
+        color: #fff;
+    }
+
+    /* Collapsible Accounting Tree Table */
+    .accounting-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .accounting-table td,
+    .accounting-table th {
+        font-size: 0.68rem !important;
+        padding: 3px 6px !important;
+        vertical-align: middle;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Description column: allow a bit more space */
+    .accounting-table td.col-desc,
+    .accounting-table th.col-desc {
+        max-width: 260px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .accounting-table th {
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+        font-weight: 700;
+        color: #495057;
+    }
+
+    .dark-mode .accounting-table th {
+        border-bottom: 2px solid rgba(255,255,255,0.1);
+        color: #cfd2d6;
+    }
+
+    /* Summary tables: same compact size */
+    #summary-bs-table td, #summary-bs-table th,
+    #summary-is-table td, #summary-is-table th {
+        font-size: 0.68rem !important;
+        padding: 3px 6px !important;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+
+    .accounting-row {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        transition: background-color 0.15s ease;
+        cursor: pointer;
+    }
+
+    .dark-mode .accounting-row {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .accounting-row:hover {
+        background-color: rgba(40, 167, 69, 0.04) !important;
+    }
+
+    /* Dynamic indentations for levels — font-size inherited from .accounting-table td */
+    .level-1 { font-weight: 800; background-color: rgba(40, 167, 69, 0.05); }
+    .dark-mode .level-1 { background-color: rgba(40, 167, 69, 0.1); }
+    .level-2 { font-weight: 700; background-color: rgba(0,0,0,0.01); }
+    .dark-mode .level-2 { background-color: rgba(255,255,255,0.01); }
+    .level-3 { font-weight: 650; }
+    .level-4 { font-weight: 600; }
+    .level-5 { font-weight: 500; color: #495057; }
+    .dark-mode .level-5 { color: #a1a5b7; }
+    .level-6 { font-weight: 400; color: #6c757d; }
+    .dark-mode .level-6 { color: #8a8a9e; }
+    .level-7 { font-weight: 400; color: #888; font-style: italic; }
+    .dark-mode .level-7 { color: #777; }
+    .level-leaf { font-style: normal; }
+
+
+    .node-expander {
+        display: inline-block;
+        width: 20px;
+        text-align: center;
+        margin-right: 6px;
+        transition: transform 0.2s ease;
+        font-size: 0.8rem;
+    }
+
+    .node-collapsed .node-expander {
+        transform: rotate(-90deg);
+    }
+
+    /* Accounting Formats */
+    .negative-amount {
+        color: #dc3545 !important;
+        font-weight: 600;
+    }
+
+    .zero-amount {
+        color: #adb5bd;
+        font-style: italic;
+    }
+
+    .dark-mode .zero-amount {
+        color: #495057;
+    }
+
+    /* Quick status indicators */
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-badge.squared {
+        background-color: rgba(40, 167, 69, 0.15);
+        color: #28a745;
+        border: 1px solid rgba(40, 167, 69, 0.3);
+    }
+
+    .status-badge.out-of-balance {
+        background-color: rgba(220, 53, 69, 0.15);
+        color: #dc3545;
+        border: 1px solid rgba(220, 53, 69, 0.3);
+    }
+
+    /* Warning for mismatching rollups */
+    .warning-icon {
+        color: #ffc107;
+        margin-left: 6px;
+        cursor: help;
+    }
+
+    /* Premium modal styles */
+    .premium-modal {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    .dark-mode .premium-modal {
+        background: #1e1e2d;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #cfd2d6;
+    }
+    .premium-modal-select {
+        background-color: #ffffff;
+        color: #495057;
+        border: 1px solid #ced4da;
+        border-radius: 8px;
+    }
+    .dark-mode .premium-modal-select {
+        background-color: #2b2b40;
+        color: #cfd2d6;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6 col-12">
+                <h1 class="m-0 text-dark">
+                    <i class="fas fa-chart-line text-primary mr-2"></i>Presupuesto Institucional
+                </h1>
+                <p class="text-muted small mt-1">Módulo para la visualización y obtención de la base histórica como punto de partida del Presupuesto Institucional.</p>
+            </div>
+            <div class="col-sm-6 col-12 text-sm-right mt-2 mt-sm-0">
+                <div class="d-flex justify-content-sm-end gap-2 flex-wrap align-items-center">
+                    <!-- Currency selector -->
+                    <div class="form-group mb-0 mr-2">
+                        <select id="currencySelector" class="form-control glass-card" style="min-width: 100px;">
+                            <option value="MN" selected>Soles (MN)</option>
+                            <option value="ME">Dólares (ME)</option>
+                            <option value="MX">Consolidado (MX)</option>
+                        </select>
+                    </div>
+
+                    <!-- Plan indicator/selector -->
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-success dropdown-toggle font-weight-bold" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-calculator mr-1"></i> Plan: {{ selected_plan.name|default:"General" }}
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right">
+                            {% for p in plans %}
+                                <a class="dropdown-item {% if p.id == selected_plan.id %}active{% endif %}" href="{% url 'financial_planning:institutional_budget_viewer' p.id %}">
+                                    {{ p.name }} ({{ p.start_date|date:"Y" }})
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    <div class="container-fluid">
+
+        <!-- ===== MULTI-PERIOD SELECTOR PANEL ===== -->
+        <div class="card glass-card mb-3" id="period-selector-card">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <i class="fas fa-calendar-alt text-success mr-2"></i>
+                        <strong class="mr-2">Períodos seleccionados:</strong>
+                        <span id="period-summary-badges" class="d-flex flex-wrap gap-1"></span>
+                    </div>
+                    <button id="toggle-period-selector-btn" class="btn btn-sm btn-outline-primary rounded-pill mt-1 mt-md-0">
+                        <i class="fas fa-edit mr-1"></i> Modificar Períodos
+                    </button>
+                </div>
+                <!-- Expandable selector -->
+                <div id="period-selector-active" style="display:none; margin-top:12px; border-top:1px solid rgba(0,0,0,0.08); padding-top:12px;">
+                    <div id="period-selector-container"></div>
+                    <div class="text-right mt-3">
+                        <button class="btn btn-primary rounded-pill px-4" id="confirm-period-btn">
+                            <i class="fas fa-check mr-1"></i> Confirmar Selección de Meses
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Core Filters and Action Toolbar -->
+        <div class="card glass-card mb-4">
+            <div class="card-body p-3">
+                <div class="row align-items-center">
+                    <!-- Toggle Switch accumulated vs monthly -->
+                    <div class="col-lg-3 col-md-4 col-12 mb-3 mb-md-0">
+                        <div class="toggle-container mx-auto mx-md-0">
+                            <button id="toggleAccum" class="toggle-btn active" onclick="setMovementMode('accum')">Acumulado</button>
+                            <button id="toggleMonth" class="toggle-btn" onclick="setMovementMode('month')">Solo Mes</button>
+                        </div>
+                    </div>
+
+                    <!-- Instant Fuzzy Search -->
+                    <div class="col-lg-4 col-md-5 col-12 mb-3 mb-md-0">
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-transparent border-right-0"><i class="fas fa-search text-muted"></i></span>
+                            </div>
+                            <input type="text" id="accountSearch" class="form-control border-left-0" placeholder="Buscar por código o nombre de cuenta..." onkeyup="filterAccounts()">
+                        </div>
+                    </div>
+
+                    <!-- Toolbar actions -->
+                    <div class="col-lg-5 col-md-3 col-12 text-md-right text-center">
+                        <button class="btn btn-sm btn-outline-primary mr-1" onclick="expandAll()">
+                            <i class="fas fa-expand-arrows-alt mr-1"></i> Expandir Todo
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary mr-1" onclick="collapseAll()">
+                            <i class="fas fa-compress-arrows-alt mr-1"></i> Contraer Todo
+                        </button>
+                        <button class="btn btn-sm btn-info mr-1" onclick="openAssignPlanModal()">
+                            <i class="fas fa-arrow-circle-right mr-1"></i> Asignar a Plan
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="exportData()">
+                            <i class="fas fa-file-excel mr-1"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Statements Tab Panels -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card glass-card">
+                    <div class="card-header p-2 d-flex justify-content-between align-items-center flex-wrap">
+                        <ul class="nav nav-pills" id="statementTabs" role="tablist">
+                            
+                            <li class="nav-item">
+                                <a class="nav-link active" id="income-statement-tab" data-toggle="pill" href="#income-statement-panel" role="tab" aria-selected="true">
+                                    <i class="fas fa-chart-line mr-2"></i>Estado de Resultados
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="monthly-income-statement-tab" data-toggle="pill" href="#monthly-income-statement-panel" role="tab" aria-selected="false">
+                                    <i class="fas fa-calendar-alt mr-2"></i>Estado de Resultados (Mensual)
+                                </a>
+                            </li>
+                        </ul>
+
+                        <!-- Dynamic cuadratura widget -->
+                        <div class="ml-auto mt-2 mt-md-0" id="cuadraturaWidget">
+                            <span class="status-badge squared" id="squareBadge">
+                                <i class="fas fa-check-circle"></i> Balance Cuadrado
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="tab-content" id="statementTabContent">
+                            
+                            <!-- Income Statement Panel -->
+                            <div class="tab-pane fade show active" id="income-statement-panel" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="accounting-table">
+                                        <thead id="is-thead">
+                                            <tr>
+                                                <th style="width: 90px; min-width: 90px; text-align: left;">Código</th>
+                                                <th class="col-desc" style="width: 260px; min-width: 260px; text-align: left;">Descripción de la Cuenta</th>
+                                                <th style="min-width:130px; text-align: right;">Cargando...</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="incomeStatementBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center p-5 text-muted">
+                                                    <i class="fas fa-spinner fa-spin fa-2x mb-3 text-success d-block"></i>
+                                                    Cargando estructura jerárquica de cuentas de resultados...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Resumen Estado de Resultados (dentro de la pestaña) -->
+                                <div id="footer-is-section" class="mt-3 px-2 pb-3">
+                                    <div class="card glass-card">
+                                        <div class="card-header bg-transparent border-bottom-0 py-2 d-flex justify-content-between align-items-center">
+                                            <h4 class="card-title font-weight-bold text-success mb-0">
+                                                <i class="fas fa-chart-line mr-2"></i>Resumen Estado de Resultados
+                                            </h4>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-success btn-xs rounded-pill px-3 dropdown-toggle" type="button" id="dropdownMenuIS" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="font-size: 11px; padding: 2px 8px; border-width: 1px;">
+                                                    <i class="fas fa-download mr-1"></i> Descargar Resumen
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuIS" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px;">
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('is', 'xlsx'); return false;"><i class="fas fa-file-excel mr-2 text-success"></i> Excel (.xlsx)</a>
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('is', 'csv'); return false;"><i class="fas fa-file-csv mr-2 text-info"></i> CSV (.csv)</a>
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('is', 'pdf'); return false;"><i class="fas fa-file-pdf mr-2 text-danger"></i> PDF (.pdf)</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm mb-0 accounting-table" id="summary-is-table">
+                                                    <thead id="summary-is-thead"></thead>
+                                                    <tbody id="summary-is-tbody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Income Statement Panel -->
+                            <div class="tab-pane fade" id="monthly-income-statement-panel" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="accounting-table" id="monthly-income-statement-table">
+                                        <thead id="monthly-is-thead">
+                                            <tr>
+                                                <th style="width: 90px; min-width: 90px; text-align: left;">Código</th>
+                                                <th class="col-desc" style="width: 260px; min-width: 260px; text-align: left;">Descripción de la Cuenta</th>
+                                                <th style="min-width:130px; text-align: right;">Cargando...</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="monthlyIncomeStatementBody">
+                                            <tr>
+                                                <td colspan="4" class="text-center p-5 text-muted">
+                                                    <i class="fas fa-spinner fa-spin fa-2x mb-3 text-success d-block"></i>
+                                                    Cargando estructura jerárquica de cuentas de resultados mensual...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Resumen Estado de Resultados Mensual (dentro de la pestaña) -->
+                                <div id="footer-monthly-is-section" class="mt-3 px-2 pb-3">
+                                    <div class="card glass-card">
+                                        <div class="card-header bg-transparent border-bottom-0 py-2 d-flex justify-content-between align-items-center">
+                                            <h4 class="card-title font-weight-bold text-success mb-0">
+                                                <i class="fas fa-calendar-alt mr-2"></i>Resumen Estado de Resultados (Mensual)
+                                            </h4>
+                                            <div class="dropdown">
+                                                <button class="btn btn-outline-success btn-xs rounded-pill px-3 dropdown-toggle" type="button" id="dropdownMenuMonthlyIS" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="font-size: 11px; padding: 2px 8px; border-width: 1px;">
+                                                    <i class="fas fa-download mr-1"></i> Descargar Resumen
+                                                </button>
+                                                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuMonthlyIS" style="box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px;">
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('monthly_is', 'xlsx'); return false;"><i class="fas fa-file-excel mr-2 text-success"></i> Excel (.xlsx)</a>
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('monthly_is', 'csv'); return false;"><i class="fas fa-file-csv mr-2 text-info"></i> CSV (.csv)</a>
+                                                    <a class="dropdown-item small" href="#" onclick="downloadSummaryDirect('monthly_is', 'pdf'); return false;"><i class="fas fa-file-pdf mr-2 text-danger"></i> PDF (.pdf)</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm mb-0 accounting-table" id="summary-monthly-is-table">
+                                                    <thead id="summary-monthly-is-thead"></thead>
+                                                    <tbody id="summary-monthly-is-tbody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Export Modal -->
+        <div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content premium-modal">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title font-weight-bold text-success" id="exportModalLabel">
+                            <i class="fas fa-file-excel mr-2"></i>Exportar Reporte
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: inherit;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body pt-3">
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold small text-muted">¿Qué deseas exportar?</label>
+                            <div class="custom-control custom-radio mb-2">
+                                <input type="radio" id="exportTypeAccounts" name="exportType" class="custom-control-input" value="accounts" checked>
+                                <label class="custom-control-label small font-weight-bold" for="exportTypeAccounts">Estructura de Cuentas Contables</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" id="exportTypeSummary" name="exportType" class="custom-control-input" value="summary">
+                                <label class="custom-control-label small font-weight-bold" for="exportTypeSummary">Tabla de Resumen Financiero</label>
+                            </div>
+                        </div>
+
+                        <div id="exportDigitsContainer" class="form-group mb-0">
+                            <label class="font-weight-bold small text-muted">Dígitos de las Cuentas:</label>
+                            <select id="exportDigitsSelector" class="form-control premium-modal-select">
+                                <option value="1">1 Dígito (Clases)</option>
+                                <option value="2">2 Dígitos (Grupos)</option>
+                                <option value="4">4 Dígitos (Cuentas)</option>
+                                <option value="6">6 Dígitos (Subcuentas)</option>
+                                <option value="8">8 Dígitos (Registro)</option>
+                                <option value="10">10 Dígitos (Detalle)</option>
+                                <option value="12" selected>12 Dígitos (Máximo detalle)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group mt-3 mb-0">
+                            <label class="font-weight-bold small text-muted">Formato de Archivo:</label>
+                            <select id="exportFormatSelector" class="form-control premium-modal-select">
+                                <option value="xlsx" selected>Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-success btn-sm rounded-pill px-4" onclick="executeExport()">
+                            <i class="fas fa-download mr-1"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assign to Plan Modal -->
+        <div class="modal fade" id="assignPlanModal" tabindex="-1" role="dialog" aria-labelledby="assignPlanModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content premium-modal">
+                    <div class="modal-header border-bottom-0 pb-0">
+                        <h5 class="modal-title font-weight-bold text-info" id="assignPlanModalLabel">
+                            <i class="fas fa-arrow-circle-right mr-2"></i>Asignar a Plan Financiero
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: inherit;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body pt-3">
+                        <div class="alert alert-warning small border-0 shadow-sm mb-3" style="background-color: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107 !important; color: #856404;">
+                            <i class="fas fa-exclamation-triangle mr-2"></i><strong>Atención:</strong> Esta acción sobrescribirá la base histórica actual del plan seleccionado con los datos y periodos que se muestran actualmente.
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold small text-muted">Plan Financiero Destino:</label>
+                            <select id="assignPlanSelector" class="form-control premium-modal-select">
+                                {% for p in plans %}
+                                    <option value="{{ p.id }}" {% if selected_plan and p.id == selected_plan.id %}selected{% endif %}>{{ p.name }} ({{ p.start_date|date:"Y" }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group mb-2">
+                            <label class="font-weight-bold small text-muted">Periodos a Asignar:</label>
+                            <div id="assignPeriodsSummary" class="d-flex flex-wrap gap-1 mt-1"></div>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold small text-muted">Moneda de Carga:</label>
+                            <div class="font-weight-bold text-success small" id="assignCurrencyLabel"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0">
+                        <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-info btn-sm rounded-pill px-4" onclick="executeAssignPlan()">
+                            <i class="fas fa-check-circle mr-1"></i> Asignar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script>
+    // ── Global state ──────────────────────────────────────────────
+    let balanceData    = null;
+    let currentMode    = 'accum';
+    let currentCurrencySymbol = 'S/';
+    let selectedPeriods = [];   // YYYY-MM sorted array
+
+    const allPeriods = {{ periods|safe }};   // injected from Django (YYYY-MM, newest first)
+    const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+    // ── Init ──────────────────────────────────────────────────────
+    $(document).ready(function() {
+        buildPeriodSelectorUI();
+
+        // Toggle digits selector based on export type
+        $('input[name="exportType"]').change(function() {
+            if ($(this).val() === 'summary') {
+                $('#exportDigitsContainer').slideUp(200);
+            } else {
+                $('#exportDigitsContainer').slideDown(200);
+            }
+        });
+
+        // Default: pre-select latest period
+        if (allPeriods.length > 0) {
+            selectedPeriods = [allPeriods[0]];
+            const cb = document.getElementById('pcb-' + allPeriods[0]);
+            if (cb) cb.checked = true;
+        }
+        updatePeriodSummaryBadges();
+        fetchTrialBalance();
+
+        // Currency change
+        $('#currencySelector').change(function() {
+            const v = $(this).val();
+            currentCurrencySymbol = v === 'MN' ? 'S/' : v === 'ME' ? '$' : 'S/.';
+            if (selectedPeriods.length > 0) fetchTrialBalance();
+        });
+
+        // Toggle selector panel
+        $('#toggle-period-selector-btn').on('click', function() {
+            const panel = $('#period-selector-active');
+            panel.toggle();
+            $(this).html(panel.is(':visible')
+                ? '<i class="fas fa-times mr-1"></i> Ocultar Edición'
+                : '<i class="fas fa-edit mr-1"></i> Modificar Períodos');
+        });
+
+        // Confirm selection
+        $('#confirm-period-btn').on('click', function() {
+            const checked = Array.from(document.querySelectorAll('.period-cb:checked'))
+                                 .map(cb => cb.value).sort();
+            if (checked.length === 0) {
+                toastr.warning('Seleccione al menos un período.');
+                return;
+            }
+            selectedPeriods = checked;
+            $('#period-selector-active').hide();
+            $('#toggle-period-selector-btn').html('<i class="fas fa-edit mr-1"></i> Modificar Períodos');
+            updatePeriodSummaryBadges();
+            fetchTrialBalance();
+        });
+    });
+
+    // ── Period selector UI ────────────────────────────────────────
+    function buildPeriodSelectorUI() {
+        const byYear = {};
+        allPeriods.forEach(p => {
+            const [y, m] = p.split('-');
+            if (!byYear[y]) byYear[y] = [];
+            byYear[y].push({ period: p, month: parseInt(m) });
+        });
+
+        const container = document.getElementById('period-selector-container');
+        container.innerHTML = '';
+
+        Object.keys(byYear).sort().reverse().forEach(year => {
+            const months = byYear[year];
+            const yearDiv = document.createElement('div');
+            yearDiv.className = 'mb-3 pb-2 border-bottom';
+
+            const monthChecks = months.map(({ period, month }) => `
+                <div class="custom-control custom-checkbox custom-control-inline mb-1 mr-3">
+                    <input type="checkbox" class="custom-control-input period-cb"
+                        id="pcb-${period}" value="${period}">
+                    <label class="custom-control-label small text-secondary" for="pcb-${period}">
+                        ${MONTH_NAMES[month - 1]}
+                    </label>
+                </div>`).join('');
+
+            yearDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong class="text-primary" style="font-size:0.9rem;">
+                        <i class="fas fa-calendar-check mr-1 text-success"></i> AÑO ${year}
+                    </strong>
+                    <div>
+                        <button class="btn btn-xs btn-outline-success mr-1" onclick="yearAction('${year}','all')">
+                            <i class="fas fa-check-square mr-1"></i>Todo
+                        </button>
+                        <button class="btn btn-xs btn-outline-secondary" onclick="yearAction('${year}','none')">
+                            <i class="fas fa-square mr-1"></i>Limpiar
+                        </button>
+                    </div>
+                </div>
+                <div class="d-flex flex-wrap">${monthChecks}</div>`;
+            container.appendChild(yearDiv);
+        });
+    }
+
+    function yearAction(year, action) {
+        document.querySelectorAll('.period-cb').forEach(cb => {
+            if (cb.value.startsWith(year + '-')) cb.checked = (action === 'all');
+        });
+    }
+
+    function updatePeriodSummaryBadges() {
+        const badges = selectedPeriods.map(p => {
+            const [y, m] = p.split('-');
+            return `<span class="badge badge-success mr-1 mb-1" style="font-size:0.78rem;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
+        }).join('');
+        $('#period-summary-badges').html(badges || '<span class="text-muted small">Ninguno</span>');
+    }
+
+    // ── API fetch ─────────────────────────────────────────────────
+    function fetchTrialBalance() {
+        const currency = $('#currencySelector').val();
+        const loadingHtml = `<tr><td colspan="99" class="text-center p-5 text-muted">
+            <i class="fas fa-spinner fa-spin fa-2x mb-3 text-success d-block"></i>
+            Recuperando información...</td></tr>`;
+        $('#balanceSheetBody').html(loadingHtml);
+        $('#incomeStatementBody').html(loadingHtml);
+        $('#monthlyIncomeStatementBody').html(loadingHtml);
+
+        $.ajax({
+            url: "{% url 'financial_planning:api_trial_balance_data' %}",
+            data: {
+                periods: JSON.stringify(selectedPeriods),
+                currency: currency
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    balanceData = response;
+                    renderTable();
+                } else {
+                    toastr.error('Error: ' + response.msg);
+                }
+            },
+            error: function() {
+                toastr.error('No se pudo recuperar el balance.');
+            }
+        });
+    }
+
+    // ── Render ────────────────────────────────────────────────────
+    function renderTable() {
+        if (!balanceData) return;
+        const periods = balanceData.periods;    // ordered list
+
+        // Build dynamic thead — narrow columns for compact multi-period view
+        const numCols   = periods.length;
+        const numColW   = numCols <= 3 ? 120 : numCols <= 6 ? 100 : numCols <= 12 ? 88 : 80;
+        const codeW     = 55;
+        const periodHeaders = periods.map(p => {
+            const [y, m] = p.split('-');
+            return `<th style="min-width:${numColW}px; width:${numColW}px; text-align:right;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;
+        }).join('');
+        const theadHtml = `<tr>
+            <th style="width: 90px; min-width: 90px; text-align:left;">Código</th>
+            <th class="col-desc" style="width: 260px; min-width: 260px; text-align:left;">Descripción de la Cuenta</th>
+            ${periodHeaders}
+        </tr>`;
+        $('#bs-thead').html(theadHtml);
+        $('#is-thead').html(theadHtml);
+        $('#monthly-is-thead').html(theadHtml);
+
+        // Render rows
+        $('#balanceSheetBody').html(buildRowsHtml(balanceData.balance_sheet, periods, 'bs') ||
+            '<tr><td colspan="99" class="text-center text-muted p-4">Sin cuentas de Balance General.</td></tr>');
+        $('#incomeStatementBody').html(buildRowsHtml(balanceData.income_statement, periods, 'is') ||
+            '<tr><td colspan="99" class="text-center text-muted p-4">Sin cuentas de Resultados.</td></tr>');
+        $('#monthlyIncomeStatementBody').html(buildRowsHtml(balanceData.income_statement, periods, 'monthly-is') ||
+            '<tr><td colspan="99" class="text-center text-muted p-4">Sin cuentas de Resultados Mensual.</td></tr>');
+
+        // Footer: always show, render multi-column if needed
+        if (balanceData.totals && Object.keys(balanceData.totals).length > 0) {
+            $('#footer-summary-section').show();
+            renderFooterSummary(balanceData.totals, periods);
+        } else {
+            $('#footer-summary-section').hide();
+        }
+    }
+
+    function buildRowsHtml(items, periods, prefix) {
+        let html = '';
+        items.forEach(item => {
+            const hasChildren = item.children_codes && item.children_codes.length > 0;
+            const levelClass  = getLevelClass(item.level);
+            const isRoot      = !item.parent_code;
+
+            const balancesDict = (prefix === 'monthly-is') ? item.monthly_balances : item.balances;
+
+            const balanceCells = periods.map(p => {
+                const val = (balancesDict && balancesDict[p] != null) ? balancesDict[p] : 0;
+                return `<td class="text-right text-monospace">${formatAmount(val)}</td>`;
+            }).join('');
+
+            html += `
+                <tr class="accounting-row level-${levelClass} ${hasChildren ? '' : 'level-leaf'} node-collapsed"
+                    style="${isRoot ? '' : 'display:none;'}"
+                    data-code="${item.code}"
+                    data-parent="${item.parent_code || ''}"
+                    data-prefix="${prefix}"
+                    data-depth="${item.depth}"
+                    id="${prefix}-row-${item.code}"
+                    onclick="toggleRow('${item.code}', '${prefix}')">
+                    <td style="padding-left:${item.depth * 14}px;">
+                        ${hasChildren
+                            ? '<span class="node-expander"><i class="fas fa-chevron-down"></i></span>'
+                            : '<span style="display:inline-block;width:26px;"></span>'}
+                        <span class="badge badge-light border text-monospace text-dark">${item.code}</span>
+                    </td>
+                    <td class="col-desc">${item.name}${item.has_discrepancy ? '<i class="fas fa-exclamation-triangle warning-icon ml-1" title="Discrepancia detectada"></i>' : ''}</td>
+                    ${balanceCells}
+                </tr>`;
+        });
+        return html;
+    }
+
+    // ── Toggle Mode ───────────────────────────────────────────────
+    function setMovementMode(mode) {
+        currentMode = mode;
+        $('#toggleAccum').toggleClass('active', mode === 'accum');
+        $('#toggleMonth').toggleClass('active', mode === 'month');
+        renderTable();
+    }
+
+    // ── Tree interaction ──────────────────────────────────────────
+    function toggleRow(code, prefix) {
+        const row = $(`#${prefix}-row-${code}`);
+        if (row.hasClass('node-collapsed')) {
+            row.removeClass('node-collapsed');
+            showChildren(code, prefix);
+        } else {
+            row.addClass('node-collapsed');
+            hideChildren(code, prefix);
+        }
+    }
+    function showChildren(parentCode, prefix) {
+        $(`tr[data-parent="${parentCode}"][data-prefix="${prefix}"]`).each(function() {
+            const r = $(this); r.show();
+            if (!r.hasClass('node-collapsed')) showChildren(r.data('code'), prefix);
+        });
+    }
+    function hideChildren(parentCode, prefix) {
+        $(`tr[data-parent="${parentCode}"][data-prefix="${prefix}"]`).each(function() {
+            $(this).hide(); hideChildren($(this).data('code'), prefix);
+        });
+    }
+    function expandAll()  { $('.accounting-row').removeClass('node-collapsed').show(); }
+    function collapseAll() {
+        $('.accounting-row').each(function() {
+            const r = $(this);
+            r.data('parent') !== '' ? r.hide() : r.show();
+            r.addClass('node-collapsed');
+        });
+    }
+
+    // ── Search ────────────────────────────────────────────────────
+    function filterAccounts() {
+        const q = $('#accountSearch').val().toLowerCase().trim();
+        if (!q) { collapseAll(); return; }
+        $('.accounting-row').each(function() {
+            const r = $(this);
+            const code = r.data('code').toString();
+            const name = r.find('td:nth-child(2)').text().toLowerCase();
+            const prefix = r.data('prefix');
+            if (code.includes(q) || name.includes(q)) {
+                r.show(); revealParents(r.data('parent'), prefix);
+            } else { r.hide(); }
+        });
+    }
+    function revealParents(parentCode, prefix) {
+        if (!parentCode) return;
+        const p = $(`#${prefix}-row-${parentCode}`);
+        p.removeClass('node-collapsed').show();
+        revealParents(p.data('parent'), prefix);
+    }
+
+    // ── Footer summary ────────────────────────────────────────────
+    function renderFooterSummary(totalsByPeriod, periods) {
+        const numCols = periods.length;
+        const numColW = numCols <= 3 ? 120 : numCols <= 6 ? 100 : numCols <= 12 ? 88 : 80;
+        const fmt = v => formatAmount(v);
+        const mn  = name => `<th class="text-left font-weight-bold" style="width: 350px; min-width: 350px; white-space:nowrap">${name}</th>`;
+        const pHeader = p => { const [y,m]=p.split('-'); return `<th class="text-right" style="min-width:${numColW}px; width:${numColW}px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`; };
+
+        // ── Balance General ──
+        const bsRows = [
+            { label: 'Total Activo (1)',           key: 'total_activo',          cls: '' },
+            { label: 'Total Pasivo (2)',            key: 'total_pasivo',          cls: '' },
+            { label: 'Total Patrimonio (3)',        key: 'total_patrimonio',      cls: '' },
+            { label: 'Total Pasivo + Patrimonio',  key: 'total_pasivo_patrimonio', cls: 'table-info font-weight-bold' },
+            { label: 'Diferencia (Cuadratura)',    key: 'diferencia',            cls: 'cuadratura-row' },
+        ];
+        let bsThead = `<tr>${mn('Concepto')}${periods.map(pHeader).join('')}</tr>`;
+        let bsTbody = bsRows.map(row => {
+            let rowCls = row.cls;
+            // For diferencia row: check if all periods are cuadrado
+            const allSquared = periods.every(p => totalsByPeriod[p] && totalsByPeriod[p].es_cuadrado);
+            if (row.key === 'diferencia') rowCls += allSquared ? ' table-success' : ' table-danger';
+            const cells = periods.map(p => {
+                const val = totalsByPeriod[p] ? totalsByPeriod[p][row.key] : 0;
+                let badge = '';
+                if (row.key === 'diferencia' && totalsByPeriod[p]) {
+                    badge = totalsByPeriod[p].es_cuadrado
+                        ? `<span class="badge badge-success ml-1" style="font-size:0.6rem"><i class="fas fa-check-circle"></i></span>`
+                        : `<span class="badge badge-danger ml-1" style="font-size:0.6rem"><i class="fas fa-exclamation-triangle"></i></span>`;
+                }
+                return `<td class="text-right">${fmt(val)}${badge}</td>`;
+            }).join('');
+            return `<tr class="${rowCls}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;
+        }).join('');
+        $('#summary-bs-thead').html(bsThead);
+        $('#summary-bs-tbody').html(bsTbody);
+
+        // ── Estado de Resultados ──
+        const isRows = [
+            { label: 'Total Ingresos (5)',       key: 'total_ingresos',  cls: 'text-success' },
+            { label: 'Total Gastos (4)',          key: 'total_gastos',   cls: 'text-danger' },
+            { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta',  cls: 'table-warning font-weight-bold' },
+        ];
+        let isThead = `<tr>${mn('Concepto')}${periods.map(pHeader).join('')}</tr>`;
+        let isTbody = isRows.map(row => {
+            const cells = periods.map(p => {
+                const val = totalsByPeriod[p] ? totalsByPeriod[p][row.key] : 0;
+                return `<td class="text-right ${row.cls}">${fmt(val)}</td>`;
+            }).join('');
+            return `<tr class="${row.cls.includes('table') ? row.cls : ''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;
+        }).join('');
+        $('#summary-is-thead').html(isThead);
+        $('#summary-is-tbody').html(isTbody);
+
+        // ── Estado de Resultados Mensual ──
+        const monthlyIsRows = [
+            { label: 'Total Ingresos (5)',       key: 'total_ingresos_monthly',  cls: 'text-success' },
+            { label: 'Total Gastos (4)',          key: 'total_gastos_monthly',   cls: 'text-danger' },
+            { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta_monthly',  cls: 'table-warning font-weight-bold' },
+        ];
+        let monthlyIsThead = `<tr>${mn('Concepto')}${periods.map(pHeader).join('')}</tr>`;
+        let monthlyIsTbody = monthlyIsRows.map(row => {
+            const cells = periods.map(p => {
+                const val = totalsByPeriod[p] ? totalsByPeriod[p][row.key] : 0;
+                return `<td class="text-right ${row.cls}">${fmt(val)}</td>`;
+            }).join('');
+            return `<tr class="${row.cls.includes('table') ? row.cls : ''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;
+        }).join('');
+        $('#summary-monthly-is-thead').html(monthlyIsThead);
+        $('#summary-monthly-is-tbody').html(monthlyIsTbody);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function getLevelClass(level) {
+        if (level <= 1) return '1';
+        if (level === 2) return '2';
+        if (level <= 4) return '3';
+        if (level <= 6) return '4';
+        if (level <= 8) return '5';
+        if (level <= 10) return '6';
+        return '7';
+    }
+
+    function formatAmount(amount) {
+        const rounded = Math.round(amount);
+        if (rounded === 0) {
+            if (amount === 0) return '<span class="zero-amount">-</span>';
+            return '<span>0</span>';
+        }
+        const formatted = Math.abs(rounded).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        if (rounded < 0) return `<span class="negative-amount">(${formatted})</span>`;
+        return `<span>${formatted}</span>`;
+    }
+
+    function exportData() {
+        if (!balanceData) return;
+        $('#exportModal').modal('show');
+    }
+
+    function executeExport() {
+        if (!balanceData) return;
+
+        const exportType = $('input[name="exportType"]:checked').val() || 'accounts';
+        const isBSActive = $('#balance-sheet-tab').hasClass('active');
+        const isMonthlyISActive = $('#monthly-income-statement-tab').hasClass('active');
+        const periods = balanceData.periods;
+        const [y, m] = periods[periods.length - 1].split('-');
+        const format = $('#exportFormatSelector').val() || 'csv';
+
+        let fileNamePrefix = '';
+        let title = '';
+
+        if (exportType === 'summary') {
+            const rows = isBSActive ? [
+                { label: 'Total Activo (1)',           key: 'total_activo' },
+                { label: 'Total Pasivo (2)',            key: 'total_pasivo' },
+                { label: 'Total Patrimonio (3)',        key: 'total_patrimonio' },
+                { label: 'Total Pasivo + Patrimonio',  key: 'total_pasivo_patrimonio' },
+                { label: 'Diferencia (Cuadratura)',    key: 'diferencia' }
+            ] : (isMonthlyISActive ? [
+                { label: 'Total Ingresos (5)',       key: 'total_ingresos_monthly' },
+                { label: 'Total Gastos (4)',          key: 'total_gastos_monthly' },
+                { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta_monthly' }
+            ] : [
+                { label: 'Total Ingresos (5)',       key: 'total_ingresos' },
+                { label: 'Total Gastos (4)',          key: 'total_gastos' },
+                { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta' }
+            ]);
+
+            fileNamePrefix = isBSActive ? 'resumen_balance_general' : (isMonthlyISActive ? 'resumen_estado_resultados_mensual' : 'resumen_estado_resultados');
+            title = isBSActive ? 'Resumen Balance General' : (isMonthlyISActive ? 'Resumen Estado de Resultados (Mensual)' : 'Resumen Estado de Resultados');
+
+            if (format === 'pdf') {
+                const elementId = isBSActive ? 'footer-summary-section' : (isMonthlyISActive ? 'footer-monthly-is-section' : 'footer-is-section');
+                exportElementToPDF(elementId, title, `${fileNamePrefix}_${y}${m}.pdf`);
+            } else if (format === 'xlsx') {
+                const headers = ["Concepto", ...periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; })];
+                const aoa = [headers];
+                rows.forEach(row => {
+                    const rowData = [row.label, ...periods.map(p => {
+                        const val = balanceData.totals[p] ? balanceData.totals[p][row.key] : 0;
+                        return val;
+                    })];
+                    aoa.push(rowData);
+                });
+                exportToExcel(aoa, `${fileNamePrefix}_${y}${m}.xlsx`);
+            } else {
+                // CSV
+                let csv = '\ufeff'; // UTF-8 BOM
+                csv += `Concepto,${periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; }).join(',')}\n`;
+                rows.forEach(row => {
+                    const rowVals = periods.map(p => {
+                        const val = balanceData.totals[p] ? balanceData.totals[p][row.key] : 0;
+                        return val.toFixed(2);
+                    }).join(',');
+                    csv += `"${row.label}",${rowVals}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                downloadBlob(blob, `${fileNamePrefix}_${y}${m}.csv`);
+            }
+        } else {
+            // accounts
+            const maxDigits = parseInt($('#exportDigitsSelector').val()) || 12;
+            let itemsToExport = [];
+            let balancesKey = 'balances';
+            if (isBSActive) {
+                itemsToExport = balanceData.balance_sheet;
+                fileNamePrefix = 'estado_situacion_financiera';
+                title = 'Estado de Situación Financiera';
+            } else if (isMonthlyISActive) {
+                itemsToExport = balanceData.income_statement;
+                balancesKey = 'monthly_balances';
+                fileNamePrefix = 'estado_resultados_mensual';
+                title = 'Estado de Resultados (Mensual)';
+            } else {
+                itemsToExport = balanceData.income_statement;
+                fileNamePrefix = 'estado_resultados';
+                title = 'Estado de Resultados';
+            }
+
+            // Filter items: only include accounts with code length <= maxDigits
+            const filteredItems = itemsToExport.filter(item => {
+                const codeStr = (item.code || '').toString().trim();
+                return codeStr.replace(/\D/g, '').length <= maxDigits;
+            });
+
+            fileNamePrefix = `${fileNamePrefix}_d${maxDigits}`;
+
+            if (format === 'pdf') {
+                const tableId = isBSActive ? 'balance-sheet-table' : (isMonthlyISActive ? 'monthly-income-statement-table' : 'income-statement-table');
+                exportTableToPDF(tableId, title, `${fileNamePrefix}_${y}${m}.pdf`);
+            } else if (format === 'xlsx') {
+                const headers = ["Codigo", "Cuenta", ...periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; })];
+                const aoa = [headers];
+                filteredItems.forEach(i => {
+                    const row = [i.code, i.name, ...periods.map(p => {
+                        const balancesDict = i[balancesKey];
+                        return (balancesDict && balancesDict[p] != null) ? balancesDict[p] : 0;
+                    })];
+                    aoa.push(row);
+                });
+                exportToExcel(aoa, `${fileNamePrefix}_${y}${m}.xlsx`);
+            } else {
+                // CSV
+                let csv = '\ufeff'; // UTF-8 BOM
+                csv += `Codigo,Cuenta,${periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; }).join(',')}\n`;
+                filteredItems.forEach(i => {
+                    const vals = periods.map(p => {
+                        const balancesDict = i[balancesKey];
+                        const val = (balancesDict && balancesDict[p] != null) ? balancesDict[p] : 0;
+                        return val.toFixed(2);
+                    }).join(',');
+                    csv += `"${i.code}","${i.name}",${vals}\n`;
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                downloadBlob(blob, `${fileNamePrefix}_${y}${m}.csv`);
+            }
+        }
+
+        $('#exportModal').modal('hide');
+        // Reset to default accounts option for next click
+        $('#exportTypeAccounts').prop('checked', true).trigger('change');
+    }
+
+    function downloadSummaryDirect(type, format) {
+        if (!balanceData) return;
+        const periods = balanceData.periods;
+        const [y, m] = periods[periods.length - 1].split('-');
+        
+        const rows = (type === 'bs') ? [
+            { label: 'Total Activo (1)',           key: 'total_activo' },
+            { label: 'Total Pasivo (2)',            key: 'total_pasivo' },
+            { label: 'Total Patrimonio (3)',        key: 'total_patrimonio' },
+            { label: 'Total Pasivo + Patrimonio',  key: 'total_pasivo_patrimonio' },
+            { label: 'Diferencia (Cuadratura)',    key: 'diferencia' }
+        ] : (type === 'monthly_is' ? [
+            { label: 'Total Ingresos (5)',       key: 'total_ingresos_monthly' },
+            { label: 'Total Gastos (4)',          key: 'total_gastos_monthly' },
+            { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta_monthly' }
+        ] : [
+            { label: 'Total Ingresos (5)',       key: 'total_ingresos' },
+            { label: 'Total Gastos (4)',          key: 'total_gastos' },
+            { label: 'Utilidad / Pérdida Neta',  key: 'utilidad_neta' }
+        ]);
+
+        const fileNamePrefix = (type === 'bs') ? 'resumen_balance_general' : (type === 'monthly_is' ? 'resumen_estado_resultados_mensual' : 'resumen_estado_resultados');
+        const title = (type === 'bs') ? 'Resumen Balance General' : (type === 'monthly_is' ? 'Resumen Estado de Resultados (Mensual)' : 'Resumen Estado de Resultados');
+
+        if (format === 'pdf') {
+            const elementId = (type === 'bs') ? 'footer-summary-section' : (type === 'monthly_is' ? 'footer-monthly-is-section' : 'footer-is-section');
+            exportElementToPDF(elementId, title, `${fileNamePrefix}_${y}${m}.pdf`);
+        } else if (format === 'xlsx') {
+            const headers = ["Concepto", ...periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; })];
+            const aoa = [headers];
+            rows.forEach(row => {
+                const rowData = [row.label, ...periods.map(p => {
+                    const val = balanceData.totals[p] ? balanceData.totals[p][row.key] : 0;
+                    return val;
+                })];
+                aoa.push(rowData);
+            });
+            exportToExcel(aoa, `${fileNamePrefix}_${y}${m}.xlsx`);
+        } else {
+            // CSV
+            let csv = '\ufeff'; // UTF-8 BOM
+            csv += `Concepto,${periods.map(p => { const [yr,mo] = p.split('-'); return MONTH_NAMES[parseInt(mo)-1]+'-'+yr; }).join(',')}\n`;
+            rows.forEach(row => {
+                const rowVals = periods.map(p => {
+                    const val = balanceData.totals[p] ? balanceData.totals[p][row.key] : 0;
+                    return val.toFixed(2);
+                }).join(',');
+                csv += `"${row.label}",${rowVals}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            downloadBlob(blob, `${fileNamePrefix}_${y}${m}.csv`);
+        }
+    }
+
+    // ── Export Helpers ─────────────────────────────────────────────
+    function downloadBlob(blob, filename) {
+        try {
+            saveAs(blob, filename);
+        } catch (e) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 1000);
+        }
+    }
+
+    function exportToExcel(data, fileName) {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        // Auto-width columns
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        const cols = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+            let max = 10;
+            for (let r = range.s.r; r <= range.e.r; r++) {
+                const cell = ws[XLSX.utils.encode_cell({r, c})];
+                if (cell && cell.v) max = Math.max(max, String(cell.v).length + 2);
+            }
+            cols.push({ wch: Math.min(max, 50) });
+        }
+        ws['!cols'] = cols;
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        downloadBlob(blob, fileName);
+    }
+
+    function exportElementToPDF(elementId, title, fileName) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const btnGroup = element.querySelector('.dropdown');
+        if (btnGroup) btnGroup.style.visibility = 'hidden';
+
+        html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            if (btnGroup) btnGroup.style.visibility = 'visible';
+            
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const isLandscape = canvas.width > canvas.height;
+            const pdf = new jsPDF({
+                orientation: isLandscape ? 'landscape' : 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+
+            const pdfW = pdf.internal.pageSize.getWidth() - 20;
+            const pdfH = (canvas.height * pdfW) / canvas.width;
+            
+            pdf.setFontSize(14);
+            pdf.setTextColor(40, 40, 40);
+            pdf.text(title, pdf.internal.pageSize.getWidth() / 2, 12, { align: 'center' });
+            pdf.addImage(imgData, 'JPEG', 10, 18, pdfW, pdfH);
+            
+            pdf.save(fileName);
+        }).catch(err => {
+            if (btnGroup) btnGroup.style.visibility = 'visible';
+            console.error('Error generating PDF:', err);
+            alert('Error al generar PDF: ' + err.message);
+        });
+    }
+
+    function exportTableToPDF(tableId, title, fileName) {
+        const originalTable = document.getElementById(tableId);
+        if (!originalTable) return;
+
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.top = '-9999px';
+        container.style.width = '1200px';
+        container.style.backgroundColor = '#ffffff';
+        container.style.padding = '20px';
+        
+        const titleEl = document.createElement('h3');
+        titleEl.innerText = title;
+        titleEl.style.color = '#2c3e50';
+        titleEl.style.fontFamily = 'sans-serif';
+        titleEl.style.marginBottom = '20px';
+        titleEl.style.textAlign = 'center';
+        container.appendChild(titleEl);
+
+        const clone = originalTable.cloneNode(true);
+        clone.style.width = '100%';
+        clone.style.height = 'auto';
+        clone.style.maxHeight = 'none';
+        clone.style.overflow = 'visible';
+        container.appendChild(clone);
+
+        document.body.appendChild(container);
+
+        html2canvas(container, { scale: 1.5, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+            document.body.removeChild(container);
+            
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const imgWidth = 190;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            let heightLeft = imgHeight;
+            let pageNum = 1;
+            let position = 10;
+            
+            pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+            heightLeft -= 277; 
+            
+            let accumulatedHeight = 277;
+            while (heightLeft > 0) {
+                pageNum++;
+                pdf.addPage();
+                
+                pdf.setFontSize(8);
+                pdf.setTextColor(120, 120, 120);
+                pdf.text(`${title} - Página ${pageNum}`, 105, 10, { align: 'center' });
+                
+                position = 15 - accumulatedHeight;
+                pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                
+                heightLeft -= 272;
+                accumulatedHeight += 272;
+            }
+            
+            pdf.save(fileName);
+        }).catch(err => {
+            if (container.parentNode) document.body.removeChild(container);
+            console.error('Error generating PDF:', err);
+            alert('Error al generar PDF: ' + err.message);
+        });
+    }
+
+    function openAssignPlanModal() {
+        if (!selectedPeriods || selectedPeriods.length === 0) {
+            toastr.warning('Seleccione al menos un período.');
+            return;
+        }
+        
+        // Populate periods summary
+        const badges = selectedPeriods.map(p => {
+            const [y, m] = p.split('-');
+            return `<span class="badge badge-info mr-1 mb-1" style="font-size:0.78rem;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
+        }).join('');
+        $('#assignPeriodsSummary').html(badges);
+        
+        // Populate currency
+        const currencyText = $('#currencySelector option:selected').text();
+        $('#assignCurrencyLabel').text(currencyText);
+        
+        // Show modal
+        $('#assignPlanModal').modal('show');
+    }
+
+    function executeAssignPlan() {
+        const planId = $('#assignPlanSelector').val();
+        const currency = $('#currencySelector').val();
+        
+        if (!planId) {
+            toastr.error('Seleccione un plan de destino.');
+            return;
+        }
+        
+        // Disable button to prevent double submit
+        const confirmBtn = $('#assignPlanModal .btn-info');
+        confirmBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Asignando...');
+        
+        $.ajax({
+            url: "{% url 'financial_planning:assign_institutional_budget_to_plan' %}",
+            type: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            contentType: "application/json",
+            data: JSON.stringify({
+                plan_id: planId,
+                periods: selectedPeriods,
+                currency: currency
+            }),
+            success: function(response) {
+                confirmBtn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Asignar');
+                $('#assignPlanModal').modal('hide');
+                if (response.status === 'success') {
+                    toastr.success(response.msg);
+                    setTimeout(function() {
+                        window.location.href = `/financial-planning/budget-wizard/${planId}/?step=2`;
+                    }, 1500);
+                } else {
+                    toastr.error(response.msg || 'Ocurrió un error inesperado.');
+                }
+            },
+            error: function(xhr, status, error) {
+                confirmBtn.prop('disabled', false).html('<i class="fas fa-check-circle mr-1"></i> Asignar');
+                let errorMsg = 'Error en el servidor al asignar el balance.';
+                if (xhr.responseJSON && xhr.responseJSON.msg) {
+                    errorMsg = xhr.responseJSON.msg;
+                }
+                toastr.error(errorMsg);
+            }
+        });
+    }
+</script>
+{% endblock %}

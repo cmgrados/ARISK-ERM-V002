@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% block title_header %}Configuración Usuarios{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #f4f6f9;
+    }
+    .config-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+    .config-title .text-orange {
+        color: #f39c12;
+    }
+    .config-title .text-gray {
+        color: #7f8c8d;
+        font-weight: 400;
+    }
+    .action-btn-group .btn {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        color: #555;
+        font-weight: 500;
+        padding: 6px 15px;
+    }
+    .action-btn-group .btn:hover {
+        background-color: #f8f9fa;
+        color: #333;
+    }
+    .action-btn-group .btn i {
+        color: #888;
+        margin-right: 5px;
+    }
+    .users-card {
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border: none;
+        margin-top: 20px;
+    }
+    .users-table th {
+        border-top: none;
+        border-bottom: 1px solid #eee;
+        color: #555;
+        font-weight: 600;
+        padding: 15px;
+    }
+    .users-table td {
+        vertical-align: middle;
+        border-bottom: 1px solid #f4f4f4;
+        padding: 12px 15px;
+        color: #666;
+    }
+    .users-table tr:hover {
+        background-color: #fbfbfb;
+    }
+    .search-btn {
+        background-color: #fff;
+        border: 1px solid #ddd;
+        color: #555;
+        padding: 5px 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    .search-btn i {
+        color: #888;
+    }
+    .custom-checkbox-cell {
+        width: 50px;
+        text-align: center;
+    }
+    .custom-checkbox-cell input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    .pagination-container {
+        text-align: center;
+        padding: 20px 0;
+        color: #777;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    .page-number {
+        display: inline-block;
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        padding: 4px 12px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        color: #555;
+    }
+    .badge-role {
+        font-weight: normal;
+        font-size: 0.85rem;
+    }
+    .td-email {
+        color: #333 !important;
+        font-weight: 500;
+    }
+</style>
+
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <div class="config-title">
+                    <span class="text-orange">Configuración</span> <span class="text-gray">Usuarios</span>
+                </div>
+                
+                <div class="btn-group action-btn-group shadow-sm">
+                    <a href="{% url 'users:user_create' %}" class="btn">
+                        <i class="far fa-file-alt"></i> Nuevo
+                    </a>
+                    <button class="btn">
+                        <i class="fas fa-times text-dark"></i> Borrar
+                    </button>
+                    <button class="btn">
+                        <i class="far fa-copy"></i> Importar
+                    </button>
+                </div>
+            </div>
+            <!-- Si tienes un logo aquí, puedes agregarlo -->
+            <!-- <div class="text-right">
+                <img src="/static/img/tu-logo.png" alt="Logo" style="max-height: 50px;">
+            </div> -->
+        </div>
+
+        <!-- White Card Section -->
+        <div class="card users-card mb-5">
+            <div class="card-body p-4">
+                
+                <!-- Search Button -->
+                <button class="search-btn shadow-sm">
+                    <i class="fas fa-search mr-1"></i> Buscar <i class="fas fa-caret-down ml-1"></i>
+                </button>
+
+                <div class="table-responsive">
+                    <table class="table users-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="custom-checkbox-cell"></th>
+                                <th>Email</th>
+                                <th>Nombres</th>
+                                <th>Apellidos</th>
+                                <th>Cargo</th>
+                                <th>Área</th>
+                                <th>Accesos (Grupos)</th>
+                                <th>Rol</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td class="custom-checkbox-cell">
+                                    <input type="checkbox" name="selected_users" value="{{ u.pk }}" class="shadow-sm">
+                                </td>
+                                <td class="td-email">{{ u.email|default:u.username }}</td>
+                                <td>{{ u.first_name|default:"-" }}</td>
+                                <td>{{ u.last_name|default:"-" }}</td>
+                                <td>{{ u.position|default:"-" }}</td>
+                                <td>{{ u.department|default:"-" }}</td>
+                                <td>
+                                    {% for g in u.groups.all %}
+                                        <span class="badge badge-info">{{ g.name }}</span>
+                                    {% empty %}
+                                        -
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if u.is_superuser %}
+                                        Administrador
+                                    {% elif u.is_risk_manager %}
+                                        Gestor
+                                    {% elif u.is_auditor %}
+                                        Auditor
+                                    {% else %}
+                                        Usuario
+                                    {% endif %}
+                                </td>
+                                <!-- <td>-</td> -->
+                                <td>
+                                    {% if u.is_active %}
+                                        <span class="text-success"><i class="fas fa-check-circle"></i> Activo</span>
+                                    {% else %}
+                                        <span class="text-danger"><i class="fas fa-times-circle"></i> Inactivo</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'users:user_update' u.pk %}" class="btn btn-sm btn-light" title="Editar">
+                                        <i class="fas fa-edit text-primary"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-5">No hay usuarios registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-container">
+                    <div class="page-number">1</div><br>
+                    {{ users|length }} Registros encontrados
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

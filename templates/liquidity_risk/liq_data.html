@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 font-weight-bold"><i class="fas fa-list mr-2"></i>Detalle de Cartera de Pasivos</h5>
+        <div class="d-flex align-items-center">
+            <form method="GET" class="form-inline mr-3">
+                <label class="mr-2 small font-weight-bold">FECHA:</label>
+                <select name="load_date" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <option value="">Todas las fechas</option>
+                    {% for date in available_dates %}
+                        <option value="{{ date|date:'Y-m-d' }}" {% if selected_date == date|date:'Y-m-d' %}selected{% endif %}>
+                            {{ date|date:'d/m/Y' }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'utilities:bulk_load_liability' %}" class="btn btn-dark btn-sm">
+                <i class="fas fa-upload mr-1"></i> Carga Masiva
+            </a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 small">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Corte</th>
+                        <th>Agencia</th>
+                        <th>Socio/Cliente</th>
+                        <th>Apellidos y Nombres</th>
+                        <th>Cta. Apertura</th>
+                        <th>Producto</th>
+                        <th>Moneda</th>
+                        <th class="text-right">Monto</th>
+                        <th class="text-right">Saldo</th>
+                        <th class="text-center">TEA</th>
+                        <th class="text-center">Vencimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for liability in liabilities %}
+                    <tr>
+                        <td class="align-middle">{{ liability.load_date|date:"d/m/Y" }}</td>
+                        <td class="align-middle">{{ liability.agency }}</td>
+                        <td class="align-middle"><code>{{ liability.customer_code }}</code></td>
+                        <td class="align-middle font-weight-bold">{{ liability.customer_name }}</td>
+                        <td class="align-middle"><code>{{ liability.opening_code }}</code></td>
+                        <td class="align-middle">{{ liability.product }}</td>
+                        <td class="align-middle text-center">{{ liability.currency }}</td>
+                        <td class="align-middle text-right">{{ liability.amount|floatformat:2 }}</td>
+                        <td class="align-middle text-right font-weight-bold text-primary">{{ liability.balance|floatformat:2 }}</td>
+                        <td class="align-middle text-center">{{ liability.tea }}%</td>
+                        <td class="align-middle text-center">
+                            {% if liability.due_date %}
+                                {{ liability.due_date|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-5 text-muted">No se encontraron registros de pasivos.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if liabilities.has_other_pages %}
+    <div class="card-footer bg-white border-top">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if liabilities.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ liabilities.previous_page_number }}{% if selected_date %}&load_date={{ selected_date }}{% endif %}">Anterior</a></li>
+                {% endif %}
+                
+                <li class="page-item disabled"><span class="page-link">Página {{ liabilities.number }} de {{ liabilities.paginator.num_pages }}</span></li>
+
+                {% if liabilities.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ liabilities.next_page_number }}{% if selected_date %}&load_date={{ selected_date }}{% endif %}">Siguiente</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

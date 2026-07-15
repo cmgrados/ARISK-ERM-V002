@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline" style="border-top-color: #161065;">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold">Posiciones y Sensibilidad</h3>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-striped table-hover mb-0">
+            <thead class="bg-light">
+                <tr>
+                    <th>Instrumento</th>
+                    <th>Moneda</th>
+                    <th>Monto Original</th>
+                    <th>Monto USD</th>
+                    <th>Tasa Cupón</th>
+                    <th>Duración</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Bonos Soberanos</td><td>SOL</td><td>1,500,000</td><td>405,000</td><td>5.2%</td><td>3.5</td></tr>
+                <tr><td>Acciones Locales</td><td>SOL</td><td>250,000</td><td>67,500</td><td>N/A</td><td>N/A</td></tr>
+                <tr><td>Depósitos Plazo</td><td>USD</td><td>800,000</td><td>800,000</td><td>2.1%</td><td>0.8</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

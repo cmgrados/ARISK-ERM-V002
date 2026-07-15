@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold text-primary"><i class="fas fa-chart-pie"></i> Panel de Reportes e Informes</h3>
+            </div>
+            <div class="card-body">
+                <p>Bienvenido al submódulo de Reportes e Informes. Aquí próximamente se desplegarán los cuadros de mando detallados, la generación de PDFs y las exportaciones a Excel para los informes exigidos por la Superintendencia y el Comité de Riesgos.</p>
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon text-info"><i class="fas fa-file-pdf"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold">Reporte SBS</span>
+                                <span class="info-box-number text-muted" style="font-weight: normal; font-size: 0.9rem;">Formato regulatorio Anexo A</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon text-success"><i class="fas fa-file-excel"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold">Sábana de Eventos</span>
+                                <span class="info-box-number text-muted" style="font-weight: normal; font-size: 0.9rem;">Exportación completa de Base de Datos</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-box bg-light">
+                            <span class="info-box-icon text-danger"><i class="fas fa-chart-bar"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text font-weight-bold">Reporte Gerencial</span>
+                                <span class="info-box-number text-muted" style="font-weight: normal; font-size: 0.9rem;">Resumen Ejecutivo de Riesgos</span>
+                                <a href="{% url 'op_risk:executive_report' %}" class="btn btn-sm btn-outline-danger mt-2" target="_blank">Generar Informe</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <button class="btn btn-primary" disabled><i class="fas fa-cogs"></i> Integraciones Adicionales en Construcción</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

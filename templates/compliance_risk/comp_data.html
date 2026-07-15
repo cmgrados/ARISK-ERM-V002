@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-book text-warning mr-2"></i>Base Normativa y Obligaciones</h3>
+        <div class="card-tools">
+            <button class="btn btn-sm text-white" style="background-color: #161065;"><i class="fas fa-plus"></i> Nueva Norma</button>
+        </div>
+    </div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover text-sm">
+            <thead class="bg-light">
+                <tr><th>ID Norma</th><th>Título / Disposición</th><th>Ámbito</th><th>Vigencia</th><th>Progreso Impl.</th><th>Estado</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>SBS-3274-2017</td><td>Gestión de Conducta de Mercado</td><td>Operaciones</td><td>12/10/2017</td>
+                    <td><div class="progress" style="height:10px;"><div class="progress-bar bg-success" style="width:100%"></div></div></td>
+                    <td><span class="badge badge-success">Cumplido</span></td>
+                </tr>
+                <tr><td>SBS-504-2021</td><td>Reglamento Gestión Riesgo Modelo</td><td>Riesgos</td><td>01/01/2022</td>
+                    <td><div class="progress" style="height:10px;"><div class="progress-bar bg-warning" style="width:75%"></div></div></td>
+                    <td><span class="badge badge-warning">En Proceso</span></td>
+                </tr>
+                <tr><td>Ley 29733</td><td>Protección de Datos Personales</td><td>Legal/TI</td><td>08/05/2013</td>
+                    <td><div class="progress" style="height:10px;"><div class="progress-bar bg-danger" style="width:40%"></div></div></td>
+                    <td><span class="badge badge-danger">Crítico</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

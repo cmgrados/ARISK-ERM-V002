@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block extra_js %}
+<!-- ECharts -->
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Top KPIs -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm" style="background-color: #161065; color: white;">
+            <div class="inner">
+                <h3>S/ 1.2M</h3>
+                <p>Value at Risk (VaR) 99%</p>
+            </div>
+            <div class="icon text-white-50"><i class="fas fa-chart-line"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm bg-white border">
+            <div class="inner">
+                <h3 class="text-danger">- S/ 450K</h3>
+                <p>Earnings at Risk (EaR)</p>
+            </div>
+            <div class="icon text-danger"><i class="fas fa-level-down-alt"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm bg-white border">
+            <div class="inner">
+                <h3 class="text-success">+ S/ 850K</h3>
+                <p>EVE (Valor Ec. Patrimonio)</p>
+            </div>
+            <div class="icon text-success"><i class="fas fa-coins"></i></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="small-box shadow-sm" style="background-color: #ffcc00; color: #141313;">
+            <div class="inner">
+                <h3>$ 3.5M</h3>
+                <p>Exposición Neta USD</p>
+            </div>
+            <div class="icon"><i class="fas fa-exchange-alt"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Gap de Tasas por Plazo -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header"><h3 class="card-title"><i class="fas fa-stream mr-2"></i>Gap de Tasas por Plazo</h3></div>
+            <div class="card-body"><div id="gapChart" style="height: 350px;"></div></div>
+        </div>
+    </div>
+    <!-- Exposición por Moneda -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
+            <div class="card-header"><h3 class="card-title" style="color:#141313;"><i class="fas fa-money-bill mr-2"></i>Exposición por Moneda (PEN/USD)</h3></div>
+            <div class="card-body"><div id="fxChart" style="height: 350px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- VaR por Portafolio -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light"><h3 class="card-title font-weight-bold"><i class="fas fa-chart-pie text-secondary mr-2"></i>VaR por Portafolio</h3></div>
+            <div class="card-body"><div id="varChart" style="height: 350px;"></div></div>
+        </div>
+    </div>
+    <!-- Sensibilidad del Margen a Tasas -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light"><h3 class="card-title font-weight-bold"><i class="fas fa-wave-square text-primary mr-2"></i>Sensibilidad del Margen Financiero</h3></div>
+            <div class="card-body"><div id="earChart" style="height: 350px;"></div></div>
+        </div>
+    </div>
+    <!-- Escenarios Tasa y Cambio -->
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light"><h3 class="card-title font-weight-bold"><i class="fas fa-bolt text-warning mr-2"></i>Escenarios Duales (Tasa + FX)</h3></div>
+            <div class="card-body"><div id="scenarioChart" style="height: 350px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Gap de Tasas por Plazo (Bar)
+    var chartGap = echarts.init(document.getElementById('gapChart'));
+    var optionGap = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        legend: { data: ['Activo Sensible', 'Pasivo Sensible', 'Brecha Sensible'] },
+        xAxis: { type: 'category', data: ['Hasta 1 mes', '1 a 3 meses', '3 a 6 meses', '6 a 12 meses', '> 1 año'] },
+        yAxis: { type: 'value', name: 'Millones S/' },
+        series: [
+            { name: 'Activo Sensible', type: 'bar', itemStyle: { color: '#161065' }, data: [120, 150, 180, 200, 300] },
+            { name: 'Pasivo Sensible', type: 'bar', itemStyle: { color: '#E84A5F' }, data: [180, 140, 100, 80, 50] },
+            { name: 'Brecha Sensible', type: 'line', itemStyle: { color: '#ffcc00' }, lineStyle:{width: 3}, data: [-60, 10, 80, 120, 250] }
+        ]
+    };
+    chartGap.setOption(optionGap);
+
+    // 2. Exposición por Moneda (Pie/Donut)
+    var chartFx = echarts.init(document.getElementById('fxChart'));
+    var optionFx = {
+        tooltip: { trigger: 'item' },
+        legend: { top: 'bottom' },
+        series: [{
+            name: 'Monedas', type: 'pie', radius: ['40%', '70%'],
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            color: ['#161065', '#ffcc00', '#50a3ba'],
+            data: [ { value: 75, name: 'Soles (PEN)' }, { value: 25, name: 'Dólares (USD)' } ]
+        }]
+    };
+    chartFx.setOption(optionFx);
+
+    // 3. VaR por Portafolio (Treemap or Pie)
+    var chartVar = echarts.init(document.getElementById('varChart'));
+    var optionVar = {
+        tooltip: { trigger: 'item' },
+        color: ['#161065', '#E84A5F', '#2A363B', '#50a3ba'],
+        series: [{
+            type: 'pie', radius: '50%',
+            data: [
+                { value: 650000, name: 'Consumo' },
+                { value: 350000, name: 'Microempresa' },
+                { value: 150000, name: 'Inversiones' },
+                { value: 50000, name: 'Hipotecario' }
+            ]
+        }]
+    };
+    chartVar.setOption(optionVar);
+
+    // 4. Sensibilidad Margen (EaR)
+    var chartEar = echarts.init(document.getElementById('earChart'));
+    var optionEar = {
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['-200 pbs', '-100 pbs', 'Base', '+100 pbs', '+200 pbs'] },
+        yAxis: { type: 'value', name: 'Δ Margen (Millones S/)' },
+        series: [{
+            name: 'Sensibilidad', type: 'bar',
+            itemStyle: {
+                color: function(params) {
+                    return params.value < 0 ? '#E84A5F' : '#161065';
+                }
+            },
+            data: [-2.5, -1.2, 0, 1.5, 3.2]
+        }]
+    };
+    chartEar.setOption(optionEar);
+
+    // 5. Escenarios FX y Tasa (Scatter)
+    var chartScenario = echarts.init(document.getElementById('scenarioChart'));
+    var optionScenario = {
+        tooltip: { formatter: 'Shock Tasa: {c} pbs<br>Devaluación: {b}%' },
+        xAxis: { type: 'value', name: 'Δ Tipo de Cambio (%)', min: -5, max: 15 },
+        yAxis: { type: 'value', name: 'Δ Tasa (pbs)', min: -100, max: 300 },
+        series: [{
+            name: 'Escenarios', type: 'scatter', symbolSize: 20,
+            itemStyle: { color: '#ffcc00', borderColor: '#141313', borderWidth: 2 },
+            data: [
+                [0, 0], [5, 100], [10, 200], [-2, -50], [15, 250]
+            ]
+        }]
+    };
+    chartScenario.setOption(optionScenario);
+
+    window.addEventListener('resize', function() {
+        chartGap.resize(); chartFx.resize(); chartVar.resize(); chartEar.resize(); chartScenario.resize();
+    });
+});
+</script>
+{% endblock %}

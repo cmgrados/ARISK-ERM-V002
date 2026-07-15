@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% load risk_extras %}
+{% load humanize %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">{{ page_title }}</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Filters Card -->
+        <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <form method="get" class="row align-items-end">
+                        <!-- Date Selectors -->
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Rango Inicial (T1)</label>
+                            <select name="date_start" class="form-control form-control-sm select2">
+                                {% for d in dates %}
+                                    <option value="{{ d|date:'Y-m-d' }}" {% if date_start == d|date:'Y-m-d' %}selected{% endif %}>
+                                        {{ d|date:"M Y"|capfirst }} ({{ d|date:"d \d\e M, Y" }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Rango Final (T2)</label>
+                            <select name="date_end" class="form-control form-control-sm select2">
+                                {% for d in dates %}
+                                    <option value="{{ d|date:'Y-m-d' }}" {% if date_end == d|date:'Y-m-d' %}selected{% endif %}>
+                                        {{ d|date:"M Y"|capfirst }} ({{ d|date:"d \d\e M, Y" }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- New Filters -->
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Producto</label>
+                            <select name="product" class="form-control form-control-sm select2">
+                                <option value="">-- Todos --</option>
+                                {% for p in products %}
+                                    <option value="{{ p }}" {% if f_product == p %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Tipo Crédito</label>
+                            <select name="credit_type" class="form-control form-control-sm select2">
+                                <option value="">-- Todos --</option>
+                                {% for t_val, t_label in credit_types %}
+                                    <option value="{{ t_val }}" {% if f_type == t_val|stringformat:"s" %}selected{% endif %}>{{ t_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Agencia</label>
+                            <select name="agency" class="form-control form-control-sm select2">
+                                <option value="">-- Todas --</option>
+                                {% for a in agencies %}
+                                    <option value="{{ a }}" {% if f_agency == a %}selected{% endif %}>{{ a }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small font-weight-bold">Asesor</label>
+                            <select name="advisor" class="form-control form-control-sm select2">
+                                <option value="">-- Todos --</option>
+                                {% for ad in advisors %}
+                                    {% if ad %}
+                                        <option value="{{ ad }}" {% if f_advisor == ad %}selected{% endif %}>{{ ad }}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-12 mt-3 text-right">
+                            <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">
+                                <i class="fas fa-sync-alt mr-1"></i> Aplicar Filtros
+                            </button>
+                            <a href="{% url 'credit_risk:transition_matrix' %}" class="btn btn-outline-secondary btn-sm px-4 shadow-sm">
+                                <i class="fas fa-undo mr-1"></i> Limpiar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        {% if matrix %}
+        <div class="row mb-4">
+            <div class="col-lg-10 offset-lg-1 text-right">
+                <button type="button" class="btn btn-info shadow-sm" onclick="exportToWord()">
+                    <i class="fas fa-file-word mr-2"></i> Descargar Todo en Word
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <!-- 1. Transition by Counts (Cantidades) -->
+            <div class="col-lg-10 offset-lg-1 mb-5">
+                <div class="card shadow-sm border-0" id="card-counts">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2">
+                        <h3 class="card-title font-weight-bold mb-0">
+                            <i class="fas fa-list-ol mr-2 text-primary"></i> Transición de Cantidades (Número de Operaciones)
+                        </h3>
+                        <div class="card-tools">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-xs btn-outline-success" onclick="exportToExcel('table-counts', 'Transicion_Cantidades')">
+                                    <i class="fas fa-file-excel mr-1"></i> Excel
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger" onclick="exportToPDF('card-counts', 'Transicion_Cantidades')">
+                                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-info" onclick="exportToImage('card-counts', 'Transicion_Cantidades')">
+                                    <i class="fas fa-image mr-1"></i> Imagen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center mb-0 transition-table" id="table-counts">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 20%;" class="align-middle">Rótulos Fila/Columna</th>
+                                        {% for cat in matrix.cats_with_total %}
+                                            <th class="small font-weight-bold">{{ cat }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row_cat in matrix.cats_with_total %}
+                                    <tr>
+                                        <td class="bg-light font-weight-bold text-center small">{{ row_cat }}</td>
+                                        {% for col_cat in matrix.cats_with_total %}
+                                            {% with val=matrix.counts|get_item:row_cat|get_item:col_cat %}
+                                                <td class="{% if row_cat == 'Total General' or col_cat == 'Total General' %}bg-total{% elif forloop.parentloop.counter == forloop.counter %}bg-diagonal{% elif forloop.parentloop.counter < forloop.counter %}bg-deterioration{% else %}bg-improvement{% endif %}">
+                                                    {{ val|default:0|format_int }}
+                                                </td>
+                                            {% endwith %}
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Transition by Total Balance (Saldo) -->
+            <div class="col-lg-10 offset-lg-1 mb-5">
+                <div class="card shadow-sm border-0" id="card-balances">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-2">
+                        <h3 class="card-title font-weight-bold mb-0">
+                            <i class="fas fa-money-bill-wave mr-2 text-success"></i> Transición de Totales (Saldos S/)
+                        </h3>
+                        <div class="card-tools">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-xs btn-outline-success" onclick="exportToExcel('table-balances', 'Transicion_Saldos')">
+                                    <i class="fas fa-file-excel mr-1"></i> Excel
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger" onclick="exportToPDF('card-balances', 'Transicion_Saldos')">
+                                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-info" onclick="exportToImage('card-balances', 'Transicion_Saldos')">
+                                    <i class="fas fa-image mr-1"></i> Imagen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center mb-0 transition-table" id="table-balances">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th style="width: 20%;" class="align-middle">Rótulos Fila/Columna</th>
+                                        {% for cat in matrix.cats_with_total %}
+                                            <th class="small font-weight-bold">{{ cat }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row_cat in matrix.cats_with_total %}
+                                    <tr>
+                                        <td class="bg-light font-weight-bold text-center small">{{ row_cat }}</td>
+                                        {% for col_cat in matrix.cats_with_total %}
+                                            {% with val=matrix.balances|get_item:row_cat|get_item:col_cat %}
+                                                <td class="{% if row_cat == 'Total General' or col_cat == 'Total General' %}bg-total{% elif forloop.parentloop.counter == forloop.counter %}bg-diagonal{% elif forloop.parentloop.counter < forloop.counter %}bg-deterioration{% else %}bg-improvement{% endif %}">
+                                                    {{ val|format_num:2 }}
+                                                </td>
+                                            {% endwith %}
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Transition Probabilities (%) -->
+            <div class="col-lg-10 offset-lg-1 mb-5">
+                <div class="card shadow-sm border-0" id="card-percentages">
+                    <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+                        <h3 class="card-title font-weight-bold mb-0">
+                            <i class="fas fa-percentage mr-2 text-info"></i> Matriz de Probabilidades de Transición (%)
+                        </h3>
+                        <div class="card-tools">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-xs btn-outline-success" onclick="exportToExcel('table-percentages', 'Transicion_Probabilidades')">
+                                    <i class="fas fa-file-excel mr-1"></i> Excel
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger" onclick="exportToPDF('card-percentages', 'Transicion_Probabilidades')">
+                                    <i class="fas fa-file-pdf mr-1"></i> PDF
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-info" onclick="exportToImage('card-percentages', 'Transicion_Probabilidades')">
+                                    <i class="fas fa-image mr-1"></i> Imagen
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-center mb-0 transition-table" id="table-percentages">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th style="width: 20%;">Categoría Inicial</th>
+                                        {% for cat in matrix.categories %}
+                                            <th class="small">{{ cat }}</th>
+                                        {% endfor %}
+                                        <th class="bg-primary small">PD (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row_cat in matrix.categories %}
+                                    <tr>
+                                        <td class="bg-light font-weight-bold text-center small">{{ row_cat }}</td>
+                                        {% for col_cat in matrix.categories %}
+                                            {% with val=matrix.percentages|get_item:row_cat|get_item:col_cat %}
+                                                <td class="{% if forloop.parentloop.counter == forloop.counter %}bg-diagonal{% elif forloop.parentloop.counter < forloop.counter %}bg-deterioration{% else %}bg-improvement{% endif %}">
+                                                    {{ val|format_num:2 }}%
+                                                </td>
+                                            {% endwith %}
+                                        {% endfor %}
+                                        <!-- Observed PD Column -->
+                                        {% with pd=matrix.pd_vector|get_item:row_cat %}
+                                        <td class="bg-light font-weight-bold text-primary">
+                                            {{ pd|format_num:2 }}%
+                                        </td>
+                                        {% endwith %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white small text-muted">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-4 d-flex align-items-center"><span class="badge mr-2" style="background-color: #ffff00; width: 15px; height: 15px; border: 1px solid #ddd;">&nbsp;</span> Permanencia</div>
+                                    <div class="mr-4 d-flex align-items-center"><span class="badge mr-2" style="background-color: #ff0000; width: 15px; height: 15px; border: 1px solid #ddd;">&nbsp;</span> Deterioro</div>
+                                    <div class="mr-4 d-flex align-items-center"><span class="badge mr-2" style="background-color: #92d050; width: 15px; height: 15px; border: 1px solid #ddd;">&nbsp;</span> Mejora</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <i class="fas fa-info-circle mr-1"></i> PD (%): Probabilidad de transición a PÉRDIDA.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Automated Analysis Section -->
+            <div class="col-lg-10 offset-lg-1 mb-5">
+                <div class="card shadow-sm border-0 bg-light">
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                        <h3 class="card-title font-weight-bold mb-0 text-dark">
+                            <i class="fas fa-file-alt mr-2 text-warning"></i> Análisis Automático de Transiciones
+                        </h3>
+                        <button class="btn btn-xs btn-outline-warning shadow-xs" onclick="copyAnalysis()">
+                            <i class="fas fa-copy mr-1"></i> Copiar Análisis
+                        </button>
+                    </div>
+                    <div class="card-body" id="analysis-content">
+                        {% for line in matrix.analysis %}
+                            <div class="analysis-item mb-3 p-3 bg-white shadow-xs rounded border-left border-warning" style="border-left-width: 4px !important;">
+                                <p class="mb-0 text-justify analysis-text text-dark" style="line-height: 1.6;">{{ line|safe }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer bg-white small text-muted text-center">
+                        Este análisis se genera automáticamente comparando los saldos de cartera entre {{ date_start }} y {{ date_end }}.
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info shadow-sm">
+            <i class="fas fa-info-circle mr-2"></i> Seleccione dos periodos para generar las matrices de transición. El sistema cruzará las operaciones recurrentes entre ambas fechas.
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Export Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    function exportToExcel(tableId, filename) {
+        var table = document.getElementById(tableId);
+        var wb = XLSX.utils.table_to_book(table, {sheet: "Sheet JS"});
+        XLSX.writeFile(wb, filename + ".xlsx");
+    }
+
+    async function exportToImage(cardId, filename) {
+        const card = document.getElementById(cardId);
+        const canvas = await html2canvas(card, { scale: 2 });
+        const link = document.createElement('a');
+        link.download = filename + ".png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    }
+
+    async function exportToPDF(cardId, filename) {
+        const { jsPDF } = window.jspdf;
+        const card = document.getElementById(cardId);
+        const canvas = await html2canvas(card, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        
+        const pdf = new jsPDF('l', 'mm', 'a4'); // Landscape
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 10, pdfWidth, pdfHeight);
+        pdf.save(filename + ".pdf");
+    }
+
+    function copyAnalysis() {
+        const texts = Array.from(document.querySelectorAll('.analysis-text')).map(p => p.innerText);
+        const fullText = texts.join('\n\n');
+        navigator.clipboard.writeText(fullText).then(() => {
+            alert('Análisis copiado al portapapeles');
+        });
+    }
+
+    function exportToWord() {
+        const header = `
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            <head><meta charset='utf-8'><title>Reporte de Transición</title>
+            <style>
+                table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+                th, td { border: 1px solid black; padding: 5px; text-align: center; font-family: Arial; font-size: 9pt; }
+                th { background-color: #161065; color: white; }
+                .bg-total { background-color: #f8f9fa; font-weight: bold; }
+                .title { font-size: 16pt; font-weight: bold; color: #161065; margin-bottom: 10px; font-family: Arial; border-bottom: 2px solid #ffcc00; padding-bottom: 5px; }
+                .subtitle { font-size: 12pt; font-weight: bold; color: #333; margin-top: 20px; margin-bottom: 10px; font-family: Arial; }
+                .analysis { margin-top: 10px; font-family: Arial; font-size: 10pt; text-align: justify; line-height: 1.5; margin-bottom: 15px; }
+            </style>
+            </head><body>
+        `;
+        const footer = "</body></html>";
+        
+        let content = "<h1 class='title'>REPORTE DE MATRICES DE TRANSICIÓN DE RIESGO</h1>";
+        content += `<p style='font-family: Arial; font-size: 10pt;'><b>Periodos:</b> ${document.getElementsByName('date_start')[0].options[document.getElementsByName('date_start')[0].selectedIndex].text} vs ${document.getElementsByName('date_end')[0].options[document.getElementsByName('date_end')[0].selectedIndex].text}</p>`;
+        
+        // 1. Counts
+        content += "<h2 class='subtitle'>1. Transición de Cantidades (Número de Operaciones)</h2>";
+        content += document.getElementById('table-counts').outerHTML;
+        
+        // 2. Balances
+        content += "<h2 class='subtitle'>2. Transición de Totales (Saldos S/)</h2>";
+        content += document.getElementById('table-balances').outerHTML;
+        
+        // 3. Percentages
+        content += "<h2 class='subtitle'>3. Matriz de Probabilidades de Transición (%)</h2>";
+        content += document.getElementById('table-percentages').outerHTML;
+        
+        // 4. Analysis
+        content += "<h1 class='title' style='margin-top: 40px;'>ANÁLISIS DE TRANSICIONES</h1>";
+        const analysisItems = document.querySelectorAll('.analysis-text');
+        analysisItems.forEach(item => {
+            content += `<p class='analysis'>${item.innerText}</p>`;
+        });
+        
+        const source = header + content + footer;
+        const blob = new Blob(['\ufeff', source], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'Reporte_Transiciones_Credito.doc';
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+<style>
+    .transition-table td { 
+        padding: 8px !important; 
+        font-size: 0.85rem;
+        vertical-align: middle !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .bg-diagonal { background-color: #ffff00 !important; color: #000; font-weight: 600; }
+    .bg-deterioration { background-color: #ff0000 !important; color: #fff; }
+    .bg-improvement { background-color: #92d050 !important; color: #000; }
+    .bg-total { background-color: #d9e1f2 !important; font-weight: bold; }
+    .card-title { font-size: 1.1rem; color: #161065; }
+    .transition-table thead th { background-color: #f8f9fa; color: #333; }
+    .analysis-item p { font-size: 0.95rem; color: #333; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+</style>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body bg-light d-flex justify-content-between align-items-center py-2">
+                <div>
+                    <h5 class="mb-0 font-weight-bold text-dark">Distribución según Vencimiento Residual</h5>
+                    <p class="text-muted small mb-0">Análisis detallado de activos y pasivos por bandas regulatorias.</p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <form method="GET" class="form-inline">
+                        <select name="period" class="form-control form-control-sm mr-2 border-primary" onchange="this.form.submit()">
+                            {% for p in all_periods %}
+                                <option value="{{ p|date:'Y-m-d' }}" {% if p == period %}selected{% endif %}>{{ p|date:'d/m/Y' }}</option>
+                            {% endfor %}
+                        </select>
+                        <select name="currency" class="form-control form-control-sm mr-2 border-primary" onchange="this.form.submit()">
+                            <option value="MN" {% if currency == 'MN' %}selected{% endif %}>Soles (MN)</option>
+                            <option value="ME" {% if currency == 'ME' %}selected{% endif %}>Dólares (ME)</option>
+                        </select>
+                    </form>
+                    <button class="btn btn-sm btn-outline-primary ml-2"><i class="fas fa-file-excel mr-1"></i> Exportar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if lar_res %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-0" style="border-left: 4px solid #10b981 !important;">
+            <i class="fas fa-check-circle fa-2x mr-3 text-success"></i>
+            <div>
+                <h6 class="mb-1 font-weight-bold">Distribución Basada en Metodología LaR (Rescatada)</h6>
+                <p class="mb-0 small">
+                    Los flujos de <strong>Cuentas de Ahorro</strong> se están distribuyendo según el cálculo oficial para el segmento <strong>{{ lar_res.segment }}</strong>. 
+                    Volatilidad asignada a la primera banda: <strong>{{ lar_res.lar_percentage|floatformat:2 }}%</strong>.
+                </p>
+            </div>
+            <div class="ml-auto">
+                <a href="{% url 'liquidity_risk:lar_methodology' %}?period={{ period|date:'Y-m-d' }}&currency={{ currency }}" class="btn btn-sm btn-outline-success">Ver Metodología</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover mb-0 text-center small" style="min-width: 1200px;">
+                        <thead class="bg-dark text-white">
+                            <tr>
+                                <th class="text-left align-middle" style="min-width: 250px;">I. DISTRIBUCIÓN SEGÚN VENCIMIENTO RESIDUAL</th>
+                                {% for band in matrix.bands %}
+                                    <th class="align-middle">{{ band }}</th>
+                                {% endfor %}
+                                <th class="align-middle">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- ACTIVOS -->
+                            <tr class="bg-light font-weight-bold">
+                                <td class="text-left text-primary">ACTIVOS</td>
+                                <td colspan="{{ matrix.bands|length|add:1 }}"></td>
+                            </tr>
+                            {% for row in matrix.assets %}
+                            <tr>
+                                <td class="text-left pl-4">{{ row.name }}</td>
+                                {% for val in row.values %}
+                                    <td>{{ val|floatformat:0|intcomma }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold bg-light">{{ row.total|floatformat:0|intcomma }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="font-weight-bold bg-light">
+                                <td class="text-left pl-3">Total (I)</td>
+                                {% for val in matrix.totals_in %}
+                                    <td>{{ val|floatformat:0|intcomma }}</td>
+                                {% endfor %}
+                                <td class="text-primary">{{ matrix.total_assets|floatformat:0|intcomma }}</td>
+                            </tr>
+
+                            <!-- PASIVOS -->
+                            <tr class="bg-light font-weight-bold">
+                                <td class="text-left text-danger">PASIVOS</td>
+                                <td colspan="{{ matrix.bands|length|add:1 }}"></td>
+                            </tr>
+                            {% for row in matrix.liabilities %}
+                            <tr>
+                                <td class="text-left pl-4">{{ row.name }}</td>
+                                {% for val in row.values %}
+                                    <td>{{ val|floatformat:0|intcomma }}</td>
+                                {% endfor %}
+                                <td class="font-weight-bold bg-light">{{ row.total|floatformat:0|intcomma }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="font-weight-bold bg-light">
+                                <td class="text-left pl-3">Total (II)</td>
+                                {% for val in matrix.totals_out %}
+                                    <td>{{ val|floatformat:0|intcomma }}</td>
+                                {% endfor %}
+                                <td class="text-danger">{{ matrix.total_liab|floatformat:0|intcomma }}</td>
+                            </tr>
+
+                            <!-- BRECHAS -->
+                            <tr class="bg-white font-weight-bold border-top-2">
+                                <td class="text-left">Brecha total (I) - (II)</td>
+                                {% for val in matrix.gaps_marginal %}
+                                    <td class="{% if val < 0 %}text-danger{% else %}text-success{% endif %}">
+                                        {{ val|floatformat:0|intcomma }}
+                                    </td>
+                                {% endfor %}
+                                <td></td>
+                            </tr>
+                            <tr class="bg-light font-weight-bold">
+                                <td class="text-left">Brecha acumulada (V)</td>
+                                {% for val in matrix.gaps_accumulated %}
+                                    <td class="{% if val < 0 %}text-danger{% else %}text-primary{% endif %}">
+                                        {{ val|floatformat:0|intcomma }}
+                                    </td>
+                                {% endfor %}
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card-body py-3">
+                <small class="text-uppercase opacity-75">Brecha 30 días</small>
+                <h4 class="mb-0 font-weight-bold">{{ currency }} {{ gap_30|floatformat:0|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm bg-info text-white">
+            <div class="card-body py-3">
+                <small class="text-uppercase opacity-75">Brecha 90 días</small>
+                <h4 class="mb-0 font-weight-bold">{{ currency }} {{ gap_90|floatformat:0|intcomma }}</h4>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

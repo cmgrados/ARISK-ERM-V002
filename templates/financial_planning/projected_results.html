@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-chart-line mr-2 text-primary"></i>Estado de Resultados Proyectado</h1>
+        <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-sm btn-secondary shadow-sm"><i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver</a>
+    </div>
+
+    {% if not has_data %}
+    <div class="alert alert-warning shadow-sm border-left-warning">
+        <i class="fas fa-exclamation-triangle mr-2"></i> No hay datos proyectados para este plan. Asegúrate de ejecutar el motor de proyecciones desde el Dashboard.
+    </div>
+    {% else %}
+    
+    <!-- KPI Row -->
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Cartera Fin de Periodo</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">S/ {{ table_rows|last|dictsort:"portfolio"|last }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Ingresos Financieros (Total)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">S/ {{ table_rows|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-coins fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Provisiones Acumuladas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">-</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shield-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Excedente Neto Final</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">S/ {{ table_rows|last|dictsort:"net_remanent"|last }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-chart-pie fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row">
+        <!-- P&L Chart -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-0">
+                    <h6 class="m-0 font-weight-bold text-primary">Evolución de Excedente Neto (S/)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="height: 300px;">
+                        <canvas id="plChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Chart -->
+        <div class="col-xl-4 col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-white border-0">
+                    <h6 class="m-0 font-weight-bold text-success">Cartera vs Depósitos</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-area" style="height: 300px;">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow mb-4 border-0">
+        <div class="card-header py-3 bg-white">
+            <h6 class="m-0 font-weight-bold text-primary">Detalle de P&L Proyectado</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0" id="resultsTable" width="100%" cellspacing="0" style="font-size: 0.85rem;">
+                    <thead class="bg-light text-dark">
+                        <tr>
+                            <th>Mes</th>
+                            <th class="text-right">Cartera (S/)</th>
+                            <th class="text-right">Depósitos (S/)</th>
+                            <th class="text-right text-success">Ingresos Fin.</th>
+                            <th class="text-right text-danger">Gastos Fin.</th>
+                            <th class="text-right font-weight-bold">Margen Bruto</th>
+                            <th class="text-right text-danger">Provisiones</th>
+                            <th class="text-right font-weight-bold">Margen Neto</th>
+                            <th class="text-right text-danger">Gasto Op.</th>
+                            <th class="text-right font-weight-bold text-primary">Excedente Neto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_rows %}
+                        <tr>
+                            <td class="font-weight-bold">{{ row.month }}</td>
+                            <td class="text-right">{{ row.portfolio|floatformat:2|intcomma }}</td>
+                            <td class="text-right">{{ row.deposits|floatformat:2|intcomma }}</td>
+                            <td class="text-right text-success">{{ row.fin_income|floatformat:2|intcomma }}</td>
+                            <td class="text-right text-danger">{{ row.fin_expense|floatformat:2|intcomma }}</td>
+                            <td class="text-right font-weight-bold">{{ row.gross_margin|floatformat:2|intcomma }}</td>
+                            <td class="text-right text-danger">{{ row.provisions|floatformat:2|intcomma }}</td>
+                            <td class="text-right font-weight-bold">{{ row.net_margin|floatformat:2|intcomma }}</td>
+                            <td class="text-right text-danger">{{ row.op_expense|floatformat:2|intcomma }}</td>
+                            <td class="text-right font-weight-bold {% if row.net_remanent < 0 %}text-danger{% else %}text-primary{% endif %}">
+                                {{ row.net_remanent|floatformat:2|intcomma }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if has_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const labels = {{ labels|safe }};
+    const portfolio = {{ portfolio_trend|safe }};
+    const deposits = {{ deposits_trend|safe }};
+    const net_income = {{ net_income_trend|safe }};
+
+    // P&L Chart
+    const ctxPL = document.getElementById('plChart').getContext('2d');
+    new Chart(ctxPL, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Excedente Neto',
+                data: net_income,
+                borderColor: '#4e73df',
+                backgroundColor: 'rgba(78, 115, 223, 0.05)',
+                borderWidth: 2,
+                pointRadius: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: '#f8f9fc' }
+                },
+                x: {
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Balance Chart
+    const ctxBal = document.getElementById('balanceChart').getContext('2d');
+    new Chart(ctxBal, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Cartera',
+                    data: portfolio,
+                    borderColor: '#1cc88a',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                },
+                {
+                    label: 'Depósitos',
+                    data: deposits,
+                    borderColor: '#f6c23e',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            },
+            scales: {
+                y: { grid: { color: '#f8f9fc' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

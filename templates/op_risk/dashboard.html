@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title_header %}Dashboard de Riesgo Operacional{% endblock %}
+
+{% block content %}
+<div class="row mb-2">
+    <div class="col-sm-6">
+        <h1 class="m-0">Dashboard de Riesgo Operacional</h1>
+    </div>
+    <div class="col-sm-6 text-right">
+        <a href="{% url 'op_risk:quick_report' %}" class="btn btn-danger btn-lg elevation-2">
+            <i class="fas fa-bullhorn"></i> Reportar Incidente
+        </a>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card card-outline card-primary shadow-sm">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-route text-primary mr-2"></i> Guía Secuencial: Ciclo de Gestión de Riesgo Operacional
+                </h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <p class="text-muted text-center mb-2" style="font-size: 0.85rem;">Para implementar adecuadamente el modelo de riesgo bajo estándares internacionales, siga estos pasos en orden:</p>
+                
+                <div class="d-flex justify-content-between flex-wrap text-center">
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-primary mb-1 font-weight-bold"><i class="fas fa-project-diagram"></i> 1. <a href="{% url 'op_risk:process_list' %}">Procesos</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Inventario de macroprocesos, dueños y criticidad.</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-danger mb-1 font-weight-bold"><i class="fas fa-exclamation-triangle"></i> 2. <a href="{% url 'op_risk:risk_matrix' %}">Riesgos</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Qué puede salir mal (Riesgo Inherente).</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-info mb-1 font-weight-bold"><i class="fas fa-shield-alt"></i> 3. <a href="{% url 'op_risk:control_matrix' %}">Controles</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Controles mitigantes (Riesgo Residual).</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-secondary mb-1 font-weight-bold"><i class="fas fa-list-alt"></i> 4. <a href="{% url 'op_risk:event_log' %}">Eventos</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Incidentes reales y cuantificación de pérdidas.</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-success mb-1 font-weight-bold"><i class="fas fa-tachometer-alt"></i> 5. <a href="{% url 'op_risk:kpi_kri' %}">KRIs / KPIs</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Monitoreo en tiempo real y alertas.</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-warning mb-1 font-weight-bold"><i class="fas fa-tasks"></i> 6. <a href="{% url 'op_risk:action_plans' %}">Planes</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Compromisos formales de mejora.</div>
+                    </div>
+                    <div class="p-2 border rounded bg-light flex-fill mx-1 mb-2" style="min-width: 120px;">
+                        <h6 class="text-dark mb-1 font-weight-bold"><i class="fas fa-file-alt"></i> 7. <a href="{% url 'op_risk:documents' %}">Gestión Doc.</a></h6>
+                        <div class="text-muted d-none d-lg-block" style="font-size: 0.7rem; line-height: 1.1;">Respaldos, manuales y evidencias.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Macroprocesses -->
+    <div class="col-lg col-md-4 col-sm-6 mb-2">
+        <div class="small-box bg-info mb-0">
+            <div class="inner p-2">
+                <h4 class="mb-0 font-weight-bold">{{ macro_count }}</h4>
+                <p class="mb-0" style="font-size: 0.8rem;">Macroprocesos</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-project-diagram" style="font-size: 2rem; top: 10px; right: 10px;"></i>
+            </div>
+            <a href="{% url 'op_risk:process_list' %}" class="small-box-footer" style="padding: 2px 0; font-size: 0.75rem;">Ver más <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    
+    <!-- Capital Requirements -->
+    <div class="col-lg col-md-4 col-sm-6 mb-2">
+        <div class="small-box bg-success mb-0">
+            <div class="inner p-2">
+                <h4 class="mb-0 font-weight-bold">{% if capital_calc %}S/ {{ capital_calc.calculated_capital|floatformat:0|intcomma }}{% else %}S/ 0{% endif %}</h4>
+                <p class="mb-0" style="font-size: 0.8rem;">Capital (Basilea)</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-piggy-bank" style="font-size: 2rem; top: 10px; right: 10px;"></i>
+            </div>
+            <a href="{% url 'op_risk:capital_list' %}" class="small-box-footer" style="padding: 2px 0; font-size: 0.75rem;">Configurar <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Procesos Evaluados -->
+    <div class="col-lg col-md-4 col-sm-6 mb-2">
+        <div class="small-box bg-success mb-0">
+            <div class="inner p-2">
+                <h4 class="mb-0 font-weight-bold">{{ process_count }}</h4>
+                <p class="mb-0" style="font-size: 0.8rem;">Proc. Evaluados</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-project-diagram" style="font-size: 2rem; top: 10px; right: 10px;"></i>
+            </div>
+            <a href="{% url 'op_risk:process_list' %}" class="small-box-footer" style="padding: 2px 0; font-size: 0.75rem;">Más info <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Eventos de Riesgo -->
+    <div class="col-lg col-md-4 col-sm-6 mb-2">
+        <div class="small-box bg-warning mb-0">
+            <div class="inner p-2">
+                <h4 class="mb-0 font-weight-bold">{{ event_count }}</h4>
+                <p class="mb-0" style="font-size: 0.8rem;">Eventos Riesgo</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle" style="font-size: 2rem; top: 10px; right: 10px;"></i>
+            </div>
+            <a href="{% url 'op_risk:event_log' %}" class="small-box-footer" style="padding: 2px 0; font-size: 0.75rem;">Administrar <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+
+    <!-- Planes Abiertos -->
+    <div class="col-lg col-md-4 col-sm-6 mb-2">
+        <div class="small-box bg-danger mb-0">
+            <div class="inner p-2">
+                <h4 class="mb-0 font-weight-bold">{{ action_plan_count }}</h4>
+                <p class="mb-0" style="font-size: 0.8rem;">Planes Atrasados</p>
+            </div>
+            <div class="icon">
+                <i class="fas fa-tasks" style="font-size: 2rem; top: 10px; right: 10px;"></i>
+            </div>
+            <a href="{% url 'op_risk:action_plans' %}" class="small-box-footer" style="padding: 2px 0; font-size: 0.75rem;">Administrar <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Heatmap -->
+    <div class="col-md-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Mapa de Calor (Perfil de Riesgo)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center table-sm m-0" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th rowspan="6" style="vertical-align: middle; width: 40px; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">Probabilidad</th>
+                                <td style="width: 140px; vertical-align: middle; font-weight: bold;">5 - Casi Certeza</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.4.0 }}</td>
+                                <td style="background-color: #fd7e14;">{{ heatmap_data.4.1 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.2 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.3 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.4 }}</td>
+                            </tr>
+                                <tr>
+                                    <td style="vertical-align: middle; font-weight: bold;">4 - Probable</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.3.0 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.3.1 }}</td>
+                                <td style="background-color: #fd7e14;">{{ heatmap_data.3.2 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.3.3 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.3.4 }}</td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align: middle; font-weight: bold;">3 - Posible</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.2.0 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.2.1 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.2.2 }}</td>
+                                <td style="background-color: #fd7e14;">{{ heatmap_data.2.3 }}</td>
+                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.2.4 }}</td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align: middle; font-weight: bold;">2 - Improbable</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.1.0 }}</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.1.1 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.1.2 }}</td>
+                                <td style="background-color: #fd7e14;">{{ heatmap_data.1.3 }}</td>
+                                <td style="background-color: #fd7e14;">{{ heatmap_data.1.4 }}</td>
+                            </tr>
+                            <tr>
+                                <td style="vertical-align: middle; font-weight: bold;">1 - Raro</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.0 }}</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.1 }}</td>
+                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.2 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.0.3 }}</td>
+                                <td style="background-color: #ffc107;">{{ heatmap_data.0.4 }}</td>
+                            </tr>
+                            <tr>
+                                <td style="border: none;"></td>
+                                <td style="font-weight: bold; padding: 10px 5px;">1 - Insignificante</td>
+                                <td style="font-weight: bold; padding: 10px 5px;">2 - Menor</td>
+                                <td style="font-weight: bold; padding: 10px 5px;">3 - Moderado</td>
+                                <td style="font-weight: bold; padding: 10px 5px;">4 - Mayor</td>
+                                <td style="font-weight: bold; padding: 10px 5px;">5 - Catastrófico</td>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div class="text-center mt-2 pb-2">
+                    <strong>Impacto</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Riesgos -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top 5 Riesgos (Severidad)</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="products-list product-list-in-card pl-2 pr-2">
+                    {% for item in top_risks %}
+                    <li class="item">
+                        <div class="product-info ml-0">
+                            <a href="{% url 'op_risk:generic_update' tipo='riesgo' pk=item.risk.id %}" class="product-title">{{ item.risk.name }}
+                                <span class="badge badge-danger float-right">Score: {{ item.score }}</span>
+                            </a>
+                            <span class="product-description">
+                                Proceso: {{ item.risk.process.name }} | P: {{ item.prob_level }} x I: {{ item.imp_level }}
+                            </span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="item text-center text-muted">No hay riesgos evaluados y aprobados.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'op_risk:risk_matrix' %}" class="uppercase">Ver todos los Riesgos</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

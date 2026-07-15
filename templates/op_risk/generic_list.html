@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12 text-right">
+        {% if type == 'control' %}
+            <a href="{% url 'op_risk:generic_create' tipo='control' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Control</a>
+        {% elif type == 'event' %}
+            <a href="{% url 'op_risk:generic_create' tipo='evento' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Evento</a>
+        {% elif type == 'kri' %}
+            <a href="{% url 'op_risk:generic_create' tipo='kri' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo KRI</a>
+        {% elif type == 'plan' %}
+            <a href="{% url 'op_risk:generic_create' tipo='plan' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Plan de Acción</a>
+        {% elif type == 'doc' %}
+            <a href="{% url 'op_risk:generic_create' tipo='documento' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Documento</a>
+        {% elif type == 'capital' %}
+            <a href="{% url 'op_risk:generic_create' tipo='capital' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Cálculo de Capital</a>
+        {% else %}
+            <a href="{% url 'op_risk:generic_create' tipo='riesgo' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Nuevo Riesgo</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="callout callout-info shadow-sm">
+    {% if type == 'control' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Matriz de Controles (Paso 3)</b></h5>
+        <p class="mb-1">Aquí debe documentar las medidas de mitigación implementadas para reducir los riesgos identificados. Diseñe controles preventivos, detectivos o correctivos, asigne un responsable y evalúe su efectividad operativa.</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo Preventivo:</strong> Aprobación dual en el sistema para desembolsos mayores a S/ 10,000.</li>
+            <li><strong>Ejemplo Detectivo:</strong> Cuadre de caja diario al cierre de la agencia y arqueos sorpresivos.</li>
+        </ul>
+    {% elif type == 'event' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Registro de Eventos (Paso 4)</b></h5>
+        <p class="mb-1">Capture incidentes reales, cuasi pérdidas, fraudes o fallas del sistema en este módulo. Es vital registrar la fecha, el impacto económico (monto) y la causa raíz para retroalimentar su Matriz de Riesgos.</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo de Pérdida:</strong> Faltante de S/ 500 en caja por error de conteo del cajero.</li>
+            <li><strong>Ejemplo de Cuasi Pérdida:</strong> Intento de fraude con pagaré falso, detectado antes del desembolso (S/ 0 pérdida).</li>
+        </ul>
+    {% elif type == 'kri' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: KRIs y KPIs (Paso 5)</b></h5>
+        <p class="mb-1">Gestione los Indicadores Clave de Riesgo (KRI). Defina umbrales, semáforos y alertas para monitorear tendencias antes de que un riesgo se materialice en una pérdida.</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo de KRI:</strong> Número de caídas del Core Financiero al mes (Límite: 2).</li>
+            <li><strong>Ejemplo de KRI:</strong> Porcentaje de créditos aprobados con excepciones a la política (Límite: 5%).</li>
+        </ul>
+    {% elif type == 'plan' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Planes de Acción (Paso 6)</b></h5>
+        <p class="mb-1">Cuando un Riesgo Residual sea inaceptable o un control falle, cree un Plan de Acción. Defina compromisos claros, fechas límite de cumplimiento y asigne responsables.</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo de Acción:</strong> Capacitar a todo el personal de ventanilla en detección de billetes falsos.</li>
+            <li><strong>Ejemplo de Acción:</strong> Implementar un firewall perimetral para proteger la base de datos de socios.</li>
+        </ul>
+    {% elif type == 'doc' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Gestión Documental (Paso 7)</b></h5>
+        <p class="mb-1">Respalde toda la gestión con evidencia. Suba manuales, normativas, y comprobantes de ejecución de controles o planes de acción.</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo de Documento:</strong> Manual de Políticas de Crédito V2.0 aprobado por el Consejo.</li>
+            <li><strong>Ejemplo de Evidencia:</strong> Acta de arqueo de caja sorpresiva firmada (PDF).</li>
+        </ul>
+    {% elif type == 'capital' %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Cálculo de Capital Operacional</b></h5>
+        <p class="mb-1">Gestione el historial de requerimientos de patrimonio efectivo por riesgo operacional bajo Basilea / SBS.</p>
+    {% else %}
+        <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Matriz de Riesgos (Paso 2)</b></h5>
+        <p class="mb-1">Levante y evalúe los riesgos inherentes de cada proceso de la Cooperativa. Defina qué puede salir mal, califique el Impacto/Probabilidad y use el Asistente IA (Copilot).</p>
+        <ul class="mb-0 text-muted" style="font-size: 0.9rem;">
+            <li><strong>Ejemplo de Riesgo:</strong> Fraude interno en el otorgamiento de créditos por colusión de asesores.</li>
+            <li><strong>Ejemplo de Riesgo:</strong> Robo de información confidencial de socios por ciberataque al servidor.</li>
+        </ul>
+    {% endif %}
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-list mr-1"></i> <b>{{ page_title }}</b></h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover text-nowrap">
+                    <thead>
+                        {% if type == 'control' %}
+                            <tr>
+                                <th>Nombre del Control</th>
+                                <th>Tipo</th>
+                                <th>Periodicidad</th>
+                                <th>Responsable</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% elif type == 'event' %}
+                            <tr>
+                                <th>Fecha Ocurrencia</th>
+                                <th>Título</th>
+                                <th>Tipo de Evento</th>
+                                <th>Proceso Afectado</th>
+                                <th>Monto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% elif type == 'kri' %}
+                            <tr>
+                                <th>KRI</th>
+                                <th>Proceso Asociado</th>
+                                <th>Riesgo Asociado</th>
+                                <th>Responsable</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% elif type == 'plan' %}
+                            <tr>
+                                <th>Plan / Hallazgo</th>
+                                <th>Estado</th>
+                                <th>Fecha Compromiso</th>
+                                <th>Responsable</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% elif type == 'doc' %}
+                            <tr>
+                                <th>Título del Documento</th>
+                                <th>Versión</th>
+                                <th>Asociado a</th>
+                                <th>Subido por</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% elif type == 'capital' %}
+                            <tr>
+                                <th>Año</th>
+                                <th>Alfa</th>
+                                <th>Capital Requerido</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <th>Riesgo</th>
+                                <th>Proceso</th>
+                                <th>Categoría</th>
+                                <th>Severidad (Score)</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        {% endif %}
+                    </thead>
+                    <tbody>
+                        {% if type == 'control' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.get_type_display }}</td>
+                                <td>{{ item.periodicity }}</td>
+                                <td>
+                                    {% if item.owner %}
+                                        {{ item.owner.name }}
+                                    {% else %}
+                                        No asignado
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'op_risk:generic_update' tipo='control' pk=item.id %}" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'op_risk:generic_delete' tipo='control' pk=item.id %}" class="btn btn-sm btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                            
+                        {% elif type == 'event' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.date_occurred|date:"d/m/Y" }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.get_event_type_display }}</td>
+                                <td>{{ item.process.name|default:"-" }}</td>
+                                <td>S/ {{ item.amount|intcomma }}</td>
+                                <td><a href="{% url 'op_risk:generic_update' tipo='evento' pk=item.id %}" class="btn btn-sm btn-info">Editar</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                            
+                        {% elif type == 'kri' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.process.name|default:"-" }}</td>
+                                <td>{{ item.risk.name|default:"-" }}</td>
+                                <td>
+                                    {% if item.owner %}
+                                        {{ item.owner.name }}
+                                    {% else %}
+                                        No asignado
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'op_risk:generic_update' tipo='kri' pk=item.id %}" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'op_risk:generic_delete' tipo='kri' pk=item.id %}" class="btn btn-sm btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                            
+                        {% elif type == 'plan' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.title }}</td>
+                                <td>
+                                    {% if item.status == 'COMPLETED' %}<span class="badge badge-success">Completado</span>
+                                    {% elif item.status == 'OVERDUE' %}<span class="badge badge-danger">Atrasado</span>
+                                    {% elif item.status == 'IN_PROGRESS' %}<span class="badge badge-warning">En Progreso</span>
+                                    {% else %}<span class="badge badge-info">Abierto</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.commitment_date|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% if item.owner %}
+                                        {{ item.owner.name }}
+                                    {% else %}
+                                        No asignado
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'op_risk:generic_update' tipo='plan' pk=item.id %}" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'op_risk:generic_delete' tipo='plan' pk=item.id %}" class="btn btn-sm btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                            
+                        {% elif type == 'doc' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.version }}</td>
+                                <td>{{ item.content_type.model }} #{{ item.object_id }}</td>
+                                <td>{{ item.uploaded_by.name|default:"-" }}</td>
+                                <td>
+                                    {% if item.drive_url %}
+                                    <a href="{{ item.drive_url }}" class="btn btn-sm btn-primary" target="_blank"><i class="fas fa-external-link-alt"></i> Ver en Nube</a>
+                                    {% elif item.file %}
+                                    <a href="{{ item.file.url }}" class="btn btn-sm btn-success" target="_blank"><i class="fas fa-file-download"></i> Ver Archivo</a>
+                                    {% endif %}
+                                    <a href="{% url 'op_risk:generic_update' tipo='documento' pk=item.id %}" class="btn btn-sm btn-info">Editar</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                            
+                        {% elif type == 'capital' %}
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.year }}</td>
+                                <td>{{ item.alfa_factor }}</td>
+                                <td><b>S/ {{ item.calculated_capital|intcomma }}</b></td>
+                                <td>
+                                    <a href="{% url 'op_risk:generic_update' tipo='capital' pk=item.id %}" class="btn btn-sm btn-info" title="Editar"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'op_risk:generic_delete' tipo='capital' pk=item.id %}" class="btn btn-sm btn-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted">No hay cálculos registrados.</td></tr>
+                            {% endfor %}
+                            
+                        {% else %}
+                            <!-- Riesgos -->
+                            {% for item in risks %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.process.name|default:"-" }}</td>
+                                <td>{{ item.category.name|default:"-" }}</td>
+                                <td>
+                                    <span class="badge {% if item.score >= 15 %}badge-danger{% elif item.score >= 10 %}badge-warning{% elif item.score >= 5 %}badge-info{% else %}badge-success{% endif %} p-2">
+                                        {{ item.score }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if item.status.code == 'APPROVED' %}<span class="badge badge-success">Aprobado</span>
+                                    {% elif item.status.code == 'CLOSED' %}<span class="badge badge-secondary">Cerrado</span>
+                                    {% elif item.status.code == 'REVIEW' %}<span class="badge badge-warning">En Revisión</span>
+                                    {% elif item.status %}<span class="badge badge-info">{{ item.status.name }}</span>
+                                    {% else %}<span class="badge badge-info">Borrador</span>
+                                    {% endif %}
+                                </td>
+                                <td><a href="{% url 'op_risk:generic_update' tipo='riesgo' pk=item.id %}" class="btn btn-sm btn-info">Editar</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="text-center text-muted">No hay registros creados.</td></tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-muted">
+                Seleccione Editar para ver los detalles del registro o añadir evidencia.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

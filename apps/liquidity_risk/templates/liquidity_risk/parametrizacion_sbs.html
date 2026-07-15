@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h3 class="font-weight-bold text-dark">Parametrización Normativa SBS</h3>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0 text-primary"><i class="fas fa-gavel"></i> Límites Regulatorios SBS</h5>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar Cambios</button>
+            </div>
+            <div class="card-body p-0">
+                <p class="text-muted px-4 pt-3 pb-1">Configure los umbrales normativos establecidos por la SBS para el monitoreo de riesgo de liquidez y ratios prudenciales.</p>
+                
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="pl-4">Indicador / Ratio</th>
+                            <th class="text-center">Signo</th>
+                            <th>Límite Normativo</th>
+                            <th>Tipo</th>
+                            <th>Última Actualización</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for param in parameters %}
+                        <tr>
+                            <td class="pl-4">
+                                <strong class="text-dark">{{ param.indicator }}</strong><br>
+                                <small class="text-muted">{{ param.code }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info p-2" style="font-size: 14px; min-width: 40px;">{{ param.sign }}</span>
+                            </td>
+                            <td>
+                                <div class="input-group" style="max-width: 150px;">
+                                    <input type="number" step="0.01" class="form-control" name="param_{{ param.code }}" value="{{ param.limit_value|floatformat:2 }}">
+                                    {% if param.limit_type == 'Porcentaje' %}
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ param.limit_type }}</span>
+                            </td>
+                            <td class="text-muted">
+                                <small>{{ param.updated_at|date:'d/m/Y H:i' }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="alert alert-warning shadow-sm">
+                <h6 class="font-weight-bold"><i class="fas fa-exclamation-triangle"></i> Notas de Cumplimiento</h6>
+                <ul class="mb-0 small">
+                    <li>Los límites de <strong>IL_MN</strong> e <strong>IL_ME</strong> son diarios y se reportan mensualmente a la SBS.</li>
+                    <li>La concentración de los <strong>20 mayores depositantes</strong> no debe exceder el patrimonio efectivo.</li>
+                    <li>Las <strong>Brechas Negativas</strong> se evalúan por bandas temporales acumuladas.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-info shadow-sm" style="background-color: #f8f9fa; border-left: 4px solid #17a2b8;">
+                <h6 class="font-weight-bold text-info"><i class="fas fa-sync"></i> Sincronización</h6>
+                <p class="mb-0 small text-muted">Al modificar estos valores, el motor de riesgos recalculará automáticamente el estado del semáforo en el Dashboard y generará alertas si se detectan incumplimientos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

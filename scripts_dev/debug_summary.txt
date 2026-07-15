@@ -1,0 +1,40 @@
+Operaciones nicas: 11171
+Procesando fecha 2025-03-31: 11887 filas encontradas.
+--- RESUMEN AUDITORA 2025-03-31 ---
+Operaciones nicas: 11384
+Procesando fecha 2025-04-30: 11919 filas encontradas.
+--- RESUMEN AUDITORA 2025-04-30 ---
+Operaciones nicas: 11365
+Procesando fecha 2025-05-31: 11963 filas encontradas.
+--- RESUMEN AUDITORA 2025-05-31 ---
+Operaciones nicas: 11358
+Procesando fecha 2025-06-30: 12340 filas encontradas.
+--- RESUMEN AUDITORA 2025-06-30 ---
+Operaciones nicas: 11456
+Procesando fecha 2025-07-31: 12461 filas encontradas.
+--- RESUMEN AUDITORA 2025-07-31 ---
+Operaciones nicas: 11373
+Procesando fecha 2025-08-31: 12636 filas encontradas.
+--- RESUMEN AUDITORA 2025-08-31 ---
+Operaciones nicas: 11272
+Procesando fecha 2025-09-30: 12832 filas encontradas.
+--- RESUMEN AUDITORA 2025-09-30 ---
+Operaciones nicas: 11180
+Procesando fecha 2025-10-31: 13106 filas encontradas.
+--- RESUMEN AUDITORA 2025-10-31 ---
+Operaciones nicas: 11132
+Procesando fecha 2025-11-30: 13445 filas encontradas.
+--- RESUMEN AUDITORA 2025-11-30 ---
+Operaciones nicas: 11077
+Procesando fecha 2025-12-31: 11438 filas encontradas.
+--- RESUMEN AUDITORA 2025-12-31 ---
+Operaciones nicas: 11060
+Procesando fecha 2026-01-31: 11310 filas encontradas.
+--- RESUMEN AUDITORA 2026-01-31 ---
+Operaciones nicas: 10937
+Procesando fecha 2026-02-28: 11147 filas encontradas.
+--- RESUMEN AUDITORA 2026-02-28 ---
+Operaciones nicas: 10774
+Procesando fecha 2026-03-31: 11188 filas encontradas.
+--- RESUMEN AUDITORA 2026-03-31 ---
+Operaciones nicas: 10786

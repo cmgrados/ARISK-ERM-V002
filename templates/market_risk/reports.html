@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Reports Blocks -->
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm text-white" style="background-color: #161065;">
+            <span class="info-box-icon"><i class="fas fa-file-pdf"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Informe Integral de Mercado</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Descargar .PDF</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm border bg-white">
+            <span class="info-box-icon text-success"><i class="fas fa-exchange-alt"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Exposición Cambiaria</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Cuadro .XLSX</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm border bg-white">
+            <span class="info-box-icon text-danger"><i class="fas fa-bell"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Alertas por Límites</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">Verificar Roturas</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="info-box mb-3 shadow-sm" style="background-color: #ffcc00; color: #141313;">
+            <span class="info-box-icon"><i class="fas fa-lightbulb text-dark"></i></span>
+            <div class="info-box-content">
+                <span class="info-box-text">Propuestas Mitigación</span>
+                <span class="info-box-number" style="font-weight: 400; font-size: 14px;">IA Activa</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-2 shadow-sm border-0">
+    <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-chart-line text-primary mr-2"></i>Monitoreo y Divulgación (Comité de Riesgos)</h3>
+    </div>
+    <div class="card-body">
+        <p class="mb-4 text-muted">Genera los reportes mandatorios para evidenciar la gestión proactiva ante vulnerabilidades del mercado.</p>
+        <div class="row">
+            <div class="col-md-6">
+                <ul class="mb-4">
+                    <li class="mb-2"><strong>Anexo de Brechas y Sensibilidad de Tasa (Anexo Estandarizado).</strong></li>
+                    <li class="mb-2"><strong>Backtesting de VaR Histórico.</strong> (Evaluación mensual del modelo vs Realidad)</li>
+                    <li><strong>Informe de Propuestas de Cobertura.</strong> (Hedge y Forward operations plan)</li>
+                </ul>
+            </div>
+        </div>
+        <button class="btn text-white text-bold" style="background-color: #161065; border: none;">
+            <i class="fas fa-file-export mr-2"></i> Exportar Paquete Regulatorio
+        </button>
+    </div>
+</div>
+{% endblock %}

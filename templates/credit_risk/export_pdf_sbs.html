@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            color: #333;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #161065;
+            padding-bottom: 10px;
+        }
+        .title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #161065;
+        }
+        .subtitle {
+            font-size: 12pt;
+            color: #666;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th {
+            background-color: #161065;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-size: 9pt;
+        }
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: right;
+            font-size: 9pt;
+        }
+        .text-left { text-align: left; }
+        .footer {
+            margin-top: 30px;
+            font-size: 8pt;
+            color: #999;
+            text-align: center;
+        }
+        .total-row {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">A.RISK ERM - ANEXO SBS</div>
+        <div class="subtitle">Estado de Saldos y Provisiones - Corte al {{ selected_date }}</div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="text-left">Categoría de Riesgo</th>
+                <th>Nro. Operaciones</th>
+                <th>Saldo de Cartera (S/)</th>
+                <th>Prov. Requerida (S/)</th>
+                <th>Prov. Constituida (S/)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr>
+                <td class="text-left">{{ item.sbs_classification }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.balance|floatformat:2 }}</td>
+                <td>{{ item.required_prov|floatformat:2 }}</td>
+                <td>{{ item.established_prov|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td class="text-left">TOTAL GENERAL</td>
+                <td>{{ totals.t_count }}</td>
+                <td>{{ totals.t_bal|floatformat:2 }}</td>
+                <td>{{ totals.t_req|floatformat:2 }}</td>
+                <td>{{ totals.t_est|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div style="margin-top: 40px;">
+        <p><strong>Notas:</strong></p>
+        <ul style="font-size: 9pt;">
+            <li>El presente reporte ha sido generado automáticamente por el motor A.RISK ERM.</li>
+            <li>Las provisiones corresponden a la normativa vigente de la SBS.</li>
+            <li>La clasificación de riesgo se basa en los días de mora y comportamiento del deudor.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        Generado el {% now "d/m/Y H:i" %} | A.RISK INTELLIGENCE PLATFORM
+    </div>
+</body>
+</html>

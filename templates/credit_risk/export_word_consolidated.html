@@ -1,0 +1,137 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="utf-8">
+<title>Reporte Consolidado de Riesgo</title>
+<style>
+    body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 11pt; color: #333; }
+    h1 { color: #161065; font-size: 18pt; border-bottom: 2px solid #161065; padding-bottom: 5px; text-align: center; }
+    h2 { background-color: #f2f2f2; border-left: 5px solid #161065; padding: 5px 10px; font-size: 14pt; margin-top: 20px; color: #161065; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; }
+    th { background-color: #161065; color: #ffffff; padding: 8px; text-align: center; border: 1px solid #ddd; }
+    td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    .text-left { text-align: left; }
+    .text-right { text-align: right; }
+    .kpi-container { width: 100%; margin-bottom: 20px; text-align: center; }
+    .kpi-box { display: inline-block; width: 30%; border: 1px solid #161065; padding: 10px; margin: 0 1%; box-sizing: border-box; }
+    .kpi-val { font-size: 16pt; font-weight: bold; color: #161065; }
+    .kpi-label { font-size: 10pt; color: #555; text-transform: uppercase; }
+    .footer { margin-top: 40px; font-size: 9pt; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 10px; }
+</style>
+</head>
+<body>
+    <h1>REPORTE CONSOLIDADO DE RIESGO CREDITICIO</h1>
+    <p style="text-align: center;"><strong>Periodo de Análisis:</strong> {{ selected_date }}</p>
+
+    <h2>1. RESUMEN EJECUTIVO (KPIs)</h2>
+    <div class="kpi-container">
+        <table style="border:none;">
+            <tr>
+                <td style="border: 1px solid #161065; padding: 15px;">
+                    <div class="kpi-val">S/ {{ total_balance|floatformat:2 }}</div>
+                    <div class="kpi-label">CARTERA TOTAL</div>
+                </td>
+                <td style="border: 1px solid #161065; padding: 15px;">
+                    <div class="kpi-val">{{ par_30|floatformat:2 }}%</div>
+                    <div class="kpi-label">MORA PAR > 30</div>
+                </td>
+                <td style="border: 1px solid #161065; padding: 15px;">
+                    <div class="kpi-val">{{ expected_loss|floatformat:2 }}%</div>
+                    <div class="kpi-label">PÉRDIDA ESPERADA (PE)</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h2>2. DISTRIBUCIÓN POR CLASIFICACIÓN SBS Y PROVISIONES</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Clasificación SBS</th>
+                <th>Saldo Vigente (S/)</th>
+                <th>% Participación</th>
+                <th>Prov. Requerida (S/)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in classification_data %}
+            <tr>
+                <td class="text-left">{{ item.sbs_classification }}</td>
+                <td class="text-right">{{ item.balance|floatformat:2 }}</td>
+                <td class="text-right">{{ item.percent|floatformat:2 }}%</td>
+                <td class="text-right">{{ item.required_provision|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No hay datos de clasificación para este periodo.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>3. CONCENTRACIÓN Y LÍMITES (IHH)</h2>
+    <p><strong>Índice Herfindahl-Hirschman (IHH) Global:</strong> {{ ihh_index|floatformat:2 }} - <strong>Estado:</strong> {{ ihh_status }}</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Segmento</th>
+                <th>Saldo Vigente (S/)</th>
+                <th>% Part.</th>
+                <th>IHH Contribución</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in ihh_data %}
+            <tr>
+                <td class="text-left">{{ item.segment }}</td>
+                <td class="text-right">{{ item.balance|floatformat:2 }}</td>
+                <td class="text-right">{{ item.percent|floatformat:2 }}%</td>
+                <td class="text-right">{{ item.ihh_contribution|floatformat:4 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">No hay datos de IHH para este periodo.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>4. CONCENTRACIÓN POR TIPO DE CRÉDITO</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo de Crédito</th>
+                <th>Saldo Vigente (S/)</th>
+                <th>% Part.</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in by_credit_type %}
+            <tr>
+                <td class="text-left">{{ item.credit_type }}</td>
+                <td class="text-right">{{ item.total_balance|floatformat:2 }}</td>
+                <td class="text-right">{{ item.percentage|floatformat:2 }}%</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="3">No hay datos para este periodo.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>5. INDICADORES DE GESTIÓN (MÓDULO DE ALERTAS)</h2>
+    <table>
+        <tbody>
+            <tr>
+                <th class="text-left" style="background-color: #f2f2f2; color: #333; width: 60%;">Cobertura de Cartera Atrasada (>30 días)</th>
+                <td class="text-right"><strong>{{ coverage_ratio|floatformat:2 }}%</strong></td>
+            </tr>
+            <tr>
+                <th class="text-left" style="background-color: #f2f2f2; color: #333;">Concentración Top 20 (% Cartera)</th>
+                <td class="text-right"><strong>{{ top_20_concentration|floatformat:2 }}%</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Este reporte es de uso confidencial y generado automáticamente por el Sistema A.RISK ERM.</p>
+        <p>Calculado bajo metodologías de Basilea y estándares SBS.</p>
+    </div>
+</body>
+</html>

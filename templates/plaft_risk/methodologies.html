@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-th mr-2" style="color: #161065;"></i>Matriz de Riesgo de Lavado (Factores de Riesgo)</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Configuración de ponderaciones para los cuatro factores de riesgo principales según normativa SBS.</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-center">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Factor de Riesgo</th>
+                                <th>Ponderación (%)</th>
+                                <th>Nivel de Vigilancia</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Clientes (PEP, No Residentes, etc.)</strong></td>
+                                <td>40%</td>
+                                <td><span class="badge badge-danger">Intensificada</span></td>
+                                <td><button class="btn btn-xs btn-outline-dark">Editar</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Productos / Servicios</strong></td>
+                                <td>20%</td>
+                                <td><span class="badge badge-warning">Simplificada</span></td>
+                                <td><button class="btn btn-xs btn-outline-dark">Editar</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Zona Geográfica</strong></td>
+                                <td>25%</td>
+                                <td><span class="badge badge-warning">Remota</span></td>
+                                <td><button class="btn btn-xs btn-outline-dark">Editar</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Canales de Distribución</strong></td>
+                                <td>15%</td>
+                                <td><span class="badge badge-success">Estándar</span></td>
+                                <td><button class="btn btn-xs btn-outline-dark">Editar</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert mt-3" style="background-color: rgba(22,16,101,0.05); color: #161065; border: 1px dashed #161065;">
+                    <i class="fas fa-info-circle mr-1"></i> La suma de ponderaciones debe ser exactamente 100%. Los cambios afectan el motor de alertas.
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border" style="border-top-color: #ffcc00;">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold" style="color: #141313;"><i class="fas fa-search-dollar mr-2"></i>Límites de Alerta</h3>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Umbral Operaciones Inusuales (Individual)</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                        <input type="text" class="form-control" value="10,000" disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Umbral Operaciones Acumuladas (Mes)</label>
+                    <div class="input-group">
+                        <div class="input-group-prepend"><span class="input-group-text">$</span></div>
+                        <input type="text" class="form-control" value="50,000" disabled>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-block text-white" style="background-color: #161065;">Configurar Umbrales</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

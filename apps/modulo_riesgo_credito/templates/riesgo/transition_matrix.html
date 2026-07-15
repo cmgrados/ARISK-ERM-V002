@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Matriz de Transición | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <h1 class="m-0 text-dark font-weight-bold">Matriz de Transición de Riesgo</h1>
+      <p class="text-muted">Análisis de migraciones de clasificación entre {{ date_t_minus_1|date:"M Y" }} y {{ date_t|date:"M Y" }}</p>
+    </div>
+  </div>
+
+  <section class="content mt-4">
+    <div class="container-fluid">
+      
+      <!-- Panel de Filtros -->
+      <div class="card shadow-sm border-0 rounded-lg mb-4">
+        <div class="card-body bg-light pb-2">
+            <form method="GET" action="">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="asesor" class="small font-weight-bold text-secondary">Asesor</label>
+                        <select name="asesor" id="asesor" class="form-control form-control-sm">
+                            <option value="">-- Todos --</option>
+                            {% for a in asesores %}
+                            <option value="{{ a }}" {% if a == sel_asesor %}selected{% endif %}>{{ a }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="producto" class="small font-weight-bold text-secondary">Producto</label>
+                        <select name="producto" id="producto" class="form-control form-control-sm">
+                            <option value="">-- Todos --</option>
+                            {% for p in productos %}
+                            <option value="{{ p }}" {% if p == sel_producto %}selected{% endif %}>{{ p }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="tipo_credito" class="small font-weight-bold text-secondary">Tipo de Crédito</label>
+                        <select name="tipo_credito" id="tipo_credito" class="form-control form-control-sm">
+                            <option value="">-- Todos --</option>
+                            {% for t in tipos_credito %}
+                            <option value="{{ t }}" {% if t == sel_tipo %}selected{% endif %}>{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="agencia" class="small font-weight-bold text-secondary">Agencia</label>
+                        <select name="agencia" id="agencia" class="form-control form-control-sm">
+                            <option value="">-- Todas --</option>
+                            {% for ag in agencias %}
+                            <option value="{{ ag }}" {% if ag == sel_agencia %}selected{% endif %}>{{ ag }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 text-right">
+                        <a href="{% url 'modulo_riesgo_credito:transition_matrix' %}" class="btn btn-sm btn-outline-secondary mr-2"><i class="fas fa-times mr-1"></i>Limpiar</a>
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-filter mr-1"></i>Aplicar Filtros</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 rounded-lg mb-4">
+        <div class="card-body">
+            {% if matrix.matrix %}
+            
+            <!-- Metodología Extendida -->
+            <div class="card border-0 shadow-sm mb-4 border-left-info" style="border-left: 4px solid #17a2b8;">
+                <div class="card-body bg-light">
+                    <h5 class="font-weight-bold text-info mb-3"><i class="fas fa-microscope mr-2"></i>Marco Metodológico: Matriz de Transición de Riesgo Crediticio</h5>
+                    
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-book-open mr-2"></i>1. Concepto y Objetivo</h6>
+                    <p class="small text-justify text-muted mb-3">
+                        La <strong>Matriz de Transición (Cadenas de Markov aplicadas a Riesgo de Crédito)</strong> es un modelo estocástico que describe la probabilidad de que una operación crediticia migre de un estado de calificación regulatoria (SBS) a otro en un horizonte temporal discreto (generalmente <math><mi>T-1</mi></math> a <math><mi>T</mi></math>). A diferencia de los modelos de cosecha (vintages) que miden la maduración desde el desembolso, o los Roll Rates que miden rodamiento de días de mora, esta matriz rastrea estrictamente la <strong>degradación o mejora formal del riesgo crediticio</strong>. Es la piedra angular para el cálculo de la Pérdida Esperada (Expected Loss) bajo el marco normativo NIIF 9 y los lineamientos de Basilea II/III, proveyendo el insumo probabilístico directo (Probabilidad de Default o PD).
+                    </p>
+
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-calculator mr-2"></i>2. Forma de Cálculo Computacional</h6>
+                    <p class="small text-justify text-muted mb-2">
+                        El motor analítico construye la matriz cruzando transversalmente el portafolio en dos fechas de corte consecutivas. El cálculo se realiza en dos fases simultáneas:
+                    </p>
+                    <ul class="small text-muted mb-3 text-justify">
+                        <li><strong>Matriz de Probabilidades (%):</strong> Calculada como la frecuencia relativa condicionada. Sea <math><msub><mi>P</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></math> la probabilidad de pasar del estado <math><mi>i</mi></math> al <math><mi>j</mi></math>. Se obtiene dividiendo el número de operaciones (o el saldo contable subyacente) que transitaron de <math><mi>i</mi></math> a <math><mi>j</mi></math>, entre el total de operaciones (o saldos) que iniciaron en el estado <math><mi>i</mi></math> en el periodo <math><mi>T-1</mi></math>.</li>
+                        <li><strong>Matriz de Saldos (S/):</strong> Cuantifica la Exposición al Momento del Incumplimiento (EAD - Exposure at Default) latente, sumando el saldo deudor neto de las operaciones para cada vector de transición. Esto dimensiona el impacto económico real en los Estados Financieros de la COOPAC.</li>
+                    </ul>
+
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-chart-line mr-2"></i>3. Guía Técnica de Interpretación</h6>
+                    <ul class="small text-muted mb-0 text-justify">
+                        <li><strong>Diagonal Principal (Celdas Verdes):</strong> Representa la <em>Tasa de Contención o Inercia</em>. Un porcentaje alto (ej. >90% en Normal) indica estabilidad del portafolio. Las operaciones no variaron su calidad de riesgo.</li>
+                        <li><strong>Triángulo Inferior Derecho (Celdas Rojas):</strong> Representa la zona de <em>Downgrade o Deterioro</em>. Mide el flujo de cartera hacia clasificaciones más castigadas. Un volumen alto aquí alerta sobre relajamiento en las políticas de admisión o cobranza.</li>
+                        <li><strong>Triángulo Superior Izquierdo (Celdas Azules):</strong> Representa la zona de <em>Upgrade o Recuperación</em>. Indica el éxito de refinanciaciones, reprogramaciones o regularización de pagos que permitieron ascender el crédito a una mejor clasificación.</li>
+                        <li><strong>Vector PD (Probabilidad de Default):</strong> Es la probabilidad terminal de migrar directamente a la categoría <em>Pérdida</em> (<math><msub><mi>P</mi><mrow><mi>i</mi><mo>,</mo><mi>Pérdida</mi></mrow></msub></math>). Un incremento intermensual de este vector exige inmediatamente una revisión de los límites de apetito al riesgo (Risk Appetite) y mayores requerimientos de provisiones.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Análisis de Matriz de Transición -->
+            <div class="alert alert-warning border-0 shadow-sm mb-4">
+                <h6 class="font-weight-bold mb-3"><i class="fas fa-search-dollar mr-2"></i>Análisis e Interpretación de Resultados (Deterioro Detectado)</h6>
+                <ul class="mb-0 text-justify small pl-3" style="line-height: 1.5;">
+                    {% for item in matrix.analysis %}
+                        <li class="mb-2">{{ item|safe }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <h5 class="font-weight-bold mt-2 mb-3 text-secondary">1. Probabilidad de Transición (%)</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle border-right">Calificación T-1 \ Calificación T</th>
+                            <th colspan="5">Destino (Mes Actual)</th>
+                            <th rowspan="2" class="align-middle bg-dark text-white">PD (Prob. Default)</th>
+                        </tr>
+                        <tr>
+                            {% for b in matrix.cat_order %}
+                                <th>{{ b }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for from_b, targets in matrix.matrix.items %}
+                        <tr>
+                            <th class="bg-light border-right text-left align-middle">{{ from_b }}</th>
+                            {% for to_b, vals in targets.items %}
+                                <td class="
+                                    {% if from_b == to_b %}bg-success-light{% endif %}
+                                    {% if from_b < to_b %}bg-danger-light{% endif %}
+                                    {% if from_b > to_b %}bg-primary-light{% endif %}
+                                ">
+                                    {{ vals.pct }}%
+                                </td>
+                            {% endfor %}
+                            <td class="font-weight-bold bg-light text-danger">
+                                {{ targets.PÉRDIDA.pct }}%
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <h5 class="font-weight-bold mt-4 mb-3 text-secondary">2. Migración de Saldos (S/)</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle border-right">Calificación T-1 \ Calificación T</th>
+                            <th colspan="5">Destino (Mes Actual)</th>
+                        </tr>
+                        <tr>
+                            {% for b in matrix.cat_order %}
+                                <th>{{ b }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for from_b, targets in matrix.matrix.items %}
+                        <tr>
+                            <th class="bg-light border-right text-left align-middle">{{ from_b }}</th>
+                            {% for to_b, vals in targets.items %}
+                                <td class="
+                                    {% if from_b == to_b %}bg-success-light{% endif %}
+                                    {% if from_b < to_b %}bg-danger-light{% endif %}
+                                    {% if from_b > to_b %}bg-primary-light{% endif %}
+                                ">
+                                    S/ {{ vals.bal|floatformat:"2"|intcomma }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% else %}
+            <div class="alert alert-warning">
+                No hay datos suficientes para calcular la matriz de transición en este periodo. Ejecute el CRON para generar histórico.
+            </div>
+            {% endif %}
+        </div>
+      </div>
+      
+      <!-- Sección Roll Rates -->
+      <div class="card shadow-sm border-0 rounded-lg">
+        <div class="card-header bg-white border-bottom-0 pb-0 pt-4">
+            <h3 class="card-title font-weight-bold m-0"><i class="fas fa-calendar-alt mr-2 text-primary"></i> Roll Rates (Migración por Tramos de Mora)</h3>
+            <p class="text-muted small mt-1">Evolución de los días de atraso de la cartera (Deterioro Operativo).</p>
+        </div>
+        <div class="card-body pt-3">
+            <!-- Metodología Roll Rates -->
+            <div class="card border-0 shadow-sm mb-4 border-left-info" style="border-left: 4px solid #17a2b8;">
+                <div class="card-body bg-light">
+                    <h5 class="font-weight-bold text-info mb-3"><i class="fas fa-microscope mr-2"></i>Marco Metodológico: Análisis de Roll Rates (Tramos de Mora)</h5>
+                    
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-book-open mr-2"></i>1. Concepto y Objetivo Operativo</h6>
+                    <p class="small text-justify text-muted mb-3">
+                        Los <strong>Roll Rates (Tasas de Rodamiento)</strong> son una métrica de gestión temprana y operativa de cobranzas. A diferencia de la Matriz de Transición que evalúa reclasificaciones formales en la SBS, este análisis traza el desplazamiento de la cartera entre <strong>buckets (tramos) de días de atraso</strong> (ej. 0 días, 1-30 días, 31-60 días, etc.). Su objetivo principal es medir la velocidad a la que la mora en etapas tempranas se convierte en mora estructural y, finalmente, en cartera pesada (NPL - Non-Performing Loans). Es una herramienta vital para evaluar la efectividad de las áreas de cobranza preventiva, administrativa y prejudicial.
+                    </p>
+
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-calculator mr-2"></i>2. Forma de Cálculo Computacional</h6>
+                    <p class="small text-justify text-muted mb-2">
+                        El algoritmo segmenta cronológicamente cada crédito según sus días de atraso en dos puntos de tiempo (mes actual vs. mes anterior).
+                    </p>
+                    <ul class="small text-muted mb-3 text-justify">
+                        <li><strong>Matriz de Rodamiento (%):</strong> Muestra la tasa condicional de migración. Si en T-1 había 100 créditos con 1-30 días de atraso, y en el mes T, 25 de ellos pasaron al tramo 31-60 días, el Roll Rate de deterioro para ese segmento es del 25%.</li>
+                        <li><strong>Matriz de Exposición (S/):</strong> Mide el valor del saldo contable insoluto que se desplazó entre los tramos, traduciendo el problema operativo en un impacto potencial sobre el flujo de caja y la liquidez de la institución.</li>
+                    </ul>
+
+                    <h6 class="font-weight-bold mt-3 text-dark"><i class="fas fa-chart-line mr-2"></i>3. Guía Técnica de Interpretación</h6>
+                    <ul class="small text-muted mb-0 text-justify">
+                        <li><strong>Contención (Celdas Verdes):</strong> Clientes que se mantuvieron en su mismo tramo de mora.</li>
+                        <li><strong>Roll Forward o Deterioro (Hacia la derecha):</strong> Representa el fracaso de la gestión de cobranzas, donde los clientes envejecen sus deudas pasando a tramos superiores. Altas tasas de "roll forward" desde el bucket "0 días" al "1-30 días" alertan sobre problemas inmediatos de liquidez y calidad de originación.</li>
+                        <li><strong>Roll Backward o Cura (Hacia la izquierda):</strong> Representa el éxito de la cobranza, logrando que clientes morosos retrocedan hacia tramos de menor atraso o se pongan completamente al día (bucket "0 días").</li>
+                    </ul>
+                </div>
+            </div>
+
+            {% if roll_rates.matrix %}
+            
+            <h5 class="font-weight-bold mt-2 mb-3 text-secondary">1. Probabilidad de Migración (%)</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle border-right">Tramo Mora T-1 \ Tramo Mora T</th>
+                            <th colspan="5">Destino (Mes Actual)</th>
+                        </tr>
+                        <tr>
+                            {% for b in roll_rates.bucket_order %}
+                                <th>{{ b }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for from_b, targets in roll_rates.matrix.items %}
+                        <tr>
+                            <th class="bg-light border-right text-left align-middle">{{ from_b }}</th>
+                            {% for to_b, vals in targets.items %}
+                                <td class="
+                                    {% if from_b == to_b %}bg-success-light{% endif %}
+                                ">
+                                    {{ vals.pct }}%
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <h5 class="font-weight-bold mt-4 mb-3 text-secondary">2. Migración de Saldos (S/)</h5>
+            <div class="table-responsive mb-4">
+                <table class="table table-bordered text-center align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th rowspan="2" class="align-middle border-right">Tramo Mora T-1 \ Tramo Mora T</th>
+                            <th colspan="5">Destino (Mes Actual)</th>
+                        </tr>
+                        <tr>
+                            {% for b in roll_rates.bucket_order %}
+                                <th>{{ b }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for from_b, targets in roll_rates.matrix.items %}
+                        <tr>
+                            <th class="bg-light border-right text-left align-middle">{{ from_b }}</th>
+                            {% for to_b, vals in targets.items %}
+                                <td class="
+                                    {% if from_b == to_b %}bg-success-light{% endif %}
+                                ">
+                                    S/ {{ vals.bal|floatformat:"2"|intcomma }}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Análisis de Roll Rates -->
+            <div class="alert alert-warning border-0 shadow-sm">
+                <h6 class="font-weight-bold mb-3"><i class="fas fa-search-dollar mr-2"></i>Análisis Operativo (Deterioro y Contención)</h6>
+                <ul class="mb-0 text-justify small pl-3" style="line-height: 1.5;">
+                    {% for item in roll_rates.analysis %}
+                        <li class="mb-2">{{ item|safe }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            {% else %}
+            <div class="alert alert-warning">
+                No hay datos suficientes para calcular los Roll Rates.
+            </div>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<style>
+.bg-success-light { background-color: rgba(40,167,69,0.1); }
+.bg-danger-light { background-color: rgba(220,53,69,0.1); color: #dc3545; font-weight: bold; }
+.bg-primary-light { background-color: rgba(0,123,255,0.1); color: #0056b3; }
+</style>
+{% endblock %}

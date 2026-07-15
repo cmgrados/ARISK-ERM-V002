@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+    <div class="card-header">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-users text-warning mr-2"></i>Segmentación y Perfilado PLAFT</h3>
+        <div class="card-tools">
+            <button class="btn btn-sm btn-primary" style="background-color: #161065; border-color: #161065;">
+                <i class="fas fa-search"></i> Consultar Listas
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0 table-responsive">
+        <table class="table table-hover text-sm">
+            <thead class="bg-light">
+                <tr>
+                    <th>Socio ID</th>
+                    <th>Nombre / Razón Social</th>
+                    <th>Tipo Cliente</th>
+                    <th>Nivel de Riesgo</th>
+                    <th>Última Actualización KYC</th>
+                    <th>PEP</th>
+                    <th>Estado de Alerta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                <tr>
+                    <td>{{ profile.id|stringformat:"06d" }}</td>
+                    <td>{{ profile.name }}</td>
+                    <td>{{ profile.client_type|default:"Persona Natural" }}</td>
+                    <td><span class="badge {% if profile.risk_level == 'alto' %}badge-danger{% elif profile.risk_level == 'medio' %}badge-warning{% else %}badge-success{% endif %}">{{ profile.risk_level|upper }}</span></td>
+                    <td>{{ profile.last_kyc_update|date:"d/m/Y" }}</td>
+                    <td>{% if profile.is_pep %}<span class="text-danger font-weight-bold">SÍ</span>{% else %}No{% endif %}</td>
+                    <td><i class="fas fa-circle {% if profile.alert_status == 'red' %}text-danger{% else %}text-success{% endif %}"></i></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center py-5 text-muted">No se han cargado perfiles de clientes para evaluación PLAFT.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

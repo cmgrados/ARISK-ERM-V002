@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .text-indigo { color: #4f46e5 !important; }
+    .bg-indigo { background-color: #4f46e5 !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; }
+    .btn-indigo:hover { background-color: #4338ca; color: white; }
+    .border-left-indigo { border-left: 4px solid #4f46e5 !important; }
+    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.05) !important; }
+    .badge-soft-indigo { background-color: #e0e7ff; color: #4338ca; }
+    .risk-matrix { position: relative; width: 100%; aspect-ratio: 1; padding: 20px; }
+    .matrix-grid { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 4px; height: 100%; border: 2px solid #e2e8f0; }
+    .cell { border-radius: 4px; opacity: 0.8; transition: all 0.3s; }
+    .cell:hover { opacity: 1; transform: scale(1.05); }
+    .y-axis-label { position: absolute; left: -10px; top: 50%; transform: rotate(-90deg) translateY(-50%); font-weight: bold; font-size: 0.8rem; color: #64748b; }
+    .x-axis-label { text-align: center; font-weight: bold; font-size: 0.8rem; color: #64748b; margin-top: 10px; }
+    .extra-small { font-size: 0.7rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 bg-light border-left-indigo">
+            <div class="card-body py-3">
+                <h6 class="font-weight-bold text-indigo mb-2"><i class="fas fa-book mr-2"></i>Metodología RCSA (Risk Control Self-Assessment)</h6>
+                <p class="mb-0 small text-muted">
+                    Esta herramienta permite cuantificar la exposición al riesgo operacional. Para cada riesgo identificado: 
+                    <strong>1)</strong> Determine la Probabilidad (Frecuencia), 
+                    <strong>2)</strong> Estime el Impacto (Severidad), 
+                    <strong>3)</strong> Evalúe la efectividad de los controles (Diseño y Ejecución). 
+                    El cruce genera el <strong>Riesgo Residual</strong>. Priorice acciones para puntajes superiores al umbral de tolerancia.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <a href="{% url 'operational_risk:management_cycle' %}" class="btn btn-sm btn-outline-indigo"><i class="fas fa-arrow-left mr-1"></i> Volver al Ciclo de Gestión</a>
+        <div class="btn-group">
+            <a href="{% url 'operational_risk:download_rcsa_template' %}" class="btn btn-sm btn-outline-success">
+                <i class="fas fa-file-excel mr-1"></i> Descargar Plantilla RCSA
+            </a>
+            <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#importRCSAModal">
+                <i class="fas fa-upload mr-1"></i> Carga Masiva RCSA
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Matriz de Calor (Heatmap) -->
+    <div class="col-md-5">
+        <div class="card shadow-none border">
+            <div class="card-header bg-white py-2">
+                <h3 class="card-title font-weight-bold text-secondary"><i class="fas fa-th mr-2"></i>Mapa de Calor (Riesgo Inherente)</h3>
+            </div>
+            <div class="card-body">
+                <div class="risk-matrix">
+                    <div class="y-axis-label text-uppercase small font-weight-bold">Impacto</div>
+                    <div class="matrix-grid">
+                        {% for row in heatmap_grid %}
+                            {% for cell in row %}
+                                <div class="cell d-flex align-items-center justify-content-center" 
+                                     style="background-color: {% if cell.config.severity_level == 'RED' %}#f87171{% elif cell.config.severity_level == 'ORANGE' %}#fbbf24{% elif cell.config.severity_level == 'YELLOW' %}#fef08a{% else %}#4ade80{% endif %};"
+                                     title="{{ cell.impact.name }} x {{ cell.prob.name }}">
+                                    {% if cell.count > 0 %}
+                                        <span class="badge badge-dark rounded-circle shadow-sm">{{ cell.count }}</span>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    <div class="x-axis-label text-uppercase small font-weight-bold">Probabilidad</div>
+                    
+                    <div class="d-flex justify-content-between mt-2 extra-small text-muted px-2">
+                        {% for p in prob_scales %}
+                            <span>{{ p.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="col-md-7">
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="info-box shadow-none border">
+                    <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text small">Riesgo Residual Crítico</span>
+                        <span class="info-box-number">{{ critical_count }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="info-box shadow-none border">
+                    <span class="info-box-icon bg-warning"><i class="fas fa-exclamation-circle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text small">Riesgo Residual Alto</span>
+                        <span class="info-box-number">{{ high_count }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-4">
+                <div class="info-box shadow-none border">
+                    <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                    <div class="info-box-content">
+                        <span class="info-box-text small">Riesgos Bajo Control</span>
+                        <span class="info-box-number">{{ controlled_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Listado de Riesgos -->
+        <div class="card shadow-none border">
+            <div class="card-header bg-white py-2">
+                <h3 class="card-title font-weight-bold text-secondary"><i class="fas fa-list mr-2"></i>Identificación y Evaluación (RCSA)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" style="font-size: 0.85rem;">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Proceso / Actividad</th>
+                                <th>Riesgo</th>
+                                <th class="text-center">Prob (I)</th>
+                                <th class="text-center">Imp (I)</th>
+                                <th class="text-center">Inherente</th>
+                                <th class="text-center">Controles</th>
+                                <th class="text-center">Residual</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in matrix_data %}
+                            <tr {% if item.eval.residual_score >= 15 %}class="bg-soft-danger"{% endif %}>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <a href="{% url 'catalogs:process_detail' item.risk.process.id %}" class="text-indigo font-weight-bold mb-0">
+                                            {{ item.risk.process.name }}
+                                        </a>
+                                        <span class="extra-small text-muted">{{ item.risk.activity.name|default:"General" }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div>
+                                            <span class="d-block font-weight-bold">{{ item.risk.name }}</span>
+                                            <span class="text-muted extra-small">{{ item.risk.description|truncatechars:40 }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">{{ item.eval.inherent_probability.value|default:"-" }}</td>
+                                <td class="text-center">{{ item.eval.inherent_impact.value|default:"-" }}</td>
+                                <td class="text-center">
+                                    <span class="badge {% if item.eval.inherent_score >= 15 %}badge-danger{% elif item.eval.inherent_score >= 9 %}badge-warning{% else %}badge-success{% endif %}">
+                                        {{ item.eval.inherent_score|default:"0" }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge badge-soft-indigo" title="Efectividad Media de Controles">
+                                        {{ item.eval.control_effectiveness|floatformat:0|default:"0" }}%
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {% if item.eval.residual_score >= 15 %}badge-danger{% elif item.eval.residual_score >= 9 %}badge-warning{% else %}badge-success{% endif %}">
+                                        {{ item.eval.residual_score|floatformat:1|default:"0" }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-xs btn-indigo mr-1" 
+                                            onclick="openRcsaModal('{{ item.risk.id }}', '{{ item.risk.name|escapejs }}', '{{ item.eval.inherent_probability.id|default:'' }}', '{{ item.eval.inherent_impact.id|default:'' }}', '{{ item.eval.comments|escapejs }}')"
+                                            title="Evaluar RCSA">
+                                        <i class="fas fa-calculator"></i>
+                                    </button>
+                                    <a href="{% url 'operational_risk:risk_detail' item.risk.id %}" class="btn btn-xs btn-outline-primary" title="Ver Detalle">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">No se han registrado riesgos operativos aún.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Evaluación RCSA -->
+<div class="modal fade" id="rcsaModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-md shadow-lg">
+        <div class="modal-content border-0">
+            <form action="{% url 'operational_risk:save_rcsa' %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="risk_id" id="modal_risk_id">
+                <div class="modal-header bg-indigo text-white">
+                    <h5 class="modal-title font-weight-bold"><i class="fas fa-calculator mr-2"></i>Evaluación RCSA</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted mb-4">Evaluación del riesgo: <strong id="modal_risk_name" class="text-indigo"></strong></p>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="font-weight-bold text-uppercase extra-small text-muted mb-3"><i class="fas fa-bolt mr-2"></i>Riesgo Inherente</h6>
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold">Probabilidad / Frecuencia</label>
+                                <select name="inherent_probability" id="modal_prob" class="form-control form-control-sm border-indigo" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for p in prob_scales %}
+                                        <option value="{{ p.id }}">{{ p.value }} - {{ p.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="form-group mb-4">
+                                <label class="small font-weight-bold">Impacto / Severidad</label>
+                                <select name="inherent_impact" id="modal_imp" class="form-control form-control-sm border-indigo" required>
+                                    <option value="">Seleccione...</option>
+                                    {% for i in impact_scales %}
+                                        <option value="{{ i.id }}">{{ i.value }} - {{ i.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="small font-weight-bold">Comentarios / Observaciones</label>
+                        <textarea name="comments" id="modal_comments" class="form-control form-control-sm border-indigo" rows="3" placeholder="Justifique su evaluación..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-indigo">
+                        <i class="fas fa-save mr-1"></i> Guardar Evaluación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Carga Masiva RCSA -->
+<div class="modal fade" id="importRCSAModal" tabindex="-1" role="dialog" aria-labelledby="importRCSAModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title" id="importRCSAModalLabel"><i class="fas fa-upload mr-2"></i>Carga Masiva RCSA</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{% url 'operational_risk:import_rcsa_excel' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p class="small text-muted">Use este formulario para cargar procesos, riesgos y evaluaciones de forma masiva desde un archivo Excel.</p>
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <small>Si el proceso o riesgo ya existen, el sistema actualizará su evaluación automáticamente.</small>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="small font-weight-bold">Seleccionar Archivo Excel (.xlsx)</label>
+                        <div class="custom-file">
+                            <input type="file" name="excel_file" class="custom-file-input" id="rcsaExcelFile" accept=".xlsx, .xls" required>
+                            <label class="custom-file-label" for="rcsaExcelFile">Elegir archivo...</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-success px-4">Procesar Carga</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openRcsaModal(id, name, prob, imp, comments) {
+        $('#modal_risk_id').val(id);
+        $('#modal_risk_name').text(name);
+        $('#modal_prob').val(prob);
+        $('#modal_imp').val(imp);
+        $('#modal_comments').val(comments);
+        $('#rcsaModal').modal('show');
+    }
+
+    // Show selected filename
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('rcsaExcelFile');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    var fileName = e.target.files[0].name;
+                    var nextSibling = e.target.nextElementSibling;
+                    nextSibling.innerText = fileName;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

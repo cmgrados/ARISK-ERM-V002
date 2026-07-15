@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-body bg-white rounded">
+                <form method="GET" class="row align-items-center">
+                    <div class="col-md-3">
+                        <label class="small font-weight-bold text-muted">FECHA DE CORTE:</label>
+                        <select name="period" class="form-control form-control-sm" onchange="this.form.submit()">
+                            {% for p in periods %}
+                                <option value="{{ p|date:'Y-m-d' }}" {% if p == selected_period %}selected{% endif %}>
+                                    {{ p|date:"d/m/Y" }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-9 text-right">
+                        <span class="badge badge-light p-2 border">
+                            <i class="fas fa-coins mr-1 text-warning"></i> Moneda: <b>CONSOLIDADO MN/ME</b>
+                        </span>
+                        <span class="badge badge-light p-2 border ml-2">
+                            <i class="fas fa-check-circle mr-1 text-success"></i> Estado: <b>{{ metrics.process_status }}</b>
+                        </span>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Executive Panel (Indicators) -->
+<div class="row">
+    <!-- Indices -->
+    <div class="col-md-3">
+        <div class="card bg-gradient-primary text-white shadow-sm mb-4">
+            <div class="card-body text-center py-4">
+                <h6 class="text-uppercase small font-weight-bold mb-2 opacity-75">Índice de Liquidez MN</h6>
+                <h2 class="font-weight-bold mb-0">{{ metrics.mn_index }}%</h2>
+                <div class="mt-2 small">Límite SBS: >= 8%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-gradient-info text-white shadow-sm mb-4">
+            <div class="card-body text-center py-4">
+                <h6 class="text-uppercase small font-weight-bold mb-2 opacity-75">Índice de Liquidez ME</h6>
+                <h2 class="font-weight-bold mb-0">{{ metrics.me_index }}%</h2>
+                <div class="mt-2 small">Límite SBS: >= 20%</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Balance Summary -->
+    <div class="col-md-3">
+        <div class="card shadow-sm mb-4 border-left border-success">
+            <div class="card-body py-3">
+                <h6 class="text-uppercase small font-weight-bold text-muted mb-1">Activos Líquidos</h6>
+                <h4 class="font-weight-bold text-success mb-0">{{ metrics.liquid_assets|floatformat:2|intcomma }}</h4>
+                <div class="text-xs text-muted mt-1">Disponibles + Inversiones</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card shadow-sm mb-4 border-left border-danger">
+            <div class="card-body py-3">
+                <h6 class="text-uppercase small font-weight-bold text-muted mb-1">Pasivos Corto Plazo</h6>
+                <h4 class="font-weight-bold text-danger mb-0">{{ metrics.short_term_liabilities|floatformat:2|intcomma }}</h4>
+                <div class="text-xs text-muted mt-1">Depósitos + Obligaciones</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Gaps and Concentration -->
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-align-left mr-2 text-primary"></i>Brechas de Liquidez (Descalce)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0 small">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Banda de Vencimiento</th>
+                                <th class="text-right">Entradas (Activos)</th>
+                                <th class="text-right">Salidas (Pasivos)</th>
+                                <th class="text-right">Brecha Marginal</th>
+                                <th class="text-right">Brecha Acumulada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in gap_table %}
+                            <tr>
+                                <td class="font-weight-bold text-dark">{{ row.band }}</td>
+                                <td class="text-right text-success">{{ row.flow_in|floatformat:2|intcomma }}</td>
+                                <td class="text-right text-danger">{{ row.flow_out|floatformat:2|intcomma }}</td>
+                                <td class="text-right font-weight-bold {% if row.marginal < 0 %}text-danger{% else %}text-primary{% endif %}">
+                                    {{ row.marginal|floatformat:2|intcomma }}
+                                </td>
+                                <td class="text-right font-weight-bold bg-light">
+                                    {{ row.accumulated|floatformat:2|intcomma }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Flow Table -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-white">
+            <h3 class="card-title font-weight-bold"><i class="fas fa-list-alt mr-2 text-primary"></i>Detalle de Flujos de Caja</h3>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm mb-0 small">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Concepto</th>
+                            {% for band in report.bandas %}
+                            <th class="text-right">{{ band }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="table-info">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>I. FLUJO DE INGRESOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_ingresos.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        <tr class="table-warning">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>II. FLUJO DE EGRESOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_egresos.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        <tr class="table-secondary">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>III. FLUJO DE ADEUDADOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_adeudados.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Right Side: Secondary Indicators -->
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold small text-uppercase">Concentración y Líneas</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small font-weight-bold">TOP 10 Acreedores</div>
+                            <div class="text-xs text-muted">Límite: <= 20%</div>
+                        </div>
+                        <span class="badge {% if metrics.top_10_depositors > 20 %}badge-danger{% else %}badge-success{% endif %} badge-pill p-2">
+                            {{ metrics.top_10_depositors }}%
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small font-weight-bold">TOP 20 Depositantes</div>
+                            <div class="text-xs text-muted">Límite: <= 20%</div>
+                        </div>
+                        <span class="badge {% if metrics.top_20_depositors > 20 %}badge-danger{% else %}badge-success{% endif %} badge-pill p-2">
+                            {{ metrics.top_20_depositors }}%
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small font-weight-bold">Líneas Disponibles</div>
+                            <div class="text-xs text-muted">Financiamiento Inmediato</div>
+                        </div>
+                        <b class="text-primary">{{ metrics.available_lines|floatformat:2|intcomma }}</b>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="p-3 bg-light border-bottom">
+                    <h6 class="font-weight-bold mb-0 text-uppercase small">Alertas y Contingencia</h6>
+                </div>
+                <div class="p-4 text-center">
+                    <div class="mb-3">
+                        <span class="h1 font-weight-bold text-dark">{{ metrics.alerts_active }}</span>
+                        <div class="small text-muted text-uppercase">Alertas Activas</div>
+                    </div>
+                    <div class="alert {% if metrics.contingency_status == 'NORMAL' %}alert-success{% else %}alert-danger{% endif %} border-0 mb-0 shadow-sm">
+                        <i class="fas {% if metrics.contingency_status == 'NORMAL' %}fa-check-circle{% else %}fa-exclamation-triangle{% endif %} mr-2"></i>
+                        ESTADO: <b>{{ metrics.contingency_status }}</b>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+    .bg-gradient-info { background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%); }
+    .card { border: none !important; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-3px); }
+    .table td { vertical-align: middle; }
+    .opacity-75 { opacity: 0.75; }
+</style>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="m-0 font-weight-bold text-primary"><i class="fas fa-gavel mr-2"></i>Límites Regulatorios SBS</h5>
+                <button type="submit" form="paramsForm" class="btn btn-success btn-sm rounded-pill px-4">
+                    <i class="fas fa-save mr-1"></i> Guardar Cambios
+                </button>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-4">
+                    Configure los umbrales normativos establecidos por la SBS para el monitoreo de riesgo de liquidez y ratios prudenciales.
+                </p>
+
+                <form method="POST" id="paramsForm">
+                    {% csrf_token %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Indicador / Ratio</th>
+                                    <th class="text-center" style="width: 150px;">Signo</th>
+                                    <th class="text-center" style="width: 200px;">Límite Normativo</th>
+                                    <th class="text-center">Tipo</th>
+                                    <th>Última Actualización</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in params %}
+                                <tr>
+                                    <td>
+                                        <div class="font-weight-bold text-dark">{{ p.name }}</div>
+                                        <div class="small text-muted">{{ p.code }}</div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-info py-2 px-3" style="font-size: 1rem;">{{ p.sign }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" step="0.01" name="limit_{{ p.code }}" value="{{ p.limit_value|stringformat:'.2f' }}" class="form-control text-center font-weight-bold">
+                                            {% if p.is_percentage %}
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if p.is_percentage %}
+                                        <span class="badge badge-pill badge-light border">Porcentaje</span>
+                                        {% else %}
+                                        <span class="badge badge-pill badge-light border">Ratio / Valor</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">
+                                        {{ p.updated_at|date:"d/m/Y H:i" }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 border-left-warning">
+            <div class="card-body">
+                <h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-exclamation-triangle mr-1"></i> Notas de Cumplimiento</h6>
+                <ul class="small text-muted mb-0">
+                    <li>Los límites de <strong>IL MN</strong> e <strong>IL ME</strong> son diarios y se reportan mensualmente a la SBS.</li>
+                    <li>La concentración de los <strong>20 mayores depositantes</strong> no debe exceder el patrimonio efectivo.</li>
+                    <li>Las <strong>Brechas Negativas</strong> se evalúan por bandas temporales acumuladas.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 border-left-primary">
+            <div class="card-body">
+                <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-sync mr-1"></i> Sincronización</h6>
+                <p class="small text-muted mb-0">
+                    Al modificar estos valores, el motor de riesgos recalculará automáticamente el estado del semáforo en el Dashboard y generará alertas si se detectan incumplimientos.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

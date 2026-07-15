@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 bg-primary text-white">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div>
+                    <h4 class="mb-0 font-weight-bold">{{ risk.name }}</h4>
+                    <p class="mb-0 opacity-75 small"><i class="fas fa-sitemap mr-1"></i> Proceso: {{ risk.process.name }}</p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'operational_risk:management_cycle' %}" class="btn btn-outline-light btn-sm mr-2">
+                        <i class="fas fa-sync-alt mr-1"></i> Volver al Ciclo
+                    </a>
+                    <a href="{% url 'operational_risk:risk_matrix' %}" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-arrow-left mr-1"></i> Volver a Matriz
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Details & Linked Data -->
+    <div class="col-lg-8">
+        <!-- Origin & Details -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 font-weight-bold text-uppercase small text-muted">Origen y Características del Riesgo</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="small font-weight-bold text-muted text-uppercase mb-1 d-block">Descripción Detallada</label>
+                        <p class="text-dark">{{ risk.description|default:"No se ha proporcionado una descripción detallada." }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="small font-weight-bold text-muted text-uppercase mb-1 d-block">Causas</label>
+                        <p class="text-dark">{{ risk.causes|linebreaks|default:"Sin causas registradas." }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="small font-weight-bold text-muted text-uppercase mb-1 d-block">Consecuencias</label>
+                        <p class="text-dark">{{ risk.consequences|linebreaks|default:"Sin consecuencias registradas." }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls & Action Plans Tabs -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white p-0">
+                <ul class="nav nav-tabs border-0" id="riskTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold small text-uppercase py-3 px-4 border-0 rounded-0" id="controls-tab" data-toggle="tab" href="#controls" role="tab">
+                            <i class="fas fa-shield-alt mr-2"></i> Controles ({{ controls.count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold small text-uppercase py-3 px-4 border-0 rounded-0" id="plans-tab" data-toggle="tab" href="#plans" role="tab">
+                            <i class="fas fa-tasks mr-2"></i> Planes de Acción ({{ action_plans.count }})
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold small text-uppercase py-3 px-4 border-0 rounded-0" id="incidents-tab" data-toggle="tab" href="#incidents" role="tab">
+                            <i class="fas fa-exclamation-circle mr-2"></i> Eventos ({{ incidents.count }})
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body p-0">
+                <div class="tab-content">
+                    <!-- Controls Tab -->
+                    <div class="tab-pane fade show active" id="controls" role="tabpanel">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="small font-weight-bold py-2">Nombre del Control</th>
+                                    <th class="small font-weight-bold py-2">Tipo</th>
+                                    <th class="small font-weight-bold py-2">Frecuencia</th>
+                                    <th class="small font-weight-bold py-2 text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for control in controls %}
+                                <tr>
+                                    <td>
+                                        <span class="font-weight-bold d-block">{{ control.name }}</span>
+                                        <small class="text-muted">{{ control.description|truncatechars:60 }}</small>
+                                    </td>
+                                    <td>{{ control.get_control_type_display }}</td>
+                                    <td>{{ control.frequency }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if control.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                            {% if control.is_active %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No hay controles vinculados a este riesgo.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Action Plans Tab -->
+                    <div class="tab-pane fade" id="plans" role="tabpanel">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="small font-weight-bold py-2">Plan de Acción</th>
+                                    <th class="small font-weight-bold py-2">Responsable</th>
+                                    <th class="small font-weight-bold py-2">Vencimiento</th>
+                                    <th class="small font-weight-bold py-2 text-center">Progreso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for plan in action_plans %}
+                                <tr>
+                                    <td>
+                                        <span class="font-weight-bold d-block">{{ plan.title }}</span>
+                                        <small class="text-muted">{{ plan.description|truncatechars:60 }}</small>
+                                    </td>
+                                    <td>
+                                        {% if plan.responsible %}
+                                            {{ plan.responsible.get_full_name|default:plan.responsible.username }}
+                                        {% else %}
+                                            Sin asignar
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ plan.due_date|date:"d M Y" }}</td>
+                                    <td class="text-center">
+                                        <div class="progress progress-xs mb-1" style="width: 80px; margin: 0 auto;">
+                                            <div class="progress-bar bg-primary" style="width: {{ plan.progress }}%"></div>
+                                        </div>
+                                        <small class="extra-small font-weight-bold">{{ plan.progress }}%</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No hay planes de acción pendientes.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Incidents Tab -->
+                    <div class="tab-pane fade" id="incidents" role="tabpanel">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="small font-weight-bold py-2">Evento / Título</th>
+                                    <th class="small font-weight-bold py-2">Fecha</th>
+                                    <th class="small font-weight-bold py-2 text-right">Pérdida Neta</th>
+                                    <th class="small font-weight-bold py-2 text-center">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for incident in incidents %}
+                                <tr>
+                                    <td>
+                                        <span class="font-weight-bold d-block">{{ incident.title }}</span>
+                                        <small class="text-muted">{{ incident.description|truncatechars:60 }}</small>
+                                    </td>
+                                    <td>{{ incident.incident_date|date:"d M Y" }}</td>
+                                    <td class="text-right font-weight-bold text-danger">
+                                        {{ incident.net_loss|default:0|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {% if incident.status == 'open' %}badge-danger{% elif incident.status == 'mitigated' %}badge-warning{% else %}badge-success{% endif %}">
+                                            {{ incident.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No hay eventos materializados para este riesgo.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Measurement -->
+    <div class="col-lg-4">
+        <!-- Current Scores -->
+        <div class="card shadow-sm border-0 mb-4 overflow-hidden">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 font-weight-bold text-uppercase small text-muted">Medición Actual (Residual)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="d-flex text-center">
+                    <div class="w-50 py-4 border-right">
+                        <h2 class="font-weight-bold mb-0">{{ latest_assessment.residual_score|default:"-" }}</h2>
+                        <span class="small text-muted text-uppercase font-weight-bold">Score Residual</span>
+                    </div>
+                    <div class="w-50 py-4">
+                        <div class="d-flex flex-column justify-content-center h-100 px-3">
+                            <div class="mb-1">
+                                <span class="small text-muted">Prob:</span> <span class="font-weight-bold">{{ latest_assessment.residual_probability|default:"-" }}</span>
+                            </div>
+                            <div>
+                                <span class="small text-muted">Imp:</span> <span class="font-weight-bold">{{ latest_assessment.residual_impact|default:"-" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="py-2 px-3 {% if latest_assessment.residual_score > 15 %}bg-danger{% elif latest_assessment.residual_score > 8 %}bg-warning{% else %}bg-success{% endif %} text-white text-center small font-weight-bold text-uppercase">
+                    Nivel de Riesgo: 
+                    {% if latest_assessment.residual_score > 15 %}Crítico
+                    {% elif latest_assessment.residual_score > 8 %}Medio/Alto
+                    {% else %}Controlado{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- New Measurement Form -->
+        <div class="card shadow-sm border-0 bg-light-soft">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0 font-weight-bold text-uppercase small text-muted"><i class="fas fa-chart-line mr-2"></i>Generar Medición</h6>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'operational_risk:save_risk_assessment' risk.id %}" method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <h6 class="small font-weight-bold text-primary mb-2">Evaluación Inherente</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="extra-small font-weight-bold mb-1">Probabilidad (1-5)</label>
+                                <input type="number" name="inherent_probability" class="form-control form-control-sm" min="1" max="5" value="{{ latest_assessment.inherent_probability|default:1 }}" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="extra-small font-weight-bold mb-1">Impacto (1-5)</label>
+                                <input type="number" name="inherent_impact" class="form-control form-control-sm" min="1" max="5" value="{{ latest_assessment.inherent_impact|default:1 }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 border-top pt-3">
+                        <h6 class="small font-weight-bold text-success mb-2">Evaluación Residual</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="extra-small font-weight-bold mb-1">Probabilidad (1-5)</label>
+                                <input type="number" name="residual_probability" class="form-control form-control-sm" min="1" max="5" value="{{ latest_assessment.residual_probability|default:1 }}" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="extra-small font-weight-bold mb-1">Impacto (1-5)</label>
+                                <input type="number" name="residual_impact" class="form-control form-control-sm" min="1" max="5" value="{{ latest_assessment.residual_impact|default:1 }}" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 border-top pt-3">
+                        <label class="extra-small font-weight-bold mb-1">Comentarios / Justificación</label>
+                        <textarea name="comments" class="form-control form-control-sm" rows="3" placeholder="Detalle el sustento de esta evaluación..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block font-weight-bold shadow-sm">
+                        <i class="fas fa-save mr-2"></i>Guardar Medición
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-light-soft { background-color: #f8fafc; }
+    .extra-small { font-size: 0.7rem; }
+    .nav-tabs .nav-link { color: #64748b; }
+    .nav-tabs .nav-link.active { color: #4f46e5; border-bottom: 3px solid #4f46e5 !important; }
+    .progress-xs { height: 6px; }
+    .opacity-75 { opacity: 0.75; }
+</style>
+{% endblock %}

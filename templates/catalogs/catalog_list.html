@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Configuración {{ verbose_name_plural }} | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <div class="row mb-2 align-items-center">
+        <div class="col-sm-6">
+          <h4 class="m-0 text-dark font-weight-bold">
+            <span class="text-orange">Configuración</span> {{ verbose_name_plural }}
+          </h4>
+        </div>
+        <div class="col-sm-6 text-right">
+            <a href="{% url 'catalogs:catalog_index' %}" class="btn btn-sm btn-light border mr-2">
+                <i class="fas fa-arrow-left"></i> Volver a Catálogos
+            </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content mt-3">
+    <div class="container-fluid">
+        
+        <form method="POST" action="{% url 'catalogs:catalog_bulk_delete' model_name %}">
+            {% csrf_token %}
+            <div class="mb-3 d-flex gap-2">
+                <a href="{% url 'catalogs:catalog_create' model_name %}" class="btn btn-sm btn-outline-secondary px-3 mr-2">
+                    <i class="far fa-file"></i> Nuevo
+                </a>
+                <button type="submit" onclick="return confirm('¿Estás seguro de que deseas eliminar los registros seleccionados?');" class="btn btn-sm btn-outline-secondary px-3 mr-2">
+                    <i class="fas fa-times"></i> Borrar
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3">
+                    <i class="fas fa-file-import"></i> Importar
+                </button>
+            </div>
+
+        <div class="card border-0 shadow-sm rounded-lg" style="background-color: #FAFAFA;">
+            <div class="card-body p-4">
+                
+                <div class="d-flex mb-3">
+                    <div class="input-group input-group-sm" style="width: 150px;">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                        </div>
+                        <input type="text" class="form-control border-left-0" placeholder="Buscar">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">Action</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-borderless table-hover" style="font-size: 0.85rem;">
+                        <thead class="border-bottom">
+                            <tr>
+                                <th style="width: 40px;"></th>
+                                {% for field in fields %}
+                                    <th class="text-muted font-weight-normal pb-3">{{ field.verbose_name }}</th>
+                                {% endfor %}
+                                <th class="text-muted font-weight-normal pb-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr class="border-bottom">
+                                <td class="align-middle">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" name="selected_ids" value="{{ row.obj.id }}" class="custom-control-input" id="check{{ row.obj.id }}">
+                                        <label class="custom-control-label" for="check{{ row.obj.id }}"></label>
+                                    </div>
+                                </td>
+                                
+                                {% for val in row.values %}
+                                    <td class="align-middle text-dark">
+                                        {% if val == "Sí" %}
+                                            <span class="text-success"><i class="fas fa-check-circle"></i> Sí</span>
+                                        {% elif val == "No" %}
+                                            <span class="text-secondary"><i class="fas fa-times-circle"></i> No</span>
+                                        {% else %}
+                                            {{ val|default:"-" }}
+                                        {% endif %}
+                                    </td>
+                                {% endfor %}
+                                
+                                <td class="align-middle text-center">
+                                    {% if model_name == 'systemintegration' %}
+                                    <button type="button" class="btn btn-sm btn-light text-success border p-1 mr-1" onclick="testConnection({{ row.obj.id }}, '{{ row.obj.get_provider_display|default:row.obj.provider }}')" title="Probar Conexión" style="line-height: 1;">
+                                        <i class="fas fa-plug"></i>
+                                    </button>
+                                    {% endif %}
+                                    <a href="{% url 'catalogs:catalog_update' model_name row.obj.id %}" class="btn btn-sm btn-light text-primary border p-1" style="line-height: 1;">
+                                        <i class="far fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center text-muted py-4">No hay registros encontrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex flex-column align-items-center mt-4">
+                    <div class="btn btn-light border btn-sm disabled mb-2">1</div>
+                    <span class="text-muted small">{{ rows|length }} Registros encontrados</span>
+                </div>
+
+            </div>
+        </div>
+        </form>
+    </div>
+  </section>
+</div>
+
+{% if model_name == 'systemintegration' %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function testConnection(id, providerName) {
+    Swal.fire({
+        title: 'Probando conexión...',
+        html: `Intentando conectar con <b>${providerName}</b>...`,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+            fetch(`/catalogs/integraciones/${id}/test/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('¡Éxito!', data.message, 'success');
+                } else if (data.status === 'info') {
+                    Swal.fire('Aviso', data.message, 'info');
+                } else {
+                    Swal.fire('Fallo de Conexión', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error Inesperado', 'Hubo un problema de red al probar la conexión.', 'error');
+            });
+        }
+    });
+}
+</script>
+{% endif %}
+
+{% endblock %}

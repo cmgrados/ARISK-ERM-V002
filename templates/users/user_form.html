@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-user-edit mr-2 text-warning"></i>{{ page_title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    {% csrf_token %}
+                    
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger shadow-xs">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        {% for field in form %}
+                            {% if field.name not in 'is_risk_manager,is_auditor,is_superuser' %}
+                            <div class="col-md-6 mb-3">
+                                <label class="font-weight-bold text-muted small text-uppercase">{{ field.label }}</label>
+                                {% if field.name == 'username' or field.name == 'email' or field.name == 'first_name' or field.name == 'last_name' or field.name == 'position' or field.name == 'department' or field.name == 'groups' %}
+                                    {{ field }}
+                                {% else %}
+                                    <!-- For password fields from UserCreationForm -->
+                                    {{ field }}
+                                    <script>document.getElementById("{{ field.id_for_label }}").classList.add("form-control");</script>
+                                {% endif %}
+                                {% if field.errors %}
+                                <small class="text-danger">{{ field.errors.0 }}</small>
+                                {% endif %}
+                                {% if field.help_text %}
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem; line-height: 1.1;">{{ field.help_text|safe }}</small>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <hr>
+                    <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-key text-secondary mr-1"></i> Permisos y Roles</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="custom-control custom-switch">
+                                {{ form.is_risk_manager }}
+                                <label class="custom-control-label font-weight-bold" for="{{ form.is_risk_manager.id_for_label }}">Gestor de Riesgos</label>
+                                <small class="form-text text-muted">Puede crear y modificar matrices, controles y evaluaciones.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="custom-control custom-switch">
+                                {{ form.is_auditor }}
+                                <label class="custom-control-label font-weight-bold" for="{{ form.is_auditor.id_for_label }}">Auditor</label>
+                                <small class="form-text text-muted">Acceso de solo lectura a auditorías avanzadas.</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="custom-control custom-switch">
+                                {{ form.is_superuser }}
+                                <label class="custom-control-label font-weight-bold text-danger" for="{{ form.is_superuser.id_for_label }}">Super Administrador</label>
+                                <small class="form-text text-muted">Acceso total al sistema, configuraciones y usuarios.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        <a href="{% url 'users:user_list' %}" class="btn btn-light px-4 mr-2">Cancelar</a>
+                        <button type="submit" class="btn btn-dark px-5 font-weight-bold shadow-sm">
+                            <i class="fas fa-save mr-2"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        var $departmentSelect = $('#id_department');
+        var $positionSelect = $('#id_position');
+        
+        function loadPositions() {
+            var departmentId = $departmentSelect.val();
+            var url = "{% url 'users:ajax_load_positions' %}";
+            
+            $.ajax({
+                url: url,
+                data: {
+                    'department': departmentId
+                },
+                success: function(data) {
+                    var oldPosition = $positionSelect.val();
+                    $positionSelect.empty();
+                    $positionSelect.append('<option value="">---------</option>');
+                    var foundOld = false;
+                    $.each(data, function(key, value) {
+                        var selected = (oldPosition == value.id) ? ' selected' : '';
+                        if (oldPosition == value.id) foundOld = true;
+                        $positionSelect.append('<option value="' + value.id + '"' + selected + '>' + value.name + '</option>');
+                    });
+                    
+                    if (!foundOld && oldPosition) {
+                        $positionSelect.val('');
+                    }
+                }
+            });
+        }
+
+        $departmentSelect.change(loadPositions);
+        // Load on initial render
+        loadPositions();
+    });
+</script>
+{% endblock %}

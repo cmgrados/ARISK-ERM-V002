@@ -1,0 +1,244 @@
+"                                <button type=\"button\" id=\"btn-apply-trend\" class=\"btn btn-sm btn-outline-info font-weight-bold shadow-sm mr-3\" onclick=\"applyHistoricalTrend()\">\n                                    <i class=\"fas fa-history mr-1\">
+<truncated 80 bytes>
+
+=====
+
+"                            window.applyHistoricalTrend = function() {\n                                let btn = $('#btn-apply-trend');\n                                let originalText = '<i class=\"fas fa-history mr-1\"></i> Aplicar Tendencia Año Ante
+<truncated 3007 bytes>
+
+=====
+
+"                                fetch(\"{% url 'financial_planning:ml_trend_projection' plan.id %}\", {\n                                    method: 'POST',\n                                    headers: {\n                                        'X-CSRFTo
+<truncated 177 bytes>
+
+=====
+
+"                                        node.varCell.html(newVar.toFixed(2) + '%');\n                                    } else {\n                                        // Leaf node distribution\n                                        let varVal = pars
+<truncated 33 bytes>
+
+=====
+
+"                            window.copyPreviousYearData = function() {\n                                data.income_statement.forEach(item => {\n                                    let node = accMap[item.code];\n                                    if (nod
+<truncated 590 bytes>
+
+=====
+
+"                            window.copyPreviousYearData = function() {\n                                data.income_statement.forEach(item => {\n                                    let node = accMap[item.code];\n                                    if (nod
+<truncated 2741 bytes>
+
+=====
+
+"                                let rowData = [];\n                                let code = String($(this).data('code') || '');\n                                $(this).find('td').each(function() {\n                                    let text = $(this)
+<truncated 1385 bytes>
+
+=====
+
+"                                <button type=\"button\" class=\"btn btn-sm btn-primary mr-2 shadow-sm font-weight-bold\" id=\"btnSaveAssumptionsTop\" onclick=\"saveAssumptionsFromStep4(this)\">\n                                    <i class=\"fas fa-save m
+<truncated 367 bytes>
+
+=====
+
+"                            // Save button logic directly from step 4\n                            window.saveAssumptionsFromStep4 = function(btnId) {\n                                const btn = $(btnId);\n                                const originalHt
+<truncated 3289 bytes>
+
+=====
+
+"                                $('.step4-input').each(function() {\n                                    const code = $(this).data('code');\n                                    const val = parseFloat($(this).val()) || 0;\n                                 
+<truncated 638 bytes>
+
+=====
+
+"                            window.saveAssumptionsFromStep4 = function(btnId) {\n                                const btn = $(btnId);\n                                const originalHtml = btn.html();\n                                const originalClasses
+<truncated 4621 bytes>
+
+=====
+
+"                                console.log(\"[DEBUG] Sending assumptions payload:\", reqData);\n                                \n                                btn.html('<i class=\"fas fa-spinner fa-spin\"></i> Guardando...').prop('disabled', true);\n 
+<truncated 3496 bytes>
+
+=====
+
+"                            const urlParams = new URLSearchParams(window.location.search);\n                            const applyAssumptions = urlParams.get('apply') !== 'false';\n                            \n                            // Remove apply
+<truncated 4028 bytes>
+
+=====
+
+"                <!-- STEP 6: Informe Final -->\n                {% if step == 6 %}\n                <div class=\"text-center mb-4\">\n                    <h4 class=\"font-weight-bold\">Informe Final de Presupuesto Institucional</h4>\n                    <
+<truncated 8205 bytes>
+
+=====
+
+"                                // Asignar al formulario oculto\n                                $('#in_total_ingresos').val(totalIngresos);\n                                $('#in_total_gastos').val(Math.abs(totalGastos));\n                              
+<truncated 1092 bytes>
+
+=====
+
+"                <!-- STEP 3: Data Historica 01 -->\n                {% if step == 3 %}\n                <style>\n                    .portfolio-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }\n                    .portfolio-table th, 
+<truncated 8618 bytes>
+
+=====
+
+"                <div class=\"card shadow border-0 mb-4\" style=\"border-radius: 12px;\">\n                    <div class=\"card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center\">\n                        <div class=\"d-
+<truncated 756 bytes>
+
+=====
+
+"                    document.addEventListener('DOMContentLoaded', function() {\n                        const datesContainer = document.getElementById('portfolio-dates-container');\n                        const loadingDatesSpan = document.getElementById(
+<truncated 4890 bytes>
+
+=====
+
+"                                    <div class=\"col-lg-3 col-md-4 col-12 mb-2 mb-md-0\">\n                                    </div>\n                                    <div class=\"col-lg-4 col-md-5 col-12 mb-2 mb-md-0\">"
+
+=====
+
+"                                <div class=\"card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center\" style=\"border-radius:0 0 12px 12px;\">\n                                    <div>\n                                       
+<truncated 1052 bytes>
+
+=====
+
+"                    <div class=\"card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center\" style=\"border-radius:0 0 12px 12px;\">\n                        <div>\n                            <button type=\"button\" id=\"btn-lo
+<truncated 876 bytes>
+
+=====
+
+"        // Initial update\n        updateTables();\n\n        // Locked Steps Logic\n        const lockedStepsJsonStr = '{{ locked_steps_json|escapejs }}';\n        let lockedSteps = {};\n        try {\n            if (lockedStepsJsonStr) {\n             
+<truncated 3091 bytes>
+
+=====
+
+"<div class=\"container-fluid\">\n    {% csrf_token %}\n    <div class=\"d-sm-flex align-items-center justify-content-between mb-4\">\n        <h1 class=\"h3 mb-0 text-gray-800\"><i class=\"fas fa-magic mr-2 text-indigo\"></i>Asistente de Planificación</h
+<truncated 275 bytes>
+
+=====
+
+"                {% include \"financial_planning/trend_analysis.html\" %}"
+
+=====
+
+"                    <li class=\"nav-item\">\n                        <a class=\"nav-link {% if step == 1 %}active bg-indigo text-white{% elif max_step >= 1 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1\" hr
+<truncated 2986 bytes>
+
+=====
+
+"- [x] Añadir rutas `plan_wizard_new` y `plan_wizard` en `urls.py`.\n- [x] Crear la vista `plan_wizard` en `views.py`.\n- [x] Construir la plantilla `wizard.html` con un Stepper moderno.\n- [x] Actualizar el listado en `dashboard.html` para usar el Wizard
+<truncated 135 bytes>
+
+=====
+
+"                <!-- STEP 1: Crear Plan -->\n                {% if step == 1 %}\n                <div class=\"text-center mb-4\">\n                    <h4 class=\"font-weight-bold\">Información General del Plan</h4>\n                    <p class=\"text-m
+<truncated 6000 bytes>
+
+=====
+
+"            </div>\n        </div>\n    </div>\n</div>\n{% endblock %}\n\n{% block extra_js %}\n<script>\n    document.addEventListener('DOMContentLoaded', function() {\n        const histDateInput = document.getElementById('{{ form.historical_start_date.
+<truncated 3901 bytes>
+
+=====
+
+"                                    <div class=\"form-group text-center\">\n                                        <label class=\"font-weight-bold h5\">Horizonte de Proyección</label>\n                                        <p class=\"text-muted mt-2\"
+<truncated 177 bytes>
+
+=====
+
+"                    // Formatting proj date (Always Enero as requested)\n                    document.getElementById('dyn_proj_start_date').textContent = 'Enero';\n                    document.getElementById('dyn_hist_start_year').textContent = projYear -
+<truncated 1675 bytes>
+
+=====
+
+"                                <div class=\"col-md-6 mb-3\">\n                                    <label class=\"font-weight-bold\">Año de Inicio de Proyección</label>\n                                    {{ form.projection_start_year }}\n             
+<truncated 291 bytes>
+
+=====
+
+"    document.addEventListener('DOMContentLoaded', function() {\n        const projStartYearInput = document.getElementById('{{ form.projection_start_year.id_for_label }}');\n        const projYearsInput = document.getElementById('{{ form.projection_years.
+<truncated 353 bytes>
+
+=====
+
+"        if (projStartYearInput) {\n            projStartYearInput.addEventListener('change', updateTables);\n            projStartYearInput.addEventListener('keyup', updateTables);\n        }\n        if (projYearsInput) {\n            projYearsInput.addE
+<truncated 212 bytes>
+
+=====
+
+"        if (projStartYearInput) projStartYearInput.addEventListener('input', updateTables);\n        if (projYearsInput) projYearsInput.addEventListener('input', updateTables);"
+
+=====
+
+"                <li class=\"nav-item\">\n                    <a class=\"nav-link {% if step == 2 %}active bg-indigo text-white{% elif step > 2 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1\" href=\"{% if pl
+<truncated 220 bytes>
+
+=====
+
+"                <!-- STEP 2: Base Histórica -->\n                {% if step == 2 %}\n                <div class=\"text-center mb-4\">\n                    <h4 class=\"font-weight-bold\">Estados Financieros Históricos (Base Histórica)</h4>\n            
+<truncated 178 bytes>
+
+=====
+
+"                <div class=\"row\">\n                    <div class=\"col-12\">\n                        <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css\">\n                        <script src=\"htt
+<truncated 8656 bytes>
+
+=====
+
+"                            </div>\n                            <div class=\"card-footer bg-light text-right\">\n                                <button id=\"load-trial-balances-btn\" class=\"btn btn-info px-4 rounded-pill text-white font-weight-bold\">\n
+<truncated 14164 bytes>
+
+=====
+
+"                                 const esfParentCodes = getParentCodes(esfDefaultRows);\n                                 const erParentCodes = getParentCodes(erDefaultRows);\n                                 \n                                 // Define r
+<truncated 804 bytes>
+
+=====
+
+"                        <!-- Alerta cuando no hay base histórica asignada -->\n                        <div id=\"no-historical-warning\" class=\"alert alert-warning text-center p-5 shadow border-0\" style=\"display: none; border-radius: 20px; background-
+<truncated 5863 bytes>
+
+=====
+
+"                                 // Check if we have historical periods\n                                 if (!savedSelectedPeriods || savedSelectedPeriods.length === 0) {\n                                     document.getElementById('no-historical-warnin
+<truncated 1334 bytes>
+
+=====
+
+"                                // Check if we have historical periods\n                                if (!savedSelectedPeriods || savedSelectedPeriods.length === 0) {\n                                    document.getElementById('no-historical-warning')
+<truncated 1314 bytes>
+
+=====
+
+"                                 // Group periods by Year dynamically for badges\n                                 const periodsByYear = {};\n                                 savedSelectedPeriods.forEach(p => {\n                                     const 
+<truncated 1655 bytes>
+
+=====
+
+"                                 // Group periods by Year dynamically for badges\n                                 const periodsByYear = {};\n                                 savedSelectedPeriods.forEach(p => {\n                                     const 
+<truncated 1655 bytes>
+
+=====
+
+"                                 function formatPeriodHeader(p) {\n                                     const [year, month] = p.split('-');\n                                     const shortYear = year.substring(2);\n                                     co
+<truncated 2067 bytes>
+
+=====
+
+"                                 // Group periods by Year dynamically for badges\n                                 const periodsByYear = {};\n                                 savedSelectedPeriods.forEach(p => {\n                                     const 
+<truncated 219 bytes>
+
+=====
+
+"                                 function formatPeriodHeader(p) {\n                                     const [year, month] = p.split('-');\n                                     const shortYear = year.substring(2);\n                                     co
+<truncated 631 bytes>
+
+=====
+
+"                                 <a href=\"{% url 'financial_planning:trial_balance_viewer_no_id' %}\" class=\"btn btn-info px-5 py-2.5 rounded-pill text-white font-weight-bold shadow transition-all hover-translate-y\">"
+
+=====
+
+"<a href=\"{% url 'financial_planning:trial_balance_viewer_no_id' %}\" class=\"btn btn-info px-5 py-2.5 rounded-pill text-white font-weight-bold shadow transition-all hover-translate-y\">"
+
+=====
+
+"                                // Load historical_data from django plan context (pre-serialized as JSON)\n                                const historicalDataJson = '{{ historical_data_json|escapejs }}';"
+
+=====
+

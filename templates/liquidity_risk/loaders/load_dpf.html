@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <!-- Main Upload Card -->
+        <div class="card card-outline card-success shadow-sm mb-5">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold">
+                    <i class="fas fa-file-contract mr-2 text-success"></i>Carga de Auxiliar: Depósitos a Plazo (DPF)
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="row">
+                    {% csrf_token %}
+                    <div class="col-md-4 mb-3">
+                        <label class="small font-weight-bold text-muted text-uppercase">Periodo de Corte:</label>
+                        <input type="date" name="period" class="form-control" required>
+                    </div>
+                    <div class="col-md-5 mb-3">
+                        <label class="small font-weight-bold text-muted text-uppercase">Archivo Excel (Auxiliar DPF):</label>
+                        <div class="custom-file">
+                            <input type="file" name="file" class="custom-file-input" id="dpfFile" accept=".xlsx, .csv" required>
+                            <label class="custom-file-label" for="dpfFile">Seleccionar archivo...</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success btn-block shadow-sm">
+                            <i class="fas fa-cloud-upload-alt mr-1"></i> Procesar Carga
+                        </button>
+                    </div>
+                </form>
+
+                <div class="alert alert-light border mt-3 mb-0 small">
+                    <i class="fas fa-info-circle mr-1 text-info"></i>
+                    <b>Campos requeridos:</b> SOCIO, DOCUMENTO, CERTIFICADO, PRODUCTO, MONEDA, MONTO, FECHA CONSTITUCIÓN, FECHA VENCIMIENTO.
+                </div>
+            </div>
+        </div>
+
+        <!-- History Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom">
+                <h3 class="card-title font-weight-bold mb-0">Historial de Cargas de DPF</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Periodo</th>
+                                <th>Fecha Carga</th>
+                                <th>Usuario</th>
+                                <th>Registros</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in history %}
+                            <tr>
+                                <td class="font-weight-bold">{{ log.period|date:"m/Y" }}</td>
+                                <td>{{ log.created_at|date:"d/m/Y H:i" }}</td>
+                                <td>{{ log.user.get_full_name|default:log.user.username }}</td>
+                                <td>{{ log.deposits.count|default:"-" }}</td>
+                                <td>
+                                    {% if log.status == 'SUCCESS' %}
+                                        <span class="badge badge-success"><i class="fas fa-check mr-1"></i> Éxito</span>
+                                    {% elif log.status == 'ERROR' %}
+                                        <span class="badge badge-danger"><i class="fas fa-times mr-1"></i> Error</span>
+                                    {% else %}
+                                        <span class="badge badge-warning">{{ log.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <button class="btn btn-xs btn-outline-secondary" title="Ver Detalle"><i class="fas fa-eye"></i></button>
+                                        <form action="{% url 'liquidity_risk:delete_lar_upload' 'dpf' log.id %}" method="POST" style="display:inline;" onsubmit="return confirm('¿Está seguro de eliminar esta carga? Se borrarán todos los registros asociados.')">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-xs btn-outline-danger" title="Eliminar Carga">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No hay historial disponible.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('custom-file-input')) {
+            var fileName = e.target.files[0].name;
+            var nextSibling = e.target.nextElementSibling;
+            nextSibling.innerText = fileName;
+        }
+    });
+</script>
+{% endblock %}

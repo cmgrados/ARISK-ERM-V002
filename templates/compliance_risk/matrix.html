@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Matriz de Riesgos de Cumplimiento{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">Matriz de Cumplimiento - COOPAC 2026</h3>
+        <div class="card-tools">
+            <a href="{% url 'compliance_risk:create_risk' %}" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-plus"></i> Nueva Evaluación
+            </a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-striped mb-0" style="font-size: 0.8rem;">
+                <thead class="bg-light text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.4px; border-bottom: 2px solid #dee2e6;">
+                    <tr>
+                        <th style="width: 25%; padding: 6px 8px;">Obligación / Requisito</th>
+                        <th style="padding: 6px 8px;">Área</th>
+                        <th class="text-center" style="width: 80px; padding: 6px 8px;">R. Inh.</th>
+                        <th style="width: 18%; padding: 6px 8px;">Sanción Potencial</th>
+                        <th class="text-center" style="width: 75px; padding: 6px 8px;">Estado</th>
+                        <th style="padding: 6px 8px;">Controles</th>
+                        <th class="text-center" style="width: 80px; padding: 6px 8px;">R. Res.</th>
+                        <th style="padding: 6px 8px;">Monitoreo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for risk in risks %}
+                    <tr>
+                        <td style="padding: 5px 8px; vertical-align: top;">
+                            <span class="badge badge-info" style="font-size: 0.65rem; padding: 2px 4px; line-height: 1;">{{ risk.requirement.get_source_display }}</span>
+                            <div style="line-height: 1.15; margin-top: 3px; font-weight: 500;">
+                                {{ risk.requirement.description }}
+                            </div>
+                        </td>
+                        <td style="padding: 5px 8px; font-size: 0.75rem; vertical-align: top;">{{ risk.requirement.responsible_area.name|default:"-" }}</td>
+                        <td class="text-center" style="padding: 5px 8px; vertical-align: middle;">
+                            <div class="rounded text-white shadow-sm" style="background-color: {{ risk.inherent_risk_color }}; font-weight: bold; padding: 3px 0; width: 65px; margin: 0 auto; line-height: 1; border: 1px solid rgba(0,0,0,0.1);">
+                                {{ risk.inherent_risk_value }}<br>
+                                <span style="font-size: 0.55rem; text-transform: uppercase;">{{ risk.inherent_risk_category|slice:":4" }}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.6rem; margin-top: 2px;">P:{{ risk.inherent_probability }} I:{{ risk.inherent_impact }}</div>
+                        </td>
+                        <td style="padding: 5px 8px; vertical-align: top;">
+                            <div style="line-height: 1.1; font-size: 0.7rem; color: #dc3545;">
+                                {{ risk.requirement.potential_sanction|linebreaksbr }}
+                            </div>
+                        </td>
+                        <td class="text-center" style="padding: 5px 8px; vertical-align: middle;">
+                            <span class="badge shadow-sm" style="background-color: {{ risk.compliance_status_color }}; color: white; padding: 4px 8px; font-size: 0.65rem; width: 65px;">
+                                {{ risk.compliance_status_label }}
+                            </span>
+                        </td>
+                        <td style="padding: 5px 8px; vertical-align: top;">
+                            <div style="line-height: 1.1; font-size: 0.7rem; color: #555;">
+                                {{ risk.existing_controls|linebreaksbr }}
+                            </div>
+                        </td>
+                        <td class="text-center" style="padding: 5px 8px; vertical-align: middle;">
+                            <div class="rounded text-white shadow-sm" style="background-color: {{ risk.residual_risk_color }}; font-weight: bold; padding: 3px 0; width: 65px; margin: 0 auto; line-height: 1; border: 1px solid rgba(0,0,0,0.1);">
+                                {{ risk.residual_risk_value }}<br>
+                                <span style="font-size: 0.55rem; text-transform: uppercase;">{{ risk.residual_risk_category|slice:":4" }}</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.6rem; margin-top: 2px;">P:{{ risk.residual_probability }} I:{{ risk.residual_impact }}</div>
+                        </td>
+                        <td style="padding: 5px 8px; vertical-align: top;">
+                            <div style="line-height: 1.1; font-size: 0.72rem; margin-bottom: 2px; font-weight: 500;">{{ risk.indicator }}</div>
+                            <span class="badge badge-light border" style="font-size: 0.6rem; padding: 1px 3px;">{{ risk.get_monitoring_frequency_display }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center p-4">
+                            <i class="fas fa-info-circle text-muted mb-2" style="font-size: 2rem;"></i><br>
+                            No hay evaluaciones registradas en la matriz.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card card-outline card-info">
+            <div class="card-header">
+                <h3 class="card-title">Leyenda de Riesgos</h3>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-2"><div class="p-2 rounded text-white" style="background-color: #28a745;"><small>Muy Bajo (1-4)</small></div></div>
+                    <div class="col-2"><div class="p-2 rounded text-white" style="background-color: #8dc63f;"><small>Bajo (5-9)</small></div></div>
+                    <div class="col-3"><div class="p-2 rounded text-white" style="background-color: #ffc107;"><small>Medio (10-14)</small></div></div>
+                    <div class="col-2"><div class="p-2 rounded text-white" style="background-color: #fd7e14;"><small>Alto (15-19)</small></div></div>
+                    <div class="col-3"><div class="p-2 rounded text-white" style="background-color: #dc3545;"><small>Muy Alto (20-25)</small></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

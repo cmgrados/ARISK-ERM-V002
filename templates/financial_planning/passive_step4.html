@@ -1,0 +1,244 @@
+                <!-- STEP 4: Data Historica 02 -->
+                {% if step == 4 %}
+                <style>
+                    .passive-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+                    .passive-table th, .passive-table td { border: 1px solid #dee2e6; padding: 6px; text-align: right; vertical-align: middle; white-space: nowrap; }
+                    .passive-table th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
+                    .passive-table .header-row-1 th { background-color: #93c5fd; color: #1e3a8a; }
+                    .passive-table .agency-row { background-color: #f8fafc; font-weight: bold; text-align: left; color: #334155; }
+                    .passive-table .month-col { text-align: left; font-weight: bold; }
+                </style>
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Data Histórica 02: Ahorros, Depósitos y Aportes</h4>
+                    <p class="text-muted">Información histórica detallada de pasivos captados por agencia.</p>
+                </div>
+                
+                <div class="card shadow border-0 mb-4" style="border-radius: 12px;">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="far fa-calendar-alt text-success mr-2"></i>
+                                <span class="font-weight-bold">Periodos seleccionados:</span>
+                                <span id="selected-passive-periods-badges" class="ml-2"></span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" type="button" data-toggle="collapse" data-target="#passiveFilterPanel" id="btn-toggle-passive-filter" aria-expanded="true">
+                                <i class="fas fa-times mr-1"></i> Ocultar Edición
+                            </button>
+                        </div>
+                        
+                        <div class="collapse show" id="passiveFilterPanel">
+                            <hr>
+                            <div id="passive-years-container">
+                                <span id="passive-dates-loading" class="text-muted small"><i class="fas fa-spinner fa-spin"></i> Obteniendo meses disponibles...</span>
+                            </div>
+                            <div class="text-right mt-3">
+                                <button id="btn-load-passive" class="btn btn-primary rounded-pill px-4 shadow-sm font-weight-bold" disabled>
+                                    <i class="fas fa-check mr-1"></i> Confirmar Selección de Meses
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="passive-table" id="passive-table">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="header-row-1">
+                                        <th style="min-width: 100px;">NRO MESES</th>
+                                        <th>AHORROS (MONTO)</th>
+                                        <th>DPF (MONTO)</th>
+                                        <th>APORTACIONES (MONTO)</th>
+                                        <th style="background-color: #fef08a; color: #854d0e;">SOCIOS (NRO)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passive-tbody">
+                                    <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
+                        <div>
+                            <button type="button" id="btn-lock-step4" class="btn btn-warning px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="saveAndLockStep4()">
+                                <i class="fas fa-lock mr-1"></i> Guardar y Bloquear Paso
+                            </button>
+                            <button type="button" id="btn-unlock-step4" class="btn btn-outline-secondary px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="toggleStepLock('4', 'unlock')" style="display:none;">
+                                <i class="fas fa-unlock mr-1"></i> Editar Paso
+                            </button>
+                        </div>
+                        <a href="?step=5" class="btn btn-primary px-4 py-2 rounded-pill font-weight-bold shadow-sm">Siguiente Paso <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const datesContainer = document.getElementById('passive-years-container');
+                        const loadingDatesSpan = document.getElementById('passive-dates-loading');
+                        const btnLoad = document.getElementById('btn-load-passive');
+                        const tbody = document.getElementById('passive-tbody');
+                        const btnToggleFilter = document.getElementById('btn-toggle-passive-filter');
+
+                        $('#passiveFilterPanel').on('shown.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-times mr-1"></i> Ocultar Edición';
+                        });
+                        $('#passiveFilterPanel').on('hidden.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-eye mr-1"></i> Mostrar Edición';
+                        });
+
+                        window.updateSelectedPassiveBadges = function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            const badgesContainer = document.getElementById('selected-passive-periods-badges');
+                            badgesContainer.innerHTML = '';
+                            if(checkedBoxes.length === 0) {
+                                badgesContainer.innerHTML = '<span class="badge badge-secondary p-2">Ninguno</span>';
+                                return;
+                            }
+                            Array.from(checkedBoxes).forEach(cb => {
+                                badgesContainer.innerHTML += `<span class="badge badge-success p-1 mr-1">${cb.dataset.short}-${cb.dataset.year}</span>`;
+                            });
+                        };
+
+                        window.checkAllPassiveYear = function(year, check) {
+                            const checkboxes = document.querySelectorAll(`.chk-pass-year-${year}`);
+                            checkboxes.forEach(cb => { cb.checked = check; });
+                            updateSelectedPassiveBadges();
+                        };
+
+                        let savedPassivePeriods = [];
+                        try {
+                            const historicalDataJson = '{{ historical_data_json|escapejs }}';
+                            const parsedData = JSON.parse(historicalDataJson);
+                            if (parsedData && parsedData.passive_periods) {
+                                savedPassivePeriods = parsedData.passive_periods;
+                            }
+                        } catch(e) {}
+
+                        window.saveAndLockStep4 = function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value);
+                            toggleStepLock('4', 'lock', { passive_periods: selectedDates });
+                        };
+
+                        fetch("{% url 'financial_planning:api_available_passive_dates' %}")
+                            .then(response => response.json())
+                            .then(result => {
+                                loadingDatesSpan.remove();
+                                if (result.status === 'success' && result.data.length > 0) {
+                                    let datesByYear = {};
+                                    result.data.forEach(d => {
+                                        let parts = d.value.split('-');
+                                        let year = parts[0];
+                                        if (!datesByYear[year]) datesByYear[year] = [];
+                                        datesByYear[year].push(d);
+                                    });
+                                    
+                                    let sortedYears = Object.keys(datesByYear).sort((a,b) => b - a);
+                                    let html = '';
+                                    
+                                    sortedYears.forEach(year => {
+                                        html += `
+                                        <div class="mb-3 border-bottom pb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="font-weight-bold text-primary mb-0"><i class="far fa-calendar-alt mr-1"></i> AÑO ${year}</h6>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" onclick="checkAllPassiveYear('${year}', true)"><i class="fas fa-check-square"></i> Todo</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="checkAllPassiveYear('${year}', false)"><i class="fas fa-square"></i> Limpiar</button>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex flex-wrap align-items-center">
+                                        `;
+                                        
+                                        datesByYear[year].sort((a,b) => b.value.localeCompare(a.value)).forEach(d => {
+                                            const isChecked = savedPassivePeriods.length > 0 ? savedPassivePeriods.includes(d.value) : true;
+                                            const checkedAttr = isChecked ? 'checked' : '';
+                                            const monthMap = { '01':'Ene', '02':'Feb', '03':'Mar', '04':'Abr', '05':'May', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Sep', '10':'Oct', '11':'Nov', '12':'Dic' };
+                                            let monthNum = d.value.split('-')[1];
+                                            let shortMonth = monthMap[monthNum] || monthNum;
+                                            
+                                            html += `
+                                            <div class="custom-control custom-checkbox mr-4 mb-2">
+                                                <input type="checkbox" class="custom-control-input passive-date-checkbox chk-pass-year-${year}" id="chk_pass_${d.value}" value="${d.value}" data-year="${year}" data-short="${shortMonth}" ${checkedAttr} onchange="updateSelectedPassiveBadges()">
+                                                <label class="custom-control-label" for="chk_pass_${d.value}">${shortMonth}</label>
+                                            </div>`;
+                                        });
+                                        html += `</div></div>`;
+                                    });
+                                    datesContainer.innerHTML = html;
+                                    btnLoad.disabled = false;
+                                    updateSelectedPassiveBadges();
+                                    
+                                    if (savedPassivePeriods.length > 0) {
+                                        btnLoad.click();
+                                    }
+                                } else {
+                                    datesContainer.innerHTML = '<span class="text-danger small ml-2">No hay fechas disponibles en la base de datos.</span>';
+                                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                                }
+                            })
+                            .catch(error => {
+                                loadingDatesSpan.innerHTML = '<span class="text-danger">Error al cargar fechas.</span>';
+                            });
+
+                        btnLoad.addEventListener('click', function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            if (checkedBoxes.length === 0) {
+                                alert("Por favor seleccione al menos un mes para cargar.");
+                                return;
+                            }
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+                            
+                            btnLoad.disabled = true;
+                            btnLoad.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Cargando...';
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos...</td></tr>';
+
+                            fetch("{% url 'financial_planning:api_historical_passive_data' %}?dates=" + encodeURIComponent(selectedDates))
+                                .then(response => response.json())
+                                .then(result => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Confirmar Selección de Meses';
+                                    if (result.status === 'success') {
+                                        if (Object.keys(result.data).length === 0) {
+                                            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">No se encontraron datos para las fechas seleccionadas.</td></tr>';
+                                        } else {
+                                            renderPassiveData(result.data);
+                                        }
+                                    } else {
+                                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-4">Error: ' + result.msg + '</td></tr>';
+                                    }
+                                })
+                                .catch(error => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Confirmar Selección de Meses';
+                                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-4">Error de conexión al cargar los datos.</td></tr>';
+                                });
+                        });
+
+                        function fmt(val) {
+                            return Math.round(val).toLocaleString('en-US');
+                        }
+
+                        function renderPassiveData(data) {
+                            const tbody = document.getElementById('passive-tbody');
+                            let html = '';
+                            
+                            for (const [agency, rows] of Object.entries(data)) {
+                                html += `<tr><td colspan="5" class="agency-row">AGENCIA ${agency}</td></tr>`;
+                                
+                                rows.forEach(row => {
+                                    html += `<tr>
+                                        <td class="month-col">${row.period}</td>
+                                        <td>${row.ahorros ? fmt(row.ahorros) : '0'}</td>
+                                        <td>${row.dpf ? fmt(row.dpf) : '0'}</td>
+                                        <td>${row.aportes ? fmt(row.aportes) : '0'}</td>
+                                        <td style="background-color: #fef08a; font-weight: bold; color: #854d0e;">${row.socios ? fmt(row.socios) : '0'}</td>
+                                    </tr>`;
+                                });
+                            }
+                            
+                            if (html === '') {
+                                html = '<tr><td colspan="5" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                            }
+                            tbody.innerHTML = html;
+                        }
+                    });
+                </script>
+                {% endif %}

@@ -1,0 +1,1640 @@
+1: {% extends 'base.html' %}
+{% load static %}
+
+{% block title_header %}Asistente de Planificación{% endblock %}
+
+{% block content %}
+<style>
+    /* Styling for dynamic accounts hierarchy in Handsontable */
+    .bg-light-blue {
+        background-color: #e0f2fe !important;
+    }
+    .bg-light {
+        background-color: #f3f4f6 !important;
+    }
+</style>
+<div class="container-fluid">
+    {% csrf_token %}
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-magic mr-2 text-indigo"></i>Asistente de Planificación</h1>
+        <a href="{% url 'financial_planning:dashboard' %}" class="btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-left fa-sm text-white-50"></i> Volver al Dashboard
+        </a>
+    </div>
+
+    <div class="card shadow mb-4 border-0">
+        <div class="card-header bg-white py-3">
+            <h6 class="m-0 font-weight-bold text-indigo">Flujo de Trabajo{% if plan %} - {{ plan.name }}{% endif %}</h6>
+        </div>
+        <div class="card-body">
+            
+            <!-- Stepper Navigation -->
+            <div class="stepper-wrapper mb-5" style="overflow-x: auto; white-space: nowrap; padding-bottom: 10px;">
+                <ul class="nav nav-pills flex-nowrap" id="wizard-tabs" style="min-width: 1200px;">
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 1 %}active bg-indigo text-white{% elif step > 1 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=1{% else %}#{% endif %}" title="Crear Plan">
+                            <i class="fas {% if step > 1 %}fa-check-circle{% else %}fa-1{% endif %} mr-1"></i>1. Crear Plan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 2 %}active bg-indigo text-white{% elif step > 2 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=2{% else %}#{% endif %}" title="Base Histórica (BH)">
+                            <i class="fas {% if step > 2 %}fa-check-circle{% else %}fa-2{% endif %} mr-1"></i>2. Base Histórica
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 3 %}active bg-indigo text-white{% elif step > 3 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=3{% else %}#{% endif %}" title="Data Histórica 01: Cartera por Agencia">
+                            <i class="fas {% if step > 3 %}fa-check-circle{% else %}fa-3{% endif %} mr-1"></i>3. Data Hist 01
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 4 %}active bg-indigo text-white{% elif step > 4 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=4{% else %}#{% endif %}" title="Data Histórica 02: Ahorros, Depósitos y Aportes por Agencia">
+                            <i class="fas {% if step > 4 %}fa-check-circle{% else %}fa-4{% endif %} mr-1"></i>4. Data Hist 02
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 5 %}active bg-indigo text-white{% elif step > 5 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=5{% else %}#{% endif %}" title="Supuestos de proyecciones">
+                            <i class="fas {% if step > 5 %}fa-check-circle{% else %}fa-5{% endif %} mr-1"></i>5. Supuestos
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 6 %}active bg-indigo text-white{% elif step > 6 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=6{% else %}#{% endif %}" title="Análisis de tendencias y ajustes">
+                            <i class="fas {% if step > 6 %}fa-check-circle{% else %}fa-6{% endif %} mr-1"></i>6. Análisis Tendencias
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 7 %}active bg-indigo text-white{% elif step > 7 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=7{% else %}#{% endif %}" title="Presupuesto Institucional">
+                            <i class="fas {% if step > 7 %}fa-check-circle{% else %}fa-7{% endif %} mr-1"></i>7. Presupuesto
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 8 %}active bg-indigo text-white{% elif step > 8 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=8{% else %}#{% endif %}" title="Balance General Proyectado">
+                            <i class="fas {% if step > 8 %}fa-check-circle{% else %}fa-8{% endif %} mr-1"></i>8. BG Proyectado
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 9 %}active bg-indigo text-white{% elif step > 9 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=9{% else %}#{% endif %}" title="Estado de Resultados Proyectado">
+                            <i class="fas {% if step > 9 %}fa-check-circle{% else %}fa-9{% endif %} mr-1"></i>9. ER Proyectado
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 10 %}active bg-indigo text-white{% elif step > 10 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=10{% else %}#{% endif %}" title="Flujo de Caja">
+                            <i class="fas {% if step > 10 %}fa-check-circle{% else %}fa-list{% endif %} mr-1"></i>10. Flujo Caja
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 11 %}active bg-indigo text-white{% elif step > 11 %}bg-light text-success font-weight-bold{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=11{% else %}#{% endif %}" title="Flujo de Efectivo">
+                            <i class="fas {% if step > 11 %}fa-check-circle{% else %}fa-list-alt{% endif %} mr-1"></i>11. Flujo Efectivo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if step == 12 %}active bg-indigo text-white{% else %}disabled{% endif %} border rounded-pill mx-1" href="{% if plan %}?step=12{% else %}#{% endif %}" title="Reportes">
+                            <i class="fas fa-chart-bar mr-1"></i>12. Reportes
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Step Content -->
+            <div class="tab-content px-3">
+                
+                <!-- STEP 1: Crear Plan -->
+                {% if step == 1 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Información General del Plan</h4>
+                    <p class="text-muted">Define el nombre, periodo y horizonte de proyección del plan financiero.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <form method="POST" id="planForm">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="font-weight-bold">Nombre del Plan</label>
+                                    {{ form.name }}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="font-weight-bold">Tipo de Versión</label>
+                                    {{ form.version_type }}
+                                </div>
+                                <div class="col-md-12 mb-3">
+                                    <label class="font-weight-bold">Descripción</label>
+                                    {{ form.description }}
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="font-weight-bold">Año de Inicio de Proyección</label>
+                                    {{ form.projection_start_year }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="font-weight-bold">Años a Proyectar</label>
+                                    {{ form.projection_years }}
+                                </div>
+                                
+                                <div class="col-md-12 mb-3 d-flex align-items-center mt-2">
+                                    <div class="custom-control custom-switch">
+                                        {{ form.is_active }}
+                                        <label class="custom-control-label font-weight-bold" for="{{ form.is_active.id_for_label }}">Plan Activo</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Dynamic Horizon Table -->
+                            <div class="card mt-4 border shadow-sm">
+                                <div class="card-header bg-dark text-white text-center py-2">
+                                    <h6 class="mb-0 font-weight-bold text-uppercase">Años y Meses (Horizonte del Plan)</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-bordered table-sm mb-0 text-center">
+                                        <tbody>
+                                            <tr><td class="text-left font-weight-bold">AÑO X-2 EJECUTADO</td><td id="dyn_year_x_minus_2">-</td></tr>
+                                            <tr><td class="text-left font-weight-bold">AÑO X-1 EJECUTADO</td><td id="dyn_year_x_minus_1">-</td></tr>
+                                            <tr class="bg-light"><td class="text-left font-weight-bold">AÑO X EJECUTADO</td><td id="dyn_year_x" class="font-weight-bold">-</td></tr>
+                                            <tr><td class="text-left font-weight-bold">AÑO PROYECTADO</td><td id="dyn_proj_year" class="font-weight-bold">-</td></tr>
+                                            <tr class="bg-light"><td class="text-left font-weight-bold">AÑO INICIO INFORMACIÓN</td><td id="dyn_hist_start_year">-</td></tr>
+                                            <tr><td class="text-left font-weight-bold">MES DE INICIO</td><td id="dyn_start_month">-</td></tr>
+                                            <tr class="bg-light"><td class="text-left font-weight-bold">MESES DE INICIO EJECUTADOS</td><td id="dyn_hist_start_date">-</td></tr>
+                                            <tr class="bg-light"><td class="text-left font-weight-bold">MESES DE INICIO PROYECTADO</td><td id="dyn_proj_start_date">-</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <div class="card mt-3 border shadow-sm" style="max-width: 300px; margin: 0 auto;">
+                                <div class="card-header bg-dark text-white text-center py-2">
+                                    <h6 class="mb-0 font-weight-bold text-uppercase">Años Proyectados</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-bordered table-sm mb-0 text-center" id="dyn_proj_years_table">
+                                        <tbody>
+                                            <tr><td>-</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="text-right mt-4">
+                                <button type="submit" class="btn btn-indigo px-5 rounded-pill">Guardar y Continuar <i class="fas fa-arrow-right ml-2"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 2: Base Histórica -->
+                {% if step == 2 %}
+                <style>
+                    /* Premium styling for Handsontable in A.RISK ERM */
+                    .handsontable {
+                        font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif !important;
+                        font-size: 13.5px !important;
+                        border-radius: 12px !important;
+                        overflow: hidden !important;
+                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+                        border: 1px solid #e2e8f0 !important;
+                    }
+                    
+                    .handsontable th {
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+                        color: #ffffff !important;
+                        font-weight: 700 !important;
+                        font-size: 12px !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.5px !important;
+                        padding: 12px 8px !important;
+                        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                        vertical-align: middle !important;
+                        text-align: center !important;
+                    }
+                    
+                    .handsontable td {
+                        padding: 8px 12px !important;
+                        border-color: #cbd5e1 !important;
+                        vertical-align: middle !important;
+                        transition: background-color 0.15s ease;
+                    }
+                    
+                    .handsontable tr:hover td {
+                        background-color: #f8fafc !important;
+                    }
+                    
+                    /* Major Headers: ACTIVO, PASIVO, PATRIMONIO */
+                    .handsontable .bg-primary {
+                        background-color: #1e3a8a !important; /* Premium Navy */
+                        color: #ffffff !important;
+                        font-size: 14px !important;
+                        letter-spacing: 0.5px !important;
+                    }
+                    
+                    /* Sub-totals: DISPONIBLE, CARTERA DE CREDITOS */
+                    .handsontable .bg-light-blue {
+                        background-color: #eff6ff !important; /* Premium soft blue */
+                        color: #1e40af !important;
+                    }
+
+                    /* Net income green highlight */
+                    .handsontable .bg-success {
+                        background-color: #10b981 !important; /* Premium Emerald */
+                        color: #ffffff !important;
+                    }
+                    
+                    .font-weight-bold {
+                        font-weight: 700 !important;
+                    }
+                    
+                    .text-primary {
+                        color: #1d4ed8 !important;
+                    }
+                    
+                    .text-white {
+                        color: #ffffff !important;
+                    }
+                    
+                    #handsontable-container {
+                        border-radius: 12px !important;
+                        overflow: hidden !important;
+                    }
+
+                    .nav-pills .nav-link {
+                        color: #4b5563;
+                        background-color: #f3f4f6;
+                        transition: all 0.25s ease;
+                        border: 1px solid #e5e7eb;
+                    }
+
+                    .nav-pills .nav-link.active {
+                        color: #ffffff !important;
+                        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+                        border-color: transparent;
+                    }
+
+                    .btn-xs {
+                        padding: 0.25rem 0.5rem;
+                        font-size: 0.75rem;
+                        line-height: 1.5;
+                        border-radius: 0.2rem;
+                    }
+                </style>
+
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">Estados Financieros Históricos (Base Histórica)</h4>
+                    <p class="text-muted">Vista de solo lectura de los saldos asignados desde el módulo de Balance de Comprobación.</p>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+
+                        <!-- Alerta cuando no hay base histórica asignada -->
+                        <div id="no-historical-warning" class="alert alert-warning text-center p-5 shadow border-0" style="display: none; border-radius: 20px; background-color: rgba(255, 193, 7, 0.08); border-left: 6px solid #ffc107 !important;">
+                            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                            <h4 class="font-weight-bold text-dark mb-2">No se ha asignado base histórica contable</h4>
+                            <p class="text-secondary mx-auto mb-4" style="max-width: 600px;">
+                                Este plan financiero no tiene asignada una base histórica. Debe ir al módulo de Balance de Comprobación, seleccionar los períodos correspondientes y asignarlos a este plan.
+                            </p>
+                            <a href="{% url 'financial_planning:trial_balance_viewer_no_id' %}" class="btn btn-info px-5 py-2 rounded-pill text-white font-weight-bold shadow">
+                                <i class="fas fa-arrow-right mr-2"></i> Ir a Balance de Comprobación
+                            </a>
+                        </div>
+
+                        <!-- Period badges + content (only when periods exist) -->
+                        <div id="hist-content-wrapper" style="display:none;">
+
+                            <!-- Period badges bar -->
+                            <div class="card shadow border-0 mb-3 p-2" style="border-radius: 12px;">
+                                <div class="d-flex align-items-center flex-wrap px-2">
+                                    <i class="fas fa-calendar-alt text-success mr-2"></i>
+                                    <strong class="mr-2" style="font-size:0.85rem;">Períodos asignados:</strong>
+                                    <span id="hist-period-badges" class="d-flex flex-wrap gap-1"></span>
+                                    <a href="{% url 'financial_planning:trial_balance_viewer_no_id' %}" class="btn btn-sm btn-outline-success rounded-pill ml-auto">
+                                        <i class="fas fa-sync-alt mr-1"></i> Reasignar
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Toolbar -->
+                            <div class="card shadow-sm border-0 mb-3 p-2" style="border-radius: 12px;">
+                                <div class="row align-items-center px-2">
+                                    <div class="col-lg-3 col-md-4 col-12 mb-2 mb-md-0">
+                                    </div>
+                                    <div class="col-lg-4 col-md-5 col-12 mb-2 mb-md-0">
+                                        <div class="input-group input-group-sm">
+                                            <div class="input-group-prepend"><span class="input-group-text bg-transparent border-right-0"><i class="fas fa-search text-muted"></i></span></div>
+                                            <input type="text" id="hist-accountSearch" class="form-control border-left-0" placeholder="Buscar por código o nombre..." onkeyup="histFilterAccounts()">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-3 col-12 text-md-right text-center">
+                                        <button class="btn btn-sm btn-outline-primary mr-1" onclick="histExpandAll()"><i class="fas fa-expand-arrows-alt mr-1"></i>Expandir</button>
+                                        <button class="btn btn-sm btn-outline-secondary mr-1" onclick="histCollapseAll()"><i class="fas fa-compress-arrows-alt mr-1"></i>Contraer</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabs + Tables -->
+                            <div class="card shadow border-0 mb-3" style="border-radius: 12px;">
+                                <div class="card-header p-2 d-flex justify-content-between align-items-center flex-wrap bg-white" style="border-radius:12px 12px 0 0;">
+                                    <ul class="nav nav-pills" id="histTabs" role="tablist">
+                                        <li class="nav-item"><a class="nav-link active" id="hist-bs-tab" data-toggle="pill" href="#hist-bs-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-balance-scale mr-1"></i>Situación Financiera</a></li>
+                                        <li class="nav-item"><a class="nav-link" id="hist-is-tab" data-toggle="pill" href="#hist-is-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-chart-line mr-1"></i>Estado de Resultados</a></li>
+                                        <li class="nav-item"><a class="nav-link" id="hist-mis-tab" data-toggle="pill" href="#hist-mis-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-calendar-alt mr-1"></i>ER (Mensual)</a></li>
+                                    </ul>
+                                    <div class="ml-auto mt-1 mt-md-0" id="hist-cuadratura">
+                                        <span class="badge badge-success px-3 py-1" id="hist-squareBadge" style="font-size:0.8rem;border-radius:20px;"><i class="fas fa-check-circle mr-1"></i>Balance Cuadrado</span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="tab-content">
+                                        <!-- BS Panel -->
+                                        <div class="tab-pane fade show active" id="hist-bs-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="hist-bs-thead"></thead><tbody id="hist-bs-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="hist-summary-bs" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-balance-scale mr-1"></i>Resumen Balance General</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-bs-thead"></thead><tbody id="hist-sum-bs-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                        <!-- IS Panel -->
+                                        <div class="tab-pane fade" id="hist-is-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="hist-is-thead"></thead><tbody id="hist-is-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="hist-summary-is" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-success mb-0"><i class="fas fa-chart-line mr-1"></i>Resumen Estado de Resultados</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-is-thead"></thead><tbody id="hist-sum-is-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                        <!-- Monthly IS Panel -->
+                                        <div class="tab-pane fade" id="hist-mis-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="hist-mis-thead"></thead><tbody id="hist-mis-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="hist-summary-mis" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-info mb-0"><i class="fas fa-calendar-alt mr-1"></i>Resumen Estado de Resultados (Mensual)</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="hist-sum-mis-thead"></thead><tbody id="hist-sum-mis-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
+                                    <div>
+                                        <button type="button" id="btn-lock-step2" class="btn btn-warning px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="toggleStepLock('2', 'lock')">
+                                            <i class="fas fa-lock mr-1"></i> Guardar y Bloquear Paso
+                                        </button>
+                                        <button type="button" id="btn-unlock-step2" class="btn btn-outline-secondary px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="toggleStepLock('2', 'unlock')" style="display:none;">
+                                            <i class="fas fa-unlock mr-1"></i> Editar Paso
+                                        </button>
+                                    </div>
+                                    <a href="?step=3" class="btn btn-primary px-4 py-2 rounded-pill font-weight-bold shadow-sm">Siguiente Paso <i class="fas fa-arrow-right ml-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <style>
+                            .accounting-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+                            .accounting-table td,.accounting-table th{font-size:0.68rem!important;padding:3px 6px!important;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+                            .accounting-table th{border-bottom:2px solid rgba(0,0,0,0.1);font-weight:700;color:#495057;}
+                            .accounting-table td.col-desc,.accounting-table th.col-desc{max-width:260px;}
+                            .accounting-row{border-bottom:1px solid rgba(0,0,0,0.04);transition:background-color 0.15s ease;cursor:pointer;}
+                            .accounting-row:hover{background-color:rgba(29,78,216,0.04)!important;}
+                            .level-1{font-weight:800;background-color:rgba(29,78,216,0.05);}.level-2{font-weight:700;}.level-3{font-weight:650;}.level-4{font-weight:600;}.level-5{font-weight:500;color:#495057;}.level-6{font-weight:400;color:#6c757d;}.level-7{font-weight:400;color:#888;font-style:italic;}.level-leaf{font-style:normal;}
+                            .node-expander{display:inline-block;width:20px;text-align:center;margin-right:6px;transition:transform 0.2s ease;font-size:0.8rem;}
+                            .node-collapsed .node-expander{transform:rotate(-90deg);}
+                            .negative-amount{color:#dc3545!important;font-weight:600;}.zero-amount{color:#adb5bd;font-style:italic;}
+                        </style>
+
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                            const historicalDataJson = '{{ historical_data_json|escapejs }}';
+                            let savedPeriods = [];
+                            let histBalanceData = null;
+                            let histMode = 'accum';
+
+                            // Parse saved periods
+                            try {
+                                const parsed = JSON.parse(historicalDataJson);
+                                if (parsed && parsed.selected_periods && parsed.selected_periods.length > 0) {
+                                    savedPeriods = parsed.selected_periods;
+                                }
+                            } catch(e) { console.error("Error parsing historical_data", e); }
+
+                            if (!savedPeriods.length) {
+                                document.getElementById('no-historical-warning').style.display = 'block';
+                                document.getElementById('hist-content-wrapper').style.display = 'none';
+                                return;
+                            }
+
+                            document.getElementById('no-historical-warning').style.display = 'none';
+                            document.getElementById('hist-content-wrapper').style.display = 'block';
+
+                            // Render period badges
+                            const badgesHtml = savedPeriods.map(p => {
+                                const [y,m] = p.split('-');
+                                return `<span class="badge badge-primary mr-1 mb-1" style="font-size:0.78rem;border-radius:20px;padding:4px 10px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
+                            }).join('');
+                            document.getElementById('hist-period-badges').innerHTML = badgesHtml;
+
+                            // Fetch from API
+                            fetchHistData();
+
+                            function fetchHistData() {
+                                $.ajax({
+                                    url: "{% url 'financial_planning:api_trial_balance_data' %}",
+                                    data: { periods: JSON.stringify(savedPeriods), currency: 'MN' },
+                                    success: function(resp) {
+                                        if (resp.status === 'success') {
+                                            histBalanceData = resp;
+                                            histRenderAll();
+                                        } else {
+                                            $('#hist-bs-body').html('<tr><td colspan="99" class="text-center p-4 text-danger">Error: '+resp.msg+'</td></tr>');
+                                        }
+                                    },
+                                    error: function() {
+                                        $('#hist-bs-body').html('<tr><td colspan="99" class="text-center p-4 text-danger">Error de conexión.</td></tr>');
+                                    }
+                                });
+                            }
+
+                            window.histSetMode = function(mode) {
+                                histMode = mode;
+                                document.getElementById('hist-toggleAccum').style.background = mode==='accum'?'#fff':'none';
+                                document.getElementById('hist-toggleAccum').style.boxShadow = mode==='accum'?'0 2px 6px rgba(0,0,0,0.1)':'none';
+                                document.getElementById('hist-toggleAccum').style.color = mode==='accum'?'#212529':'#6c757d';
+                                document.getElementById('hist-toggleMonth').style.background = mode==='month'?'#fff':'none';
+                                document.getElementById('hist-toggleMonth').style.boxShadow = mode==='month'?'0 2px 6px rgba(0,0,0,0.1)':'none';
+                                document.getElementById('hist-toggleMonth').style.color = mode==='month'?'#212529':'#6c757d';
+                                histRenderAll();
+                            };
+
+                            function histRenderAll() {
+                                if (!histBalanceData) return;
+                                const periods = histBalanceData.periods;
+                                const numCols = periods.length;
+                                const colW = numCols<=3?120:numCols<=6?100:numCols<=12?88:80;
+                                const pHeaders = periods.map(p=>{const[y,m]=p.split('-');return`<th style="min-width:${colW}px;width:${colW}px;text-align:right;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;}).join('');
+                                const theadHtml = `<tr><th style="width:90px;min-width:90px;text-align:left;">Código</th><th class="col-desc" style="width:260px;min-width:260px;text-align:left;">Descripción</th>${pHeaders}</tr>`;
+                                $('#hist-bs-thead').html(theadHtml);
+                                $('#hist-is-thead').html(theadHtml);
+                                $('#hist-mis-thead').html(theadHtml);
+
+                                $('#hist-bs-body').html(histBuildRows(histBalanceData.balance_sheet, periods, 'hbs') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+                                $('#hist-is-body').html(histBuildRows(histBalanceData.income_statement, periods, 'his') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+                                $('#hist-mis-body').html(histBuildRows(histBalanceData.income_statement, periods, 'hmis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+
+                                if (histBalanceData.totals) histRenderSummary(histBalanceData.totals, periods);
+                            }
+
+                            function histBuildRows(items, periods, prefix) {
+                                let html = '';
+                                items.forEach(item => {
+                                    const hasChildren = item.children_codes && item.children_codes.length > 0;
+                                    const lvl = histGetLevelClass(item.level);
+                                    const isRoot = !item.parent_code;
+                                    const bDict = (prefix==='hmis') ? item.monthly_balances : item.balances;
+                                    const cells = periods.map(p => {
+                                        const val = (bDict && bDict[p]!=null) ? bDict[p] : 0;
+                                        return `<td class="text-right text-monospace">${histFmtAmt(val)}</td>`;
+                                    }).join('');
+                                    html += `<tr class="accounting-row level-${lvl} ${hasChildren?'':'level-leaf'} node-collapsed" style="${isRoot?'':'display:none;'}" data-code="${item.code}" data-parent="${item.parent_code||''}" data-prefix="${prefix}" data-depth="${item.depth}" id="${prefix}-row-${item.code}" onclick="histToggleRow('${item.code}','${prefix}')">
+                                        <td style="padding-left:${item.depth*14}px;">${hasChildren?'<span class="node-expander"><i class="fas fa-chevron-down"></i></span>':'<span style="display:inline-block;width:26px;"></span>'}<span class="badge badge-light border text-monospace text-dark">${item.code}</span></td>
+                                        <td class="col-desc">${item.name}${item.has_discrepancy?'<i class="fas fa-exclamation-triangle text-warning ml-1" title="Discrepancia"></i>':''}</td>
+                                        ${cells}</tr>`;
+                                });
+                                return html;
+                            }
+
+                            function histRenderSummary(totals, periods) {
+                                const numCols=periods.length;const colW=numCols<=3?120:numCols<=6?100:numCols<=12?88:80;
+                                const fmt=v=>histFmtAmt(v);
+                                const mn=name=>`<th class="text-left font-weight-bold" style="width:350px;min-width:350px;white-space:nowrap">${name}</th>`;
+                                const pH=p=>{const[y,m]=p.split('-');return`<th class="text-right" style="min-width:${colW}px;width:${colW}px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;};
+                                const theadRow=`<tr>${mn('Concepto')}${periods.map(pH).join('')}</tr>`;
+
+                                // ── Balance General ──
+                                const bsRows=[{label:'Total Activo (1)',key:'total_activo',cls:''},{label:'Total Pasivo (2)',key:'total_pasivo',cls:''},{label:'Total Patrimonio (3)',key:'total_patrimonio',cls:''},{label:'Total Pasivo + Patrimonio',key:'total_pasivo_patrimonio',cls:'table-info font-weight-bold'},{label:'Diferencia (Cuadratura)',key:'diferencia',cls:'cuadratura-row'}];
+                                let bsTbody=bsRows.map(row=>{let rowCls=row.cls;const allSq=periods.every(p=>totals[p]&&totals[p].es_cuadrado);if(row.key==='diferencia')rowCls+=allSq?' table-success':' table-danger';const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;let badge='';if(row.key==='diferencia'&&totals[p]){badge=totals[p].es_cuadrado?`<span class="badge badge-success ml-1" style="font-size:0.6rem"><i class="fas fa-check-circle"></i></span>`:`<span class="badge badge-danger ml-1" style="font-size:0.6rem"><i class="fas fa-exclamation-triangle"></i></span>`;}return`<td class="text-right">${fmt(val)}${badge}</td>`;}).join('');return`<tr class="${rowCls}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#hist-sum-bs-thead').html(theadRow);$('#hist-sum-bs-tbody').html(bsTbody);
+
+                                // ── Estado de Resultados (Acumulado) ──
+                                const isRows=[{label:'Total Ingresos (5)',key:'total_ingresos',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta',cls:'table-warning font-weight-bold'}];
+                                let isTbody=isRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#hist-sum-is-thead').html(theadRow);$('#hist-sum-is-tbody').html(isTbody);
+
+                                // ── Estado de Resultados (Mensual) ──
+                                const misRows=[{label:'Total Ingresos (5)',key:'total_ingresos_monthly',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos_monthly',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta_monthly',cls:'table-warning font-weight-bold'}];
+                                let misTbody=misRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#hist-sum-mis-thead').html(theadRow);$('#hist-sum-mis-tbody').html(misTbody);
+
+                                // Update cuadratura badge
+                                const allSquared=periods.every(p=>totals[p]&&totals[p].es_cuadrado);
+                                if(allSquared){$('#hist-squareBadge').removeClass('badge-danger').addClass('badge-success').html('<i class="fas fa-check-circle mr-1"></i>Balance Cuadrado');}
+                                else{$('#hist-squareBadge').removeClass('badge-success').addClass('badge-danger').html('<i class="fas fa-exclamation-triangle mr-1"></i>Descuadrado');}
+                            }
+
+                            // Tree interaction
+                            window.histToggleRow = function(code, prefix) {
+                                const row = $(`#${prefix}-row-${code}`);
+                                if (row.hasClass('node-collapsed')) { row.removeClass('node-collapsed'); histShowChildren(code, prefix); }
+                                else { row.addClass('node-collapsed'); histHideChildren(code, prefix); }
+                            };
+                            function histShowChildren(pc, prefix) {
+                                $(`tr[data-parent="${pc}"][data-prefix="${prefix}"]`).each(function(){const r=$(this);r.show();if(!r.hasClass('node-collapsed'))histShowChildren(r.data('code'),prefix);});
+                            }
+                            function histHideChildren(pc, prefix) {
+                                $(`tr[data-parent="${pc}"][data-prefix="${prefix}"]`).each(function(){$(this).hide();histHideChildren($(this).data('code'),prefix);});
+                            }
+                            window.histExpandAll = function() { $('.accounting-row').removeClass('node-collapsed').show(); };
+                            window.histCollapseAll = function() {
+                                $('.accounting-row').each(function(){const r=$(this);r.data('parent')!==''?r.hide():r.show();r.addClass('node-collapsed');});
+                            };
+                            window.histFilterAccounts = function() {
+                                const q=$('#hist-accountSearch').val().toLowerCase().trim();
+                                if(!q){histCollapseAll();return;}
+                                $('.accounting-row').each(function(){const r=$(this);const code=r.data('code').toString();const name=r.find('td:nth-child(2)').text().toLowerCase();const prefix=r.data('prefix');if(code.includes(q)||name.includes(q)){r.show();histRevealParents(r.data('parent'),prefix);}else{r.hide();}});
+                            };
+                            function histRevealParents(pc, prefix) {
+                                if(!pc)return;const p=$(`#${prefix}-row-${pc}`);p.removeClass('node-collapsed').show();histRevealParents(p.data('parent'),prefix);
+                            }
+
+                            function histGetLevelClass(level){if(level<=1)return'1';if(level===2)return'2';if(level<=4)return'3';if(level<=6)return'4';if(level<=8)return'5';if(level<=10)return'6';return'7';}
+                            function histFmtAmt(amount){const rounded=Math.round(amount);if(rounded===0){return amount===0?'<span class="zero-amount">-</span>':'<span>0</span>';}const formatted=Math.abs(rounded).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});if(rounded<0)return`<span class="negative-amount">(${formatted})</span>`;return`<span>${formatted}</span>`;}
+                        });
+                        </script>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 3: Data Historica 01 -->
+                {% if step == 3 %}
+                <style>
+                    .portfolio-table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+                    .portfolio-table th, .portfolio-table td { border: 1px solid #dee2e6; padding: 4px; text-align: right; vertical-align: middle; white-space: nowrap; }
+                    .portfolio-table th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
+                    .portfolio-table .header-row-1 th { background-color: #93c5fd; color: #1e3a8a; }
+                    .portfolio-table .header-row-2 th { background-color: #bfdbfe; color: #1e3a8a; }
+                    .portfolio-table .agency-row { background-color: #f8fafc; font-weight: bold; text-align: left; color: #334155; }
+                    .portfolio-table .month-col { text-align: left; font-weight: bold; }
+                    .portfolio-table .total-col { background-color: #fef08a; font-weight: bold; }
+                </style>
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Data Histórica 01: Cartera por Agencia</h4>
+                    <p class="text-muted">Información histórica detallada del portafolio de cartera crediticia.</p>
+                </div>
+                
+                <div class="card shadow border-0 mb-4" style="border-radius: 12px;">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="far fa-calendar-alt text-success mr-2"></i>
+                                <span class="font-weight-bold">Periodos seleccionados:</span>
+                                <span id="selected-periods-badges" class="ml-2"></span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" type="button" data-toggle="collapse" data-target="#portfolioFilterPanel" id="btn-toggle-filter" aria-expanded="true">
+                                <i class="fas fa-times mr-1"></i> Ocultar Edición
+                            </button>
+                        </div>
+                        
+                        <div class="collapse show" id="portfolioFilterPanel">
+                            <hr>
+                            <div id="portfolio-years-container">
+                                <span id="dates-loading" class="text-muted small"><i class="fas fa-spinner fa-spin"></i> Obteniendo meses disponibles...</span>
+                            </div>
+                            <div class="text-right mt-3">
+                                <button id="btn-load-portfolio" class="btn btn-primary rounded-pill px-4 shadow-sm font-weight-bold" disabled>
+                                    <i class="fas fa-check mr-1"></i> Confirmar Selección de Meses
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="portfolio-table" id="portfolio-table">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="header-row-1">
+                                        <th rowspan="2" style="min-width: 80px;">NRO MESES</th>
+                                        <th rowspan="2" style="min-width: 80px;">NRO ANALISTAS</th>
+                                        <th colspan="6">NUMEROS DESEMBOLSOS</th>
+                                        <th colspan="6">MONTOS DESEMBOLSOS</th>
+                                        <th colspan="6">NUMERO CARTERA</th>
+                                        <th colspan="6">SALDO CARTERA</th>
+                                        <th rowspan="2">CARTERA VCDA. MONTO</th>
+                                    </tr>
+                                    <tr class="header-row-2">
+                                        <!-- Numeros Desembolsos -->
+                                        <th>G.EMP.</th><th>M.EMP.</th><th>P.EMP.</th><th>MI.EMP.</th><th>CONS</th><th>TOTAL</th>
+                                        <!-- Montos Desembolsos -->
+                                        <th>G.EMP.</th><th>M.EMP.</th><th>P.EMP.</th><th>MI.EMP.</th><th>CONS</th><th>TOTAL</th>
+                                        <!-- Numero Cartera -->
+                                        <th>G.EMP.</th><th>M.EMP.</th><th>P.EMP.</th><th>MI.EMP.</th><th>CONS</th><th>TOTAL</th>
+                                        <!-- Saldo Cartera -->
+                                        <th>G.EMP.</th><th>M.EMP.</th><th>P.EMP.</th><th>MI.EMP.</th><th>CONS</th><th>TOTAL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="portfolio-tbody">
+                                    <tr><td colspan="27" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos de la carga masiva...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
+                        <div>
+                            <button type="button" id="btn-lock-step3" class="btn btn-warning px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="saveAndLockStep3()">
+                                <i class="fas fa-lock mr-1"></i> Guardar y Bloquear Paso
+                            </button>
+                            <button type="button" id="btn-unlock-step3" class="btn btn-outline-secondary px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="toggleStepLock('3', 'unlock')" style="display:none;">
+                                <i class="fas fa-unlock mr-1"></i> Editar Paso
+                            </button>
+                        </div>
+                        <a href="?step=4" class="btn btn-primary px-4 py-2 rounded-pill font-weight-bold shadow-sm">Siguiente Paso <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const datesContainer = document.getElementById('portfolio-years-container');
+                        const loadingDatesSpan = document.getElementById('dates-loading');
+                        const btnLoad = document.getElementById('btn-load-portfolio');
+                        const tbody = document.getElementById('portfolio-tbody');
+                        const btnToggleFilter = document.getElementById('btn-toggle-filter');
+
+                        // Toggle button text logic
+                        $('#portfolioFilterPanel').on('shown.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-times mr-1"></i> Ocultar Edición';
+                        });
+                        $('#portfolioFilterPanel').on('hidden.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-eye mr-1"></i> Mostrar Edición';
+                        });
+
+                        window.updateSelectedBadges = function() {
+                            const checkedBoxes = document.querySelectorAll('.portfolio-date-checkbox:checked');
+                            const badgesContainer = document.getElementById('selected-periods-badges');
+                            badgesContainer.innerHTML = '';
+                            if(checkedBoxes.length === 0) {
+                                badgesContainer.innerHTML = '<span class="badge badge-secondary p-2">Ninguno</span>';
+                                return;
+                            }
+                            Array.from(checkedBoxes).forEach(cb => {
+                                badgesContainer.innerHTML += `<span class="badge badge-success p-1 mr-1">${cb.dataset.short}-${cb.dataset.year}</span>`;
+                            });
+                        };
+
+                        window.checkAllYear = function(year, check) {
+                            const checkboxes = document.querySelectorAll(`.chk-year-${year}`);
+                            checkboxes.forEach(cb => { cb.checked = check; });
+                            updateSelectedBadges();
+                        };
+
+                        // Check if there are saved portfolio periods
+                        let savedPortfolioPeriods = [];
+                        try {
+                            const historicalDataJson = '{{ historical_data_json|escapejs }}';
+                            const parsedData = JSON.parse(historicalDataJson);
+                            if (parsedData && parsedData.portfolio_periods) {
+                                savedPortfolioPeriods = parsedData.portfolio_periods;
+                            }
+                        } catch(e) {}
+
+                        window.saveAndLockStep3 = function() {
+                            const checkedBoxes = document.querySelectorAll('.portfolio-date-checkbox:checked');
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value);
+                            toggleStepLock('3', 'lock', { portfolio_periods: selectedDates });
+                        };
+
+                        // 1. Fetch available dates
+                        fetch("{% url 'financial_planning:api_available_portfolio_dates' %}")
+                            .then(response => response.json())
+                            .then(result => {
+                                loadingDatesSpan.remove();
+                                if (result.status === 'success' && result.data.length > 0) {
+                                    let datesByYear = {};
+                                    result.data.forEach(d => {
+                                        let parts = d.value.split('-');
+                                        let year = parts[0];
+                                        if (!datesByYear[year]) datesByYear[year] = [];
+                                        datesByYear[year].push(d);
+                                    });
+                                    
+                                    let sortedYears = Object.keys(datesByYear).sort((a,b) => b - a);
+                                    let html = '';
+                                    
+                                    sortedYears.forEach(year => {
+                                        html += `
+                                        <div class="mb-3 border-bottom pb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="font-weight-bold text-primary mb-0"><i class="far fa-calendar-alt mr-1"></i> AÑO ${year}</h6>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" onclick="checkAllYear('${year}', true)"><i class="fas fa-check-square"></i> Todo</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="checkAllYear('${year}', false)"><i class="fas fa-square"></i> Limpiar</button>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex flex-wrap align-items-center">
+                                        `;
+                                        
+                                        datesByYear[year].sort((a,b) => b.value.localeCompare(a.value)).forEach(d => {
+                                            const isChecked = savedPortfolioPeriods.length > 0 ? savedPortfolioPeriods.includes(d.value) : true;
+                                            const checkedAttr = isChecked ? 'checked' : '';
+                                            const monthMap = { '01':'Ene', '02':'Feb', '03':'Mar', '04':'Abr', '05':'May', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Sep', '10':'Oct', '11':'Nov', '12':'Dic' };
+                                            let monthNum = d.value.split('-')[1];
+                                            let shortMonth = monthMap[monthNum] || monthNum;
+                                            
+                                            html += `
+                                            <div class="custom-control custom-checkbox mr-4 mb-2">
+                                                <input type="checkbox" class="custom-control-input portfolio-date-checkbox chk-year-${year}" id="chk_${d.value}" value="${d.value}" data-year="${year}" data-short="${shortMonth}" ${checkedAttr} onchange="updateSelectedBadges()">
+                                                <label class="custom-control-label" for="chk_${d.value}">${shortMonth}</label>
+                                            </div>`;
+                                        });
+                                        html += `</div></div>`;
+                                    });
+                                    datesContainer.innerHTML = html;
+                                    btnLoad.disabled = false;
+                                    updateSelectedBadges();
+                                    
+                                    if (savedPortfolioPeriods.length > 0) {
+                                        btnLoad.click(); // Auto-load if we have saved periods
+                                    }
+                                } else {
+                                    datesContainer.innerHTML = '<span class="text-danger small ml-2">No hay fechas disponibles en la base de datos.</span>';
+                                    tbody.innerHTML = '<tr><td colspan="27" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                                }
+                            })
+                            .catch(error => {
+                                loadingDatesSpan.innerHTML = '<span class="text-danger">Error al cargar fechas.</span>';
+                            });
+
+                        // 2. Bind load button
+                        btnLoad.addEventListener('click', function() {
+                            const checkedBoxes = document.querySelectorAll('.portfolio-date-checkbox:checked');
+                            if (checkedBoxes.length === 0) {
+                                alert("Por favor seleccione al menos un mes para cargar.");
+                                return;
+                            }
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+                            
+                            // Show loading state
+                            btnLoad.disabled = true;
+                            btnLoad.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Cargando...';
+                            tbody.innerHTML = '<tr><td colspan="27" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos de la carga masiva...</td></tr>';
+
+                            fetch("{% url 'financial_planning:api_historical_portfolio_data' %}?dates=" + encodeURIComponent(selectedDates))
+                                .then(response => response.json())
+                                .then(result => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Cargar Cartera';
+                                    if (result.status === 'success') {
+                                        if (Object.keys(result.data).length === 0) {
+                                            tbody.innerHTML = '<tr><td colspan="27" class="text-center p-4">No se encontraron datos para las fechas seleccionadas.</td></tr>';
+                                        } else {
+                                            renderPortfolioData(result.data);
+                                        }
+                                    } else {
+                                        tbody.innerHTML = '<tr><td colspan="27" class="text-center text-danger p-4">Error: ' + result.msg + '</td></tr>';
+                                    }
+                                })
+                                .catch(error => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Cargar Cartera';
+                                    tbody.innerHTML = '<tr><td colspan="27" class="text-center text-danger p-4">Error de conexión al cargar los datos.</td></tr>';
+                                });
+                        });
+
+                        function fmt(val) {
+                            return Math.round(val).toLocaleString('en-US');
+                        }
+
+                        function renderPortfolioData(data) {
+                            const tbody = document.getElementById('portfolio-tbody');
+                            let html = '';
+                            
+                            const types = ['G.EMP.', 'M.EMP.', 'P.EMP.', 'MI.EMP.', 'CONS'];
+
+                            for (const [agency, rows] of Object.entries(data)) {
+                                html += `<tr><td colspan="27" class="agency-row">AGENCIA ${agency}</td></tr>`;
+                                
+                                rows.forEach(row => {
+                                    let nd_tot = 0; let md_tot = 0; let nc_tot = 0; let sc_tot = 0;
+                                    let rowHtml = `<tr><td class="month-col">${row.period}</td><td>${row.advisors}</td>`;
+                                    
+                                    // Numeros Desembolsos
+                                    types.forEach(t => { 
+                                        const v = row.types[t].nro_des; nd_tot += v;
+                                        rowHtml += `<td>${v||''}</td>`; 
+                                    });
+                                    rowHtml += `<td class="total-col">${nd_tot||''}</td>`;
+                                    
+                                    // Montos Desembolsos
+                                    types.forEach(t => { 
+                                        const v = row.types[t].monto_des; md_tot += v;
+                                        rowHtml += `<td>${v ? fmt(v) : ''}</td>`; 
+                                    });
+                                    rowHtml += `<td class="total-col">${md_tot ? fmt(md_tot) : ''}</td>`;
+                                    
+                                    // Numero Cartera
+                                    types.forEach(t => { 
+                                        const v = row.types[t].nro_cart; nc_tot += v;
+                                        rowHtml += `<td>${v||''}</td>`; 
+                                    });
+                                    rowHtml += `<td class="total-col">${nc_tot||''}</td>`;
+                                    
+                                    // Saldo Cartera
+                                    types.forEach(t => { 
+                                        const v = row.types[t].saldo_cart; sc_tot += v;
+                                        rowHtml += `<td>${v ? fmt(v) : ''}</td>`; 
+                                    });
+                                    rowHtml += `<td class="total-col">${sc_tot ? fmt(sc_tot) : ''}</td>`;
+                                    
+                                    // VCDA
+                                    rowHtml += `<td class="total-col">${row.vcda ? fmt(row.vcda) : ''}</td></tr>`;
+                                    
+                                    html += rowHtml;
+                                });
+                            }
+                            
+                            if (html === '') {
+                                html = '<tr><td colspan="27" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                            }
+                            tbody.innerHTML = html;
+                        }
+                    });
+                </script>
+                {% endif %}
+
+                <!-- STEP 4: Data Historica 02 -->
+                {% if step == 4 %}
+                <style>
+                    .passive-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+                    .passive-table th, .passive-table td { border: 1px solid #dee2e6; padding: 6px; text-align: right; vertical-align: middle; white-space: nowrap; }
+                    .passive-table th { background-color: #f1f5f9; text-align: center; font-weight: bold; }
+                    .passive-table .header-row-1 th { background-color: #93c5fd; color: #1e3a8a; }
+                    .passive-table .agency-row { background-color: #f8fafc; font-weight: bold; text-align: left; color: #334155; }
+                    .passive-table .month-col { text-align: left; font-weight: bold; }
+                </style>
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Data Histórica 02: Ahorros, Depósitos y Aportes</h4>
+                    <p class="text-muted">Información histórica detallada de pasivos captados por agencia.</p>
+                </div>
+                
+                <div class="card shadow border-0 mb-4" style="border-radius: 12px;">
+                    <div class="card-header bg-white border-bottom p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="far fa-calendar-alt text-success mr-2"></i>
+                                <span class="font-weight-bold">Periodos seleccionados:</span>
+                                <span id="selected-passive-periods-badges" class="ml-2"></span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill font-weight-bold" type="button" data-toggle="collapse" data-target="#passiveFilterPanel" id="btn-toggle-passive-filter" aria-expanded="true">
+                                <i class="fas fa-times mr-1"></i> Ocultar Edición
+                            </button>
+                        </div>
+                        
+                        <div class="collapse show" id="passiveFilterPanel">
+                            <hr>
+                            <div id="passive-years-container">
+                                <span id="passive-dates-loading" class="text-muted small"><i class="fas fa-spinner fa-spin"></i> Obteniendo meses disponibles...</span>
+                            </div>
+                            <div class="text-right mt-3">
+                                <button id="btn-load-passive" class="btn btn-primary rounded-pill px-4 shadow-sm font-weight-bold" disabled>
+                                    <i class="fas fa-check mr-1"></i> Confirmar Selección de Meses
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="passive-table" id="passive-table">
+                                <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <tr class="header-row-1">
+                                        <th style="min-width: 100px;">NRO MESES</th>
+                                        <th>AHORROS (MONTO)</th>
+                                        <th>DPF (MONTO)</th>
+                                        <th>APORTACIONES (MONTO)</th>
+                                        <th style="background-color: #fef08a; color: #854d0e;">SOCIOS (NRO)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="passive-tbody">
+                                    <tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light border-0 py-3 d-flex justify-content-between align-items-center" style="border-radius:0 0 12px 12px;">
+                        <div>
+                            <button type="button" id="btn-lock-step4" class="btn btn-warning px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="saveAndLockStep4()">
+                                <i class="fas fa-lock mr-1"></i> Guardar y Bloquear Paso
+                            </button>
+                            <button type="button" id="btn-unlock-step4" class="btn btn-outline-secondary px-4 py-2 rounded-pill font-weight-bold shadow-sm" onclick="toggleStepLock('4', 'unlock')" style="display:none;">
+                                <i class="fas fa-unlock mr-1"></i> Editar Paso
+                            </button>
+                        </div>
+                        <a href="?step=5" class="btn btn-primary px-4 py-2 rounded-pill font-weight-bold shadow-sm">Siguiente Paso <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const datesContainer = document.getElementById('passive-years-container');
+                        const loadingDatesSpan = document.getElementById('passive-dates-loading');
+                        const btnLoad = document.getElementById('btn-load-passive');
+                        const tbody = document.getElementById('passive-tbody');
+                        const btnToggleFilter = document.getElementById('btn-toggle-passive-filter');
+
+                        if (!datesContainer) return;
+
+                        $('#passiveFilterPanel').on('shown.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-times mr-1"></i> Ocultar Edición';
+                        });
+                        $('#passiveFilterPanel').on('hidden.bs.collapse', function () {
+                            btnToggleFilter.innerHTML = '<i class="fas fa-eye mr-1"></i> Mostrar Edición';
+                        });
+
+                        window.updateSelectedPassiveBadges = function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            const badgesContainer = document.getElementById('selected-passive-periods-badges');
+                            badgesContainer.innerHTML = '';
+                            if(checkedBoxes.length === 0) {
+                                badgesContainer.innerHTML = '<span class="badge badge-secondary p-2">Ninguno</span>';
+                                return;
+                            }
+                            Array.from(checkedBoxes).forEach(cb => {
+                                badgesContainer.innerHTML += `<span class="badge badge-success p-1 mr-1">${cb.dataset.short}-${cb.dataset.year}</span>`;
+                            });
+                        };
+
+                        window.checkAllPassiveYear = function(year, check) {
+                            const checkboxes = document.querySelectorAll(`.chk-pass-year-${year}`);
+                            checkboxes.forEach(cb => { cb.checked = check; });
+                            updateSelectedPassiveBadges();
+                        };
+
+                        let savedPassivePeriods = [];
+                        try {
+                            const historicalDataJson = '{{ historical_data_json|escapejs }}';
+                            const parsedData = JSON.parse(historicalDataJson);
+                            if (parsedData && parsedData.passive_periods) {
+                                savedPassivePeriods = parsedData.passive_periods;
+                            }
+                        } catch(e) {}
+
+                        window.saveAndLockStep4 = function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value);
+                            toggleStepLock('4', 'lock', { passive_periods: selectedDates });
+                        };
+
+                        fetch("{% url 'financial_planning:api_available_passive_dates' %}")
+                            .then(response => response.json())
+                            .then(result => {
+                                loadingDatesSpan.remove();
+                                if (result.status === 'success' && result.data.length > 0) {
+                                    let datesByYear = {};
+                                    result.data.forEach(d => {
+                                        let parts = d.value.split('-');
+                                        let year = parts[0];
+                                        if (!datesByYear[year]) datesByYear[year] = [];
+                                        datesByYear[year].push(d);
+                                    });
+                                    
+                                    let sortedYears = Object.keys(datesByYear).sort((a,b) => b - a);
+                                    let html = '';
+                                    
+                                    sortedYears.forEach(year => {
+                                        html += `
+                                        <div class="mb-3 border-bottom pb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 class="font-weight-bold text-primary mb-0"><i class="far fa-calendar-alt mr-1"></i> AÑO ${year}</h6>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" onclick="checkAllPassiveYear('${year}', true)"><i class="fas fa-check-square"></i> Todo</button>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="checkAllPassiveYear('${year}', false)"><i class="fas fa-square"></i> Limpiar</button>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex flex-wrap align-items-center">
+                                        `;
+                                        
+                                        datesByYear[year].sort((a,b) => b.value.localeCompare(a.value)).forEach(d => {
+                                            const isChecked = savedPassivePeriods.length > 0 ? savedPassivePeriods.includes(d.value) : true;
+                                            const checkedAttr = isChecked ? 'checked' : '';
+                                            const monthMap = { '01':'Ene', '02':'Feb', '03':'Mar', '04':'Abr', '05':'May', '06':'Jun', '07':'Jul', '08':'Ago', '09':'Sep', '10':'Oct', '11':'Nov', '12':'Dic' };
+                                            let monthNum = d.value.split('-')[1];
+                                            let shortMonth = monthMap[monthNum] || monthNum;
+                                            
+                                            html += `
+                                            <div class="custom-control custom-checkbox mr-4 mb-2">
+                                                <input type="checkbox" class="custom-control-input passive-date-checkbox chk-pass-year-${year}" id="chk_pass_${d.value}" value="${d.value}" data-year="${year}" data-short="${shortMonth}" ${checkedAttr} onchange="updateSelectedPassiveBadges()">
+                                                <label class="custom-control-label" for="chk_pass_${d.value}">${shortMonth}</label>
+                                            </div>`;
+                                        });
+                                        html += `</div></div>`;
+                                    });
+                                    datesContainer.innerHTML = html;
+                                    btnLoad.disabled = false;
+                                    updateSelectedPassiveBadges();
+                                    
+                                    if (savedPassivePeriods.length > 0) {
+                                        btnLoad.click();
+                                    }
+                                } else {
+                                    datesContainer.innerHTML = '<span class="text-danger small ml-2">No hay fechas disponibles en la base de datos.</span>';
+                                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                                }
+                            })
+                            .catch(error => {
+                                loadingDatesSpan.innerHTML = '<span class="text-danger">Error al cargar fechas.</span>';
+                            });
+
+                        btnLoad.addEventListener('click', function() {
+                            const checkedBoxes = document.querySelectorAll('.passive-date-checkbox:checked');
+                            if (checkedBoxes.length === 0) {
+                                alert("Por favor seleccione al menos un mes para cargar.");
+                                return;
+                            }
+                            const selectedDates = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+                            
+                            btnLoad.disabled = true;
+                            btnLoad.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Cargando...';
+                            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando datos...</td></tr>';
+
+                            fetch("{% url 'financial_planning:api_historical_passive_data' %}?dates=" + encodeURIComponent(selectedDates))
+                                .then(response => response.json())
+                                .then(result => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Confirmar Selección de Meses';
+                                    if (result.status === 'success') {
+                                        if (Object.keys(result.data).length === 0) {
+                                            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">No se encontraron datos para las fechas seleccionadas.</td></tr>';
+                                        } else {
+                                            renderPassiveData(result.data);
+                                        }
+                                    } else {
+                                        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-4">Error: ' + result.msg + '</td></tr>';
+                                    }
+                                })
+                                .catch(error => {
+                                    btnLoad.disabled = false;
+                                    btnLoad.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> Confirmar Selección de Meses';
+                                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger p-4">Error de conexión al cargar los datos.</td></tr>';
+                                });
+                        });
+
+                        function fmt(val) {
+                            return Math.round(val).toLocaleString('en-US');
+                        }
+
+                        function renderPassiveData(data) {
+                            const tbody = document.getElementById('passive-tbody');
+                            let html = '';
+                            
+                            for (const [agency, rows] of Object.entries(data)) {
+                                html += `<tr><td colspan="5" class="agency-row">AGENCIA ${agency}</td></tr>`;
+                                
+                                rows.forEach(row => {
+                                    html += `<tr>
+                                        <td class="month-col">${row.period}</td>
+                                        <td>${row.ahorros ? fmt(row.ahorros) : '0'}</td>
+                                        <td>${row.dpf ? fmt(row.dpf) : '0'}</td>
+                                        <td>${row.aportes ? fmt(row.aportes) : '0'}</td>
+                                        <td style="background-color: #fef08a; font-weight: bold; color: #854d0e;">${row.socios ? fmt(row.socios) : '0'}</td>
+                                    </tr>`;
+                                });
+                            }
+                            
+                            if (html === '') {
+                                html = '<tr><td colspan="5" class="text-center text-muted p-4">No hay datos históricos disponibles.</td></tr>';
+                            }
+                            tbody.innerHTML = html;
+                        }
+                    });
+                </script>
+                {% endif %}
+
+                <!-- STEP 5: Supuestos -->
+                {% if step == 5 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Configuración de Supuestos</h4>
+                    <p class="text-muted">Define las variables macroeconómicas, operativas y las metas específicas por agencia y producto.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-sliders-h fa-5x text-success mb-4 opacity-50"></i>
+                        <p class="mb-4">Para configurar los supuestos comerciales, tasas, riesgos y operacionales se requiere una vista ampliada.</p>
+                        
+                        <a href="{% url 'financial_planning:manage_assumptions' plan.id %}" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm mb-3">
+                            <i class="fas fa-external-link-alt mr-2"></i> Abrir Gestor de Supuestos
+                        </a>
+                        
+                        <div class="mt-5 border-top pt-4">
+                            <p class="text-muted">¿Ya terminaste de configurar los supuestos?</p>
+                            <a href="?step=6" class="btn btn-outline-indigo px-5 rounded-pill">Continuar <i class="fas fa-arrow-right ml-2"></i></a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 6: Análisis de tendencias -->
+                {% if step == 6 %}
+                {% include "financial_planning/trend_analysis.html" %}
+                {% endif %}
+
+                <!-- STEP 7: Presupuesto Institucional (antiguo Proyectar) -->
+                {% if step == 7 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold text-primary text-uppercase" style="letter-spacing: 0.5px;">Base Histórica: Presupuesto Institucional</h4>
+                    <p class="text-muted">Vista de solo lectura de los saldos asignados desde el módulo de Presupuesto Institucional.</p>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+
+                        <!-- Alerta cuando no hay base histórica asignada -->
+                        <div id="no-budget-warning" class="alert alert-warning text-center p-5 shadow border-0" style="display: none; border-radius: 20px; background-color: rgba(255, 193, 7, 0.08); border-left: 6px solid #ffc107 !important;">
+                            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+                            <h4 class="font-weight-bold text-dark mb-2">No se ha asignado base para el presupuesto</h4>
+                            <p class="text-secondary mx-auto mb-4" style="max-width: 600px;">
+                                Este plan financiero no tiene asignada una base para el presupuesto institucional. Debe ir al módulo de Presupuesto Institucional, seleccionar los períodos correspondientes y asignarlos a este plan.
+                            </p>
+                            <a href="{% url 'financial_planning:institutional_budget_viewer' plan.id %}" class="btn btn-info px-5 py-2 rounded-pill text-white font-weight-bold shadow">
+                                <i class="fas fa-arrow-right mr-2"></i> Ir a Presupuesto Institucional
+                            </a>
+                        </div>
+
+                        <!-- Period badges + content (only when periods exist) -->
+                        <div id="budget-content-wrapper" style="display:none;">
+
+                            <!-- Period badges bar -->
+                            <div class="card shadow border-0 mb-3 p-2" style="border-radius: 12px;">
+                                <div class="d-flex align-items-center flex-wrap px-2">
+                                    <i class="fas fa-calendar-alt text-success mr-2"></i>
+                                    <strong class="mr-2" style="font-size:0.85rem;">Períodos asignados:</strong>
+                                    <span id="budget-period-badges" class="d-flex flex-wrap gap-1"></span>
+                                    <button class="btn btn-sm btn-outline-danger rounded-pill ml-auto" onclick="budgetClearData()">
+                                        <i class="fas fa-trash-alt mr-1"></i> Eliminar Base
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Toolbar -->
+                            <div class="card shadow-sm border-0 mb-3 p-2" style="border-radius: 12px;">
+                                <div class="row align-items-center px-2">
+                                    <div class="col-lg-3 col-md-4 col-12 mb-2 mb-md-0">
+                                        <div style="display:flex;align-items:center;background:rgba(0,0,0,0.04);border-radius:30px;padding:3px;width:fit-content;border:1px solid rgba(0,0,0,0.08);">
+                                            <button id="budget-toggleAccum" class="hist-toggle-btn active" onclick="budgetSetMode('accum')" style="border:none;background:#fff;padding:6px 14px;font-size:0.82rem;font-weight:600;border-radius:20px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.1);color:#212529;">Acumulado</button>
+                                            <button id="budget-toggleMonth" class="hist-toggle-btn" onclick="budgetSetMode('month')" style="border:none;background:none;padding:6px 14px;font-size:0.82rem;font-weight:600;border-radius:20px;cursor:pointer;color:#6c757d;">Solo Mes</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-md-5 col-12 mb-2 mb-md-0">
+                                        <div class="input-group input-group-sm">
+                                            <div class="input-group-prepend"><span class="input-group-text bg-transparent border-right-0"><i class="fas fa-search text-muted"></i></span></div>
+                                            <input type="text" id="budget-accountSearch" class="form-control border-left-0" placeholder="Buscar por código o nombre..." onkeyup="budgetFilterAccounts()">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-5 col-md-3 col-12 text-md-right text-center">
+                                        <button class="btn btn-sm btn-outline-primary mr-1" onclick="budgetExpandAll()"><i class="fas fa-expand-arrows-alt mr-1"></i>Expandir</button>
+                                        <button class="btn btn-sm btn-outline-secondary mr-1" onclick="budgetCollapseAll()"><i class="fas fa-compress-arrows-alt mr-1"></i>Contraer</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabs + Tables -->
+                            <div class="card shadow border-0 mb-3" style="border-radius: 12px;">
+                                <div class="card-header p-2 d-flex justify-content-between align-items-center flex-wrap bg-white" style="border-radius:12px 12px 0 0;">
+                                    <ul class="nav nav-pills" id="budgetTabs" role="tablist">
+                                        <li class="nav-item"><a class="nav-link active" id="budget-bs-tab" data-toggle="pill" href="#budget-bs-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-balance-scale mr-1"></i>Situación Financiera</a></li>
+                                        <li class="nav-item"><a class="nav-link" id="budget-is-tab" data-toggle="pill" href="#budget-is-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-chart-line mr-1"></i>Estado de Resultados</a></li>
+                                        <li class="nav-item"><a class="nav-link" id="budget-mis-tab" data-toggle="pill" href="#budget-mis-panel" role="tab" style="border-radius:8px;font-weight:600;padding:8px 16px;"><i class="fas fa-calendar-alt mr-1"></i>ER (Mensual)</a></li>
+                                    </ul>
+                                    <div class="ml-auto mt-1 mt-md-0" id="budget-cuadratura">
+                                        <span class="badge badge-success px-3 py-1" id="budget-squareBadge" style="font-size:0.8rem;border-radius:20px;"><i class="fas fa-check-circle mr-1"></i>Balance Cuadrado</span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="tab-content">
+                                        <!-- BS Panel -->
+                                        <div class="tab-pane fade show active" id="budget-bs-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="budget-bs-thead"></thead><tbody id="budget-bs-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="budget-summary-bs" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-primary mb-0"><i class="fas fa-balance-scale mr-1"></i>Resumen Balance General</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="budget-sum-bs-thead"></thead><tbody id="budget-sum-bs-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                        <!-- IS Panel -->
+                                        <div class="tab-pane fade" id="budget-is-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="budget-is-thead"></thead><tbody id="budget-is-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="budget-summary-is" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-success mb-0"><i class="fas fa-chart-line mr-1"></i>Resumen Estado de Resultados</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="budget-sum-is-thead"></thead><tbody id="budget-sum-is-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                        <!-- Monthly IS Panel -->
+                                        <div class="tab-pane fade" id="budget-mis-panel" role="tabpanel">
+                                            <div class="table-responsive"><table class="accounting-table"><thead id="budget-mis-thead"></thead><tbody id="budget-mis-body"><tr><td colspan="99" class="text-center p-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x mb-3 text-primary d-block"></i>Cargando...</td></tr></tbody></table></div>
+                                            <div id="budget-summary-mis" class="mt-2 px-2 pb-2">
+                                                <div class="card border-0 shadow-sm" style="border-radius:10px;"><div class="card-header bg-transparent border-0 py-2"><h6 class="font-weight-bold text-info mb-0"><i class="fas fa-calendar-alt mr-1"></i>Resumen Estado de Resultados (Mensual)</h6></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0 accounting-table"><thead id="budget-sum-mis-thead"></thead><tbody id="budget-sum-mis-tbody"></tbody></table></div></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light border-0 py-3 text-right" style="border-radius:0 0 12px 12px;">
+                                    <form action="{% url 'financial_planning:generate_projections' %}" method="POST" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                                        <input type="hidden" name="wizard" value="1">
+                                        <button type="submit" class="btn btn-success px-4 py-2 rounded-pill font-weight-bold shadow-sm">Generar Proyecciones <i class="fas fa-cogs ml-1"></i></button>
+                                    </form>
+                                    <a href="?step=8" class="btn btn-primary px-4 py-2 rounded-pill font-weight-bold shadow-sm ml-2">Siguiente Paso <i class="fas fa-arrow-right ml-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const MONTH_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                            const budgetDataJson = '{{ budget_data_json|escapejs }}';
+                            let budgetSavedPeriods = [];
+                            let budgetBalanceData = null;
+                            let budgetMode = 'accum';
+
+                            // Parse saved periods
+                            try {
+                                const parsed = JSON.parse(budgetDataJson);
+                                if (parsed && parsed.selected_periods && parsed.selected_periods.length > 0) {
+                                    budgetSavedPeriods = parsed.selected_periods;
+                                }
+                            } catch(e) { console.error("Error parsing budget_data", e); }
+
+                            if (!budgetSavedPeriods.length) {
+                                document.getElementById('no-budget-warning').style.display = 'block';
+                                document.getElementById('budget-content-wrapper').style.display = 'none';
+                                return;
+                            }
+
+                            document.getElementById('no-budget-warning').style.display = 'none';
+                            document.getElementById('budget-content-wrapper').style.display = 'block';
+
+                            // Render period badges
+                            const badgesHtml = budgetSavedPeriods.map(p => {
+                                const [y,m] = p.split('-');
+                                return `<span class="badge badge-primary mr-1 mb-1" style="font-size:0.78rem;border-radius:20px;padding:4px 10px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</span>`;
+                            }).join('');
+                            document.getElementById('budget-period-badges').innerHTML = badgesHtml;
+
+                            // Fetch from API
+                            budgetFetchData();
+
+                            function budgetFetchData() {
+                                $.ajax({
+                                    url: "{% url 'financial_planning:api_trial_balance_data' %}",
+                                    data: { periods: JSON.stringify(budgetSavedPeriods), currency: 'MN' },
+                                    success: function(resp) {
+                                        if (resp.status === 'success') {
+                                            budgetBalanceData = resp;
+                                            budgetRenderAll();
+                                        } else {
+                                            $('#budget-bs-body').html('<tr><td colspan="99" class="text-center p-4 text-danger">Error: '+resp.msg+'</td></tr>');
+                                        }
+                                    },
+                                    error: function() {
+                                        $('#budget-bs-body').html('<tr><td colspan="99" class="text-center p-4 text-danger">Error de conexión.</td></tr>');
+                                    }
+                                });
+                            }
+
+                            window.budgetSetMode = function(mode) {
+                                budgetMode = mode;
+                                document.getElementById('budget-toggleAccum').style.background = mode==='accum'?'#fff':'none';
+                                document.getElementById('budget-toggleAccum').style.boxShadow = mode==='accum'?'0 2px 6px rgba(0,0,0,0.1)':'none';
+                                document.getElementById('budget-toggleAccum').style.color = mode==='accum'?'#212529':'#6c757d';
+                                document.getElementById('budget-toggleMonth').style.background = mode==='month'?'#fff':'none';
+                                document.getElementById('budget-toggleMonth').style.boxShadow = mode==='month'?'0 2px 6px rgba(0,0,0,0.1)':'none';
+                                document.getElementById('budget-toggleMonth').style.color = mode==='month'?'#212529':'#6c757d';
+                                budgetRenderAll();
+                            };
+
+                            function budgetRenderAll() {
+                                if (!budgetBalanceData) return;
+                                const periods = budgetBalanceData.periods;
+                                const numCols = periods.length;
+                                const colW = numCols<=3?120:numCols<=6?100:numCols<=12?88:80;
+                                const pHeaders = periods.map(p=>{const[y,m]=p.split('-');return`<th style="min-width:${colW}px;width:${colW}px;text-align:right;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;}).join('');
+                                const theadHtml = `<tr><th style="width:90px;min-width:90px;text-align:left;">Código</th><th class="col-desc" style="width:260px;min-width:260px;text-align:left;">Descripción</th>${pHeaders}</tr>`;
+                                $('#budget-bs-thead').html(theadHtml);
+                                $('#budget-is-thead').html(theadHtml);
+                                $('#budget-mis-thead').html(theadHtml);
+
+                                $('#budget-bs-body').html(budgetBuildRows(budgetBalanceData.balance_sheet, periods, 'bbs') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+                                $('#budget-is-body').html(budgetBuildRows(budgetBalanceData.income_statement, periods, 'bis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+                                $('#budget-mis-body').html(budgetBuildRows(budgetBalanceData.income_statement, periods, 'bmis') || '<tr><td colspan="99" class="text-center text-muted p-4">Sin datos.</td></tr>');
+
+                                if (budgetBalanceData.totals) budgetRenderSummary(budgetBalanceData.totals, periods);
+                            }
+
+                            function budgetBuildRows(items, periods, prefix) {
+                                let html = '';
+                                items.forEach(item => {
+                                    const hasChildren = item.children_codes && item.children_codes.length > 0;
+                                    const lvl = histGetLevelClass(item.level); // reused from hist script
+                                    const isRoot = !item.parent_code;
+                                    const bDict = (prefix==='bmis') ? item.monthly_balances : item.balances;
+                                    const cells = periods.map(p => {
+                                        const val = (bDict && bDict[p]!=null) ? bDict[p] : 0;
+                                        return `<td class="text-right text-monospace">${histFmtAmt(val)}</td>`;
+                                    }).join('');
+                                    html += `<tr class="accounting-row level-${lvl} ${hasChildren?'':'level-leaf'} node-collapsed" style="${isRoot?'':'display:none;'}" data-code="${item.code}" data-parent="${item.parent_code||''}" data-prefix="${prefix}" data-depth="${item.depth}" id="${prefix}-row-${item.code}" onclick="budgetToggleRow('${item.code}','${prefix}')">
+                                        <td style="padding-left:${item.depth*14}px;">${hasChildren?'<span class="node-expander"><i class="fas fa-chevron-down"></i></span>':'<span style="display:inline-block;width:26px;"></span>'}<span class="badge badge-light border text-monospace text-dark">${item.code}</span></td>
+                                        <td class="col-desc">${item.name}${item.has_discrepancy?'<i class="fas fa-exclamation-triangle text-warning ml-1" title="Discrepancia"></i>':''}</td>
+                                        ${cells}</tr>`;
+                                });
+                                return html;
+                            }
+
+                            function budgetRenderSummary(totals, periods) {
+                                const numCols=periods.length;const colW=numCols<=3?120:numCols<=6?100:numCols<=12?88:80;
+                                const fmt=v=>histFmtAmt(v);
+                                const mn=name=>`<th class="text-left font-weight-bold" style="width:350px;min-width:350px;white-space:nowrap">${name}</th>`;
+                                const pH=p=>{const[y,m]=p.split('-');return`<th class="text-right" style="min-width:${colW}px;width:${colW}px;">${MONTH_NAMES[parseInt(m)-1]}-${y}</th>`;};
+                                const theadRow=`<tr>${mn('Concepto')}${periods.map(pH).join('')}</tr>`;
+
+                                // ── Balance General ──
+                                const bsRows=[{label:'Total Activo (1)',key:'total_activo',cls:''},{label:'Total Pasivo (2)',key:'total_pasivo',cls:''},{label:'Total Patrimonio (3)',key:'total_patrimonio',cls:''},{label:'Total Pasivo + Patrimonio',key:'total_pasivo_patrimonio',cls:'table-info font-weight-bold'},{label:'Diferencia (Cuadratura)',key:'diferencia',cls:'cuadratura-row'}];
+                                let bsTbody=bsRows.map(row=>{let rowCls=row.cls;const allSq=periods.every(p=>totals[p]&&totals[p].es_cuadrado);if(row.key==='diferencia')rowCls+=allSq?' table-success':' table-danger';const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;let badge='';if(row.key==='diferencia'&&totals[p]){badge=totals[p].es_cuadrado?`<span class="badge badge-success ml-1" style="font-size:0.6rem"><i class="fas fa-check-circle"></i></span>`:`<span class="badge badge-danger ml-1" style="font-size:0.6rem"><i class="fas fa-exclamation-triangle"></i></span>`;}return`<td class="text-right">${fmt(val)}${badge}</td>`;}).join('');return`<tr class="${rowCls}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#budget-sum-bs-thead').html(theadRow);$('#budget-sum-bs-tbody').html(bsTbody);
+
+                                // ── Estado de Resultados (Acumulado) ──
+                                const isRows=[{label:'Total Ingresos (5)',key:'total_ingresos',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta',cls:'table-warning font-weight-bold'}];
+                                let isTbody=isRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#budget-sum-is-thead').html(theadRow);$('#budget-sum-is-tbody').html(isTbody);
+
+                                // ── Estado de Resultados (Mensual) ──
+                                const misRows=[{label:'Total Ingresos (5)',key:'total_ingresos_monthly',cls:'text-success'},{label:'Total Gastos (4)',key:'total_gastos_monthly',cls:'text-danger'},{label:'Utilidad / Pérdida Neta',key:'utilidad_neta_monthly',cls:'table-warning font-weight-bold'}];
+                                let misTbody=misRows.map(row=>{const cells=periods.map(p=>{const val=totals[p]?totals[p][row.key]:0;return`<td class="text-right ${row.cls}">${fmt(val)}</td>`;}).join('');return`<tr class="${row.cls.includes('table')?row.cls:''}"><td class="font-weight-bold" style="white-space:nowrap">${row.label}</td>${cells}</tr>`;}).join('');
+                                $('#budget-sum-mis-thead').html(theadRow);$('#budget-sum-mis-tbody').html(misTbody);
+
+                                // Update cuadratura badge
+                                const allSquared=periods.every(p=>totals[p]&&totals[p].es_cuadrado);
+                                if(allSquared){$('#budget-squareBadge').removeClass('badge-danger').addClass('badge-success').html('<i class="fas fa-check-circle mr-1"></i>Balance Cuadrado');}
+                                else{$('#budget-squareBadge').removeClass('badge-success').addClass('badge-danger').html('<i class="fas fa-exclamation-triangle mr-1"></i>Descuadrado');}
+                            }
+
+                            // Tree interaction
+                            window.budgetToggleRow = function(code, prefix) {
+                                const row = $(`#${prefix}-row-${code}`);
+                                if (row.hasClass('node-collapsed')) { row.removeClass('node-collapsed'); budgetShowChildren(code, prefix); }
+                                else { row.addClass('node-collapsed'); budgetHideChildren(code, prefix); }
+                            };
+                            function budgetShowChildren(pc, prefix) {
+                                $(`tr[data-parent="${pc}"][data-prefix="${prefix}"]`).each(function(){const r=$(this);r.show();if(!r.hasClass('node-collapsed'))budgetShowChildren(r.data('code'),prefix);});
+                            }
+                            function budgetHideChildren(pc, prefix) {
+                                $(`tr[data-parent="${pc}"][data-prefix="${prefix}"]`).each(function(){$(this).hide();budgetHideChildren($(this).data('code'),prefix);});
+                            }
+                            window.budgetExpandAll = function() { $('#budget-content-wrapper .accounting-row').removeClass('node-collapsed').show(); };
+                            window.budgetCollapseAll = function() {
+                                $('#budget-content-wrapper .accounting-row').each(function(){const r=$(this);r.data('parent')!==''?r.hide():r.show();r.addClass('node-collapsed');});
+                            };
+                            window.budgetFilterAccounts = function() {
+                                const q=$('#budget-accountSearch').val().toLowerCase().trim();
+                                if(!q){budgetCollapseAll();return;}
+                                $('#budget-content-wrapper .accounting-row').each(function(){const r=$(this);const code=r.data('code').toString();const name=r.find('td:nth-child(2)').text().toLowerCase();const prefix=r.data('prefix');if(code.includes(q)||name.includes(q)){r.show();budgetRevealParents(r.data('parent'),prefix);}else{r.hide();}});
+                            };
+                            function budgetRevealParents(pc, prefix) {
+                                if(!pc)return;const p=$(`#${prefix}-row-${pc}`);p.removeClass('node-collapsed').show();budgetRevealParents(p.data('parent'),prefix);
+                            }
+                            
+                            window.budgetClearData = function() {
+                                if (!confirm('¿Está seguro de que desea eliminar la base histórica asignada al presupuesto institucional? Deberá asignarla nuevamente desde el módulo.')) return;
+                                
+                                $.ajax({
+                                    url: "{% url 'financial_planning:clear_institutional_budget_from_plan' %}",
+                                    type: "POST",
+                                    headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                                    data: JSON.stringify({ plan_id: '{{ plan.id }}' }),
+                                    contentType: "application/json",
+                                    success: function(resp) {
+                                        if (resp.status === 'success') {
+                                            alert(resp.msg);
+                                            location.reload();
+                                        } else {
+                                            alert('Error: ' + resp.msg);
+                                        }
+                                    },
+                                    error: function() {
+                                        alert('Error al intentar eliminar los datos.');
+                                    }
+                                });
+                            };
+                        });
+                        </script>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 8: Balance General Proyectado -->
+                {% if step == 8 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Balance General Proyectado</h4>
+                    <p class="text-muted">Vista del Balance General resultante de las proyecciones.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-balance-scale fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Balance General Proyectado.</p>
+                        <a href="?step=9" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 9: Estado de Resultados Proyectado -->
+                {% if step == 9 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Estado de Resultados Proyectado</h4>
+                    <p class="text-muted">Vista del Estado de Resultados resultante de las proyecciones.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-receipt fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Estado de Resultados Proyectado.</p>
+                        <a href="?step=10" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 10: Flujo de Caja -->
+                {% if step == 10 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Flujo de Caja</h4>
+                    <p class="text-muted">Proyección detallada de ingresos y salidas de efectivo operativos, de inversión y financieros.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-money-bill-wave fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Caja.</p>
+                        <a href="?step=11" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 11: Flujo de Efectivo -->
+                {% if step == 11 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Flujo de Efectivo</h4>
+                    <p class="text-muted">Resumen del estado de flujos de efectivo.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-water fa-5x text-secondary mb-4 opacity-50"></i>
+                        <p class="mb-4">Módulo en construcción. Aquí se visualizará el Flujo de Efectivo.</p>
+                        <a href="?step=12" class="btn btn-outline-indigo px-5 rounded-pill">Siguiente Paso <i class="fas fa-arrow-right ml-2"></i></a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- STEP 12: Reportes (antiguo Resultados) -->
+                {% if step == 12 %}
+                <div class="text-center mb-4">
+                    <h4 class="font-weight-bold">Reportes y Resultados</h4>
+                    <p class="text-muted">Los resultados han sido procesados exitosamente.</p>
+                </div>
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <i class="fas fa-chart-pie fa-5x text-info mb-4"></i>
+                        <p class="mb-4 h5">El modelo iterativo ha concluido y los estados financieros proyectados están listos para revisión.</p>
+                        
+                        <a href="{% url 'financial_planning:projected_results' plan.id %}" class="btn btn-info btn-lg px-5 rounded-pill shadow mb-3">
+                            <i class="fas fa-chart-line mr-2"></i> Ver Dashboard de Resultados P&L
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const projStartYearInput = document.getElementById('{{ form.projection_start_year.id_for_label }}');
+        const projYearsInput = document.getElementById('{{ form.projection_years.id_for_label }}');
+
+        function updateTables() {
+            if (projStartYearInput && projYearsInput) {
+                const projYearVal = projStartYearInput.value;
+                const projYearsVal = parseInt(projYearsInput.value, 10);
+
+                if (projYearVal) {
+                    const projYear = parseInt(projYearVal, 10);
+                    
+                    document.getElementById('dyn_year_x_minus_2').textContent = projYear - 3;
+                    document.getElementById('dyn_year_x_minus_1').textContent = projYear - 2;
+                    document.getElementById('dyn_year_x').textContent = projYear - 1;
+                    document.getElementById('dyn_proj_year').textContent = projYear;
+                    
+                    // Formatting proj date (Always Enero as requested)
+                    document.getElementById('dyn_proj_start_date').textContent = 'Enero';
+                    document.getElementById('dyn_hist_start_year').textContent = projYear - 3; // Dos años antes del ejecutado
+                    document.getElementById('dyn_start_month').textContent = 'Enero';
+                    document.getElementById('dyn_hist_start_date').textContent = 'Enero';
+                    
+                    if (!isNaN(projYearsVal) && projYearsVal > 0) {
+                        let tbodyHTML = '';
+                        for (let i = 0; i < projYearsVal; i++) {
+                            tbodyHTML += `<tr><td class="font-weight-bold">${projYear + i}</td></tr>`;
+                        }
+                        document.querySelector('#dyn_proj_years_table tbody').innerHTML = tbodyHTML;
+                    } else {
+                        document.querySelector('#dyn_proj_years_table tbody').innerHTML = '<tr><td>-</td></tr>';
+                    }
+                } else {
+                    document.getElementById('dyn_year_x_minus_2').textContent = '-';
+                    document.getElementById('dyn_year_x_minus_1').textContent = '-';
+                    document.getElementById('dyn_year_x').textContent = '-';
+                    document.getElementById('dyn_proj_year').textContent = '-';
+                    document.getElementById('dyn_proj_start_date').textContent = '-';
+                    document.getElementById('dyn_hist_start_year').textContent = '-';
+                    document.getElementById('dyn_start_month').textContent = '-';
+                    document.getElementById('dyn_hist_start_date').textContent = '-';
+                    document.querySelector('#dyn_proj_years_table tbody').innerHTML = '<tr><td>-</td></tr>';
+                }
+            }
+        }
+
+        if (projStartYearInput) projStartYearInput.addEventListener('input', updateTables);
+        if (projYearsInput) projYearsInput.addEventListener('input', updateTables);
+
+        // Initial update
+        updateTables();
+
+        // Locked Steps Logic
+        const lockedStepsJsonStr = '{{ locked_steps_json|escapejs }}';
+        let lockedSteps = {};
+        try {
+            if (lockedStepsJsonStr) {
+                lockedSteps = JSON.parse(lockedStepsJsonStr);
+            }
+        } catch(e) { console.error('Error parsing locked steps', e); }
+
+        window.toggleStepLock = function(step, action, extraData={}) {
+            fetch("{% url 'financial_planning:toggle_step_lock' plan.id %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : ''
+                },
+                body: JSON.stringify({ step: step, action: action, extra_data: extraData })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    lockedSteps[step] = (action === 'lock');
+                    applyLockState(step);
+                    alert(data.msg);
+                } else {
+                    alert('Error: ' + data.msg);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error de conexión.');
+            });
+        };
+
+        function applyLockState(step) {
+            const isLocked = lockedSteps[step] === true;
+            const btnLock = document.getElementById(`btn-lock-step${step}`);
+            const btnUnlock = document.getElementById(`btn-unlock-step${step}`);
+
+            if (btnLock && btnUnlock) {
+                if (isLocked) {
+                    btnLock.style.display = 'none';
+                    btnUnlock.style.display = 'inline-block';
+                } else {
+                    btnLock.style.display = 'inline-block';
+                    btnUnlock.style.display = 'none';
+                }
+            }
+
+            // Specific logic per step to disable UI components
+            if (step == '2') {
+                const reasignarBtn = document.querySelector('a[href*="balance-comprobacion"]');
+                if (reasignarBtn) {
+                    if (isLocked) {
+                        reasignarBtn.classList.add('disabled');
+                        reasignarBtn.style.pointerEvents = 'none';
+                    } else {
+                        reasignarBtn.classList.remove('disabled');
+                        reasignarBtn.style.pointerEvents = 'auto';
+                    }
+                }
+            } else if (step == '3') {
+                const btnLoadPortfolio = document.getElementById('btn-load-portfolio');
+                if (btnLoadPortfolio) {
+                    btnLoadPortfolio.disabled = isLocked;
+                }
+                document.querySelectorAll('.portfolio-date-checkbox').forEach(chk => {
+                    chk.disabled = isLocked;
+                });
+            } else if (step == '4') {
+                const btnLoadPassive = document.getElementById('btn-load-passive');
+                if (btnLoadPassive) {
+                    btnLoadPassive.disabled = isLocked;
+                }
+                document.querySelectorAll('.passive-date-checkbox').forEach(chk => {
+                    chk.disabled = isLocked;
+                });
+            }
+            // Add other steps as needed
+        }
+
+        // Apply lock states on load
+        Object.keys(lockedSteps).forEach(step => {
+            if (lockedSteps[step]) applyLockState(step);
+        });
+
+    });
+</script>
+{% endblock %}\n

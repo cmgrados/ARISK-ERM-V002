@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+    <div class="card-header"><h3 class="card-title font-weight-bold">Repositorio de Informes de Apetito y Tolerancia</h3></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card border text-center p-3">
+                    <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i>
+                    <h6>Estado Global del Apetito</h6>
+                    <p class="text-xs text-muted">Generado: 27/04/2026</p>
+                    <button class="btn btn-sm btn-outline-dark">Descargar</button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border text-center p-3">
+                    <i class="fas fa-file-excel fa-3x text-success mb-2"></i>
+                    <h6>Log de Excesos Q1</h6>
+                    <p class="text-xs text-muted">Generado: 01/04/2026</p>
+                    <button class="btn btn-sm btn-outline-dark">Descargar</button>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border text-center p-3">
+                    <i class="fas fa-file-signature fa-3x text-info mb-2"></i>
+                    <h6>Acta Comité de Riesgos</h6>
+                    <p class="text-xs text-muted">Pendiente de Firma</p>
+                    <button class="btn btn-sm btn-outline-dark">Ver Detalle</button>
+                </div>
+            </div>
+             <div class="col-md-3">
+                <div class="card border text-center p-3 bg-light">
+                    <i class="fas fa-plus-circle fa-3x text-muted mb-2"></i>
+                    <h6>Generar Nuevo Informe</h6>
+                    <p class="text-xs text-muted">Personalizar Periodo</p>
+                    <button class="btn btn-sm btn-primary">Iniciar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

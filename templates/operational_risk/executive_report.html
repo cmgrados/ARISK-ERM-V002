@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title_header %}Informe Ejecutivo Final - Ciclo de Gestión{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Summary -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card bg-gradient-indigo text-white elevation-2">
+                <div class="card-body text-center p-4">
+                    <h5 class="text-uppercase opacity-75 small font-weight-bold">Madurez Institucional</h5>
+                    <h2 class="display-4 font-weight-bold mb-0">{{ maturity_pct|floatformat:1 }}%</h2>
+                    <p class="mb-0 small">Basado en COSO III</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white elevation-1">
+                <div class="card-body text-center p-4">
+                    <h5 class="text-uppercase text-muted small font-weight-bold">Riesgo Residual Promedio</h5>
+                    <h2 class="display-4 font-weight-bold text-indigo mb-0">{{ avg_residual|floatformat:2 }}</h2>
+                    <p class="mb-0 small text-muted">Exposición operativa neta</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white elevation-1">
+                <div class="card-body text-center p-4">
+                    <h5 class="text-uppercase text-muted small font-weight-bold">Pérdida Neta Acumulada</h5>
+                    <h2 class="display-4 font-weight-bold text-danger mb-0">S/ {{ total_gross_loss|floatformat:0|intcomma }}</h2>
+                    <p class="mb-0 small text-muted">Eventos registrados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-white elevation-1 border-left border-warning">
+                <div class="card-body text-center p-4">
+                    <h5 class="text-uppercase text-muted small font-weight-bold">Cumplimiento de Planes</h5>
+                    <h2 class="display-4 font-weight-bold text-warning mb-0">{{ plan_compliance|floatformat:1 }}%</h2>
+                    <p class="mb-0 small text-muted">{{ completed_plans }} de {{ total_plans }} acciones cerradas</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Analytics -->
+    <div class="row mt-4">
+        <div class="col-lg-8">
+            <div class="card elevation-2 border-0 overflow-hidden">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h3 class="card-title font-weight-bold mb-0"><i class="fas fa-chart-line mr-2 text-indigo"></i> Tendencia de Madurez vs Riesgo</h3>
+                    <button class="btn btn-xs btn-indigo" data-toggle="modal" data-target="#snapshotModal">
+                        <i class="fas fa-save mr-1"></i> Cerrar Ciclo
+                    </button>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+
+            <div class="card elevation-2 border-0 mt-4 overflow-hidden">
+                <div class="card-header bg-white py-3 border-0">
+                    <h3 class="card-title font-weight-bold"><i class="fas fa-history mr-2 text-indigo"></i> Histórico de Cierres</h3>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0 px-4">Ciclo</th>
+                                    <th class="border-0">Fecha</th>
+                                    <th class="border-0">Madurez</th>
+                                    <th class="border-0">Riesgo Residual</th>
+                                    <th class="border-0">Cumplimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for s in snapshots %}
+                                <tr>
+                                    <td class="px-4 font-weight-bold">{{ s.cycle_name }}</td>
+                                    <td>{{ s.snapshot_date }}</td>
+                                    <td>{{ s.maturity_pct }}%</td>
+                                    <td>{{ s.avg_residual_score }}</td>
+                                    <td>{{ s.plan_compliance_pct }}%</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No hay cierres históricos registrados.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card elevation-2 border-0 bg-indigo text-white">
+                <div class="card-body p-4">
+                    <h4 class="font-weight-bold mb-4"><i class="fas fa-robot mr-2"></i> Agente de IA A.RISK</h4>
+                    <p class="opacity-75" style="line-height: 1.6;">
+                        {{ ai_narrative }}
+                    </p>
+                    
+                    {% if ai_recommendations %}
+                    <hr class="border-light opacity-25">
+                    <h6 class="text-uppercase font-weight-bold small mb-3"><i class="fas fa-brain mr-2"></i> Recomendaciones del Experto</h6>
+                    {% for rec in ai_recommendations %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="badge badge-{{ rec.level|lower }} small">{{ rec.area }}</span>
+                            <span class="small font-weight-bold">{{ rec.level }}</span>
+                        </div>
+                        <p class="small mb-1">{{ rec.insight }}</p>
+                        <p class="small text-warning font-italic"><strong>Acción Sugerida:</strong> {{ rec.action }}</p>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    {% if alerts %}
+                    <hr class="border-light opacity-25">
+                    <h6 class="text-uppercase font-weight-bold small mb-3"><i class="fas fa-bell mr-2"></i> Alertas Críticas</h6>
+                    {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.type }} py-2 px-3 small border-0 mb-2" style="background: rgba(255,255,255,0.1); color: #fff;">
+                        <i class="fas fa-exclamation-circle mr-1"></i> {{ alert.msg }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-4 elevation-1 border-0">
+                <div class="card-body p-4">
+                    <h5 class="font-weight-bold"><i class="fas fa-file-pdf mr-2 text-danger"></i> Exportar Documentación</h5>
+                    <p class="text-muted small">Descargue el informe detallado para el Comité de Riesgos.</p>
+                    <button class="btn btn-outline-indigo btn-block font-weight-bold">
+                        <i class="fas fa-download mr-1"></i> Informe PDF Completo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating AI Chat Widget -->
+<div id="aiChatWrapper" class="ai-chat-closed">
+    <button id="aiChatToggle" class="btn btn-indigo rounded-circle elevation-4">
+        <i class="fas fa-comment-dots"></i>
+    </button>
+    
+    <div id="aiChatWindow" class="card elevation-4 border-0">
+        <div class="card-header bg-indigo text-white d-flex justify-content-between align-items-center py-2">
+            <span class="font-weight-bold small"><i class="fas fa-robot mr-2"></i> Chat con Experto IA</span>
+            <button type="button" class="close text-white" id="aiChatClose">&times;</button>
+        </div>
+        <div id="aiChatBody" class="card-body p-3 overflow-auto" style="height: 300px; background: rgba(255,255,255,0.9);">
+            <div class="chat-msg ai-msg mb-3">
+                <div class="p-2 rounded bg-light small shadow-sm">
+                    Hola. Soy su asistente experto. ¿Desea que analicemos su madurez COSO o sus planes de acción pendientes?
+                </div>
+            </div>
+        </div>
+        <div class="card-footer bg-white p-2">
+            <div class="input-group input-group-sm">
+                <input type="text" id="aiChatInput" class="form-control border-0 bg-light" placeholder="Escriba su consulta...">
+                <div class="input-group-append">
+                    <button class="btn btn-indigo" id="aiChatSend">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Snapshot Modal -->
+<div class="modal fade" id="snapshotModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <form method="POST" class="modal-content border-0 elevation-3">
+            {% csrf_token %}
+            <div class="modal-header bg-indigo text-white">
+                <h5 class="modal-title font-weight-bold">Cerrar Ciclo de Gestión</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="font-weight-bold">Nombre del Ciclo</label>
+                    <input type="text" name="cycle_name" class="form-control" placeholder="Ej: Ciclo Mayo 2026" required>
+                </div>
+                <div class="form-group">
+                    <label class="font-weight-bold">Observaciones / Conclusiones</label>
+                    <textarea name="comments" class="form-control" rows="3" placeholder="Resumen de la gestión..."></textarea>
+                </div>
+                <div class="bg-light p-3 rounded">
+                    <p class="mb-1 small font-weight-bold text-muted text-uppercase">Data a Congelar:</p>
+                    <ul class="mb-0 small text-muted list-unstyled">
+                        <li><i class="fas fa-check mr-1 text-success"></i> Madurez: {{ maturity_pct|floatformat:1 }}%</li>
+                        <li><i class="fas fa-check mr-1 text-success"></i> R. Residual: {{ avg_residual|floatformat:2 }}</li>
+                        <li><i class="fas fa-check mr-1 text-success"></i> Cumplimiento: {{ plan_compliance|floatformat:1 }}%</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                <button type="submit" name="save_snapshot" class="btn btn-indigo font-weight-bold px-4">Guardar Snapshot</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-indigo {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
+    }
+    .bg-indigo { background-color: #1e1b4b !important; }
+    .btn-indigo { background-color: #4f46e5; color: white; }
+    .btn-indigo:hover { background-color: #4338ca; color: white; }
+    .text-indigo { color: #4f46e5 !important; }
+    .btn-outline-indigo {
+        border-color: #4f46e5;
+        color: #4f46e5;
+    }
+    .btn-outline-indigo:hover {
+        background-color: #4f46e5;
+        color: #fff;
+    }
+    .badge-critical { background: #991b1b; color: white; }
+    .badge-danger { background: #dc2626; color: white; }
+    .badge-warning { background: #fbbf24; color: #1e1b4b; }
+    .badge-info { background: #0ea5e9; color: white; }
+    .btn-xs { padding: .125rem .25rem; font-size: .75rem; }
+
+    /* Floating Chat Styles */
+    #aiChatWrapper {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1050;
+        transition: all 0.3s ease;
+    }
+    #aiChatToggle {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    #aiChatWindow {
+        position: absolute;
+        bottom: 70px;
+        right: 0;
+        width: 320px;
+        display: none;
+        transform: translateY(20px);
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    .ai-chat-open #aiChatWindow {
+        display: block;
+        transform: translateY(0);
+    }
+    .user-msg { text-align: right; margin-left: 20%; }
+    .ai-msg { text-align: left; margin-right: 20%; }
+    .user-msg div { background: #4f46e5 !important; color: white; }
+</style>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var ctx = document.getElementById('trendChart').getContext('2d');
+        var trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [{% for s in snapshots %}"{{ s.cycle_name }}",{% endfor %}],
+                datasets: [
+                    {
+                        label: 'Madurez (%)',
+                        data: [{% for s in snapshots %}{{ s.maturity_pct }},{% endfor %}],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Riesgo Residual',
+                        data: [{% for s in snapshots %}{{ s.avg_residual_score }},{% endfor %}],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'transparent',
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: 'Madurez %' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        max: 25,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Riesgo Residual' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // Interactive Chat Logic
+        const wrapper = document.getElementById('aiChatWrapper');
+        const toggle = document.getElementById('aiChatToggle');
+        const close = document.getElementById('aiChatClose');
+        const chatBody = document.getElementById('aiChatBody');
+        const input = document.getElementById('aiChatInput');
+        const sendBtn = document.getElementById('aiChatSend');
+
+        toggle.addEventListener('click', () => wrapper.classList.toggle('ai-chat-open'));
+        close.addEventListener('click', () => wrapper.classList.remove('ai-chat-open'));
+
+        function appendMsg(text, isUser = false) {
+            const div = document.createElement('div');
+            div.className = `chat-msg ${isUser ? 'user-msg' : 'ai-msg'} mb-3`;
+            div.innerHTML = `<div class="p-2 rounded small shadow-sm ${isUser ? '' : 'bg-light'}">${text}</div>`;
+            chatBody.appendChild(div);
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        async function sendQuery() {
+            const query = input.value.trim();
+            if (!query) return;
+
+            appendMsg(query, true);
+            input.value = '';
+
+            try {
+                const response = await fetch('{% url "operational_risk:ai_chat" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+                const data = await response.json();
+                appendMsg(data.response || "No pude procesar la consulta.");
+            } catch (err) {
+                appendMsg("Error de conexión con el agente.");
+            }
+        }
+
+        sendBtn.addEventListener('click', sendQuery);
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });
+    });
+</script>
+{% endblock %}
+{% endblock %}

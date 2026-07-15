@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-smile-beam mr-2 text-success"></i>Sentimiento del Mes</h3></div>
+            <div class="card-body"><div id="repPie" style="height: 350px;"></div></div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white"><h3 class="card-title font-weight-bold"><i class="fas fa-share-alt mr-2 text-primary"></i>Menciones por Canal</h3></div>
+            <div class="card-body"><div id="repBar" style="height: 350px;"></div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var rPie = echarts.init(document.getElementById('repPie'));
+    rPie.setOption({
+        tooltip: { trigger: 'item' },
+        color: ['#28a745', '#ffc107', '#dc3545', '#161065'],
+        series: [{
+            type: 'pie', radius: '60%',
+            data: [
+                {value: 60, name: 'Positivo'},
+                {value: 25, name: 'Neutral'},
+                {value: 15, name: 'Negativo'}
+            ]
+        }]
+    });
+
+    var rBar = echarts.init(document.getElementById('repBar'));
+    rBar.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: ['Facebook', 'Instagram', 'Twitter', 'Web', 'Prensa'] },
+        yAxis: { type: 'value' },
+        series: [{
+            data: [120, 80, 45, 30, 15], type: 'bar',
+            itemStyle: { color: '#161065', borderRadius: [5,5,0,0] }
+        }]
+    });
+    window.addEventListener('resize', function(){ rPie.resize(); rBar.resize(); });
+});
+</script>
+{% endblock %}

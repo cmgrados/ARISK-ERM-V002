@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title_header %}Gestión de Procesos (RO){% endblock %}
+
+{% block content %}
+<div class="callout callout-info shadow-sm">
+    <h5><i class="fas fa-info-circle text-info"></i> <b>Guía del Módulo: Catálogo de Procesos (Paso 1)</b></h5>
+    <p class="mb-1">En este módulo debe registrar la estructura operativa de la Cooperativa. Comience creando <strong>Macroprocesos</strong> y luego asócieles <strong>Procesos</strong> específicos. Asegúrese de asignar dueños y niveles de criticidad, ya que estos serán la base para la identificación de riesgos.</p>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs" id="processTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link active font-weight-bold" id="tree-tab" data-toggle="tab" href="#tree" role="tab" aria-controls="tree" aria-selected="true"><i class="fas fa-sitemap"></i> Mapa de Relaciones</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link" id="macro-tab" data-toggle="tab" href="#macro" role="tab" aria-controls="macro" aria-selected="false">Macroprocesos</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link" id="proc-tab" data-toggle="tab" href="#proc" role="tab" aria-controls="proc" aria-selected="false">Procesos</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link" id="sub-tab" data-toggle="tab" href="#sub" role="tab" aria-controls="sub" aria-selected="false">Subprocesos</a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link" id="act-tab" data-toggle="tab" href="#act" role="tab" aria-controls="act" aria-selected="false">Actividades</a>
+  </li>
+</ul>
+
+<div class="tab-content bg-white border border-top-0 p-4 mb-4 shadow-sm" id="processTabsContent">
+    
+  <!-- ===============================
+       TAB 1: MAPA DE RELACIONES (ÁRBOL)
+       =============================== -->
+  <div class="tab-pane fade show active" id="tree" role="tabpanel" aria-labelledby="tree-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Estructura Jerárquica de Procesos</h5>
+          <div>
+            <a href="{% url 'op_risk:generic_create' tipo='macroproceso' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Macroproceso</a>
+            <a href="{% url 'op_risk:generic_create' tipo='proceso' %}" class="btn btn-sm btn-info"><i class="fas fa-plus"></i> Proceso</a>
+          </div>
+      </div>
+      <p class="text-muted"><small><i>Haz clic en los procesos para expandir y ver sus subprocesos y actividades asociadas.</i></small></p>
+      
+      <table class="table table-striped table-hover border">
+          <thead class="bg-light">
+              <tr>
+                  <th style="width: 25%;">Macroproceso</th>
+                  <th style="width: 50%;">Procesos y Estructura Asociada</th>
+                  <th style="width: 25%;">Dueño del Macroproceso</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for macro in macroprocesses %}
+              <tr>
+                  <td>
+                      <strong>{{ macro.name }}</strong>
+                      <div class="mt-2">
+                          <a href="{% url 'op_risk:generic_update' tipo='macroproceso' pk=macro.id %}" class="text-primary mr-2" title="Editar"><i class="fas fa-edit"></i></a>
+                          <a href="{% url 'op_risk:generic_delete' tipo='macroproceso' pk=macro.id %}" class="text-danger" title="Eliminar"><i class="fas fa-trash"></i></a>
+                      </div>
+                  </td>
+                  <td>
+                      <div class="accordion" id="accordion-macro-{{ macro.id }}">
+                          {% for proc in macro.processes.all %}
+                              <div class="card mb-1 border shadow-none">
+                                  <div class="card-header p-2 bg-white" id="heading-proc-{{ proc.id }}">
+                                      <h6 class="mb-0">
+                                          <button class="btn btn-link btn-block text-left text-dark text-decoration-none p-0 font-weight-bold" type="button" data-toggle="collapse" data-target="#collapse-proc-{{ proc.id }}" aria-expanded="false" aria-controls="collapse-proc-{{ proc.id }}">
+                                              <i class="fas fa-chevron-right mr-1 text-primary" style="font-size: 0.8rem;"></i>
+                                              {{ proc.name }}
+                                              {% if proc.criticality == 'ALTA' %}
+                                                  <span class="badge badge-danger float-right mt-1">Alta</span>
+                                              {% elif proc.criticality == 'MEDIA' %}
+                                                  <span class="badge badge-warning float-right mt-1">Media</span>
+                                              {% else %}
+                                                  <span class="badge badge-info float-right mt-1">Baja</span>
+                                              {% endif %}
+                                          </button>
+                                      </h6>
+                                  </div>
+
+                                  <div id="collapse-proc-{{ proc.id }}" class="collapse" aria-labelledby="heading-proc-{{ proc.id }}" data-parent="#accordion-macro-{{ macro.id }}">
+                                      <div class="card-body p-2 bg-light">
+                                          
+                                          {% if proc.subprocesses.all %}
+                                              <ul class="list-unstyled mb-0 ml-3">
+                                                  {% for sub in proc.subprocesses.all %}
+                                                      <li class="mb-2">
+                                                          <strong><i class="fas fa-level-down-alt text-secondary"></i> {{ sub.name }}</strong>
+                                                          
+                                                          {% if sub.activities.all %}
+                                                              <ul class="list-unstyled mt-1 ml-4" style="border-left: 2px solid #dee2e6; padding-left: 10px;">
+                                                                  {% for act in sub.activities.all %}
+                                                                      <li class="mb-1 text-muted" style="font-size: 0.9rem;">
+                                                                          <i class="far fa-circle text-primary" style="font-size: 0.4rem; vertical-align: middle;"></i> {{ act.name }}
+                                                                      </li>
+                                                                  {% endfor %}
+                                                              </ul>
+                                                          {% else %}
+                                                              <p class="text-muted small ml-4 mb-0"><em>Sin actividades</em></p>
+                                                          {% endif %}
+                                                      </li>
+                                                  {% endfor %}
+                                              </ul>
+                                          {% else %}
+                                              <p class="text-muted small mb-0 ml-2"><em>Sin subprocesos asignados</em></p>
+                                          {% endif %}
+                                      </div>
+                                  </div>
+                              </div>
+                          {% empty %}
+                              <p class="text-muted mb-0"><em>Sin procesos asignados</em></p>
+                          {% endfor %}
+                      </div>
+                  </td>
+                  <td>
+                      {% if macro.owner_position %}
+                          <span class="d-block">{{ macro.owner_position.name }}</span>
+                          {% if macro.owner_area %}<small class="text-muted">{{ macro.owner_area.name }}</small>{% endif %}
+                      {% else %}
+                          <span class="text-muted">No asignado</span>
+                      {% endif %}
+                  </td>
+              </tr>
+              {% empty %}
+              <tr>
+                  <td colspan="3" class="text-center">No hay registros en el mapa de relaciones.</td>
+              </tr>
+              {% endfor %}
+          </tbody>
+      </table>
+  </div>
+  
+  <!-- ===============================
+       TAB 2: MACROPROCESOS
+       =============================== -->
+  <div class="tab-pane fade" id="macro" role="tabpanel" aria-labelledby="macro-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Directorio de Macroprocesos</h5>
+          <a href="{% url 'op_risk:generic_create' tipo='macroproceso' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Nuevo Macroproceso</a>
+      </div>
+      <table class="table table-hover table-bordered table-sm">
+          <thead class="thead-light">
+              <tr>
+                  <th>Nombre</th>
+                  <th>Cargo Dueño</th>
+                  <th>Área Dueña</th>
+                  <th class="text-center" style="width: 100px;">Acciones</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for macro in macroprocesses %}
+              <tr>
+                  <td>{{ macro.name }}</td>
+                  <td>{{ macro.owner_position.name|default:"-" }}</td>
+                  <td>{{ macro.owner_area.name|default:"-" }}</td>
+                  <td class="text-center">
+                      <a href="{% url 'op_risk:generic_update' tipo='macroproceso' pk=macro.id %}" class="text-info mx-1"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'op_risk:generic_delete' tipo='macroproceso' pk=macro.id %}" class="text-danger mx-1"><i class="fas fa-trash"></i></a>
+                  </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center">No hay macroprocesos.</td></tr>
+              {% endfor %}
+          </tbody>
+      </table>
+  </div>
+  
+  <!-- ===============================
+       TAB 3: PROCESOS
+       =============================== -->
+  <div class="tab-pane fade" id="proc" role="tabpanel" aria-labelledby="proc-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Directorio de Procesos</h5>
+          <a href="{% url 'op_risk:generic_create' tipo='proceso' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Nuevo Proceso</a>
+      </div>
+      <table class="table table-hover table-bordered table-sm">
+          <thead class="thead-light">
+              <tr>
+                  <th>Macroproceso</th>
+                  <th>Proceso</th>
+                  <th>Criticidad</th>
+                  <th>Cargo Dueño</th>
+                  <th class="text-center" style="width: 100px;">Acciones</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for proc in processes %}
+              <tr>
+                  <td><span class="badge badge-secondary">{{ proc.macroprocess.name }}</span></td>
+                  <td>{{ proc.name }}</td>
+                  <td>
+                      {% if proc.criticality == 'ALTA' %}<span class="text-danger font-weight-bold"><i class="fas fa-arrow-up"></i> Alta</span>
+                      {% elif proc.criticality == 'MEDIA' %}<span class="text-warning font-weight-bold"><i class="fas fa-minus"></i> Media</span>
+                      {% else %}<span class="text-info"><i class="fas fa-arrow-down"></i> Baja</span>{% endif %}
+                  </td>
+                  <td>{{ proc.owner_position.name|default:"-" }}</td>
+                  <td class="text-center">
+                      <a href="{% url 'op_risk:generic_update' tipo='proceso' pk=proc.id %}" class="text-info mx-1"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'op_risk:generic_delete' tipo='proceso' pk=proc.id %}" class="text-danger mx-1"><i class="fas fa-trash"></i></a>
+                  </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-center">No hay procesos.</td></tr>
+              {% endfor %}
+          </tbody>
+      </table>
+  </div>
+  
+  <!-- ===============================
+       TAB 4: SUBPROCESOS
+       =============================== -->
+  <div class="tab-pane fade" id="sub" role="tabpanel" aria-labelledby="sub-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Directorio de Subprocesos</h5>
+          <a href="{% url 'op_risk:generic_create' tipo='subproceso' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Nuevo Subproceso</a>
+      </div>
+      <table class="table table-hover table-bordered table-sm">
+          <thead class="thead-light">
+              <tr>
+                  <th>Proceso Padre</th>
+                  <th>Subproceso</th>
+                  <th>Cargo Dueño</th>
+                  <th class="text-center" style="width: 100px;">Acciones</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for sub in subprocesses %}
+              <tr>
+                  <td><small class="text-muted">{{ sub.process.macroprocess.name }} > </small>{{ sub.process.name }}</td>
+                  <td><strong>{{ sub.name }}</strong></td>
+                  <td>{{ sub.owner_position.name|default:"-" }}</td>
+                  <td class="text-center">
+                      <a href="{% url 'op_risk:generic_update' tipo='subproceso' pk=sub.id %}" class="text-info mx-1"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'op_risk:generic_delete' tipo='subproceso' pk=sub.id %}" class="text-danger mx-1"><i class="fas fa-trash"></i></a>
+                  </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center">No hay subprocesos.</td></tr>
+              {% endfor %}
+          </tbody>
+      </table>
+  </div>
+
+  <!-- ===============================
+       TAB 5: ACTIVIDADES
+       =============================== -->
+  <div class="tab-pane fade" id="act" role="tabpanel" aria-labelledby="act-tab">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Directorio de Actividades</h5>
+          <a href="{% url 'op_risk:generic_create' tipo='actividad' %}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> Nueva Actividad</a>
+      </div>
+      <table class="table table-hover table-bordered table-sm">
+          <thead class="thead-light">
+              <tr>
+                  <th>Subproceso Padre</th>
+                  <th>Actividad</th>
+                  <th>Cargo Dueño</th>
+                  <th class="text-center" style="width: 100px;">Acciones</th>
+              </tr>
+          </thead>
+          <tbody>
+              {% for act in activities %}
+              <tr>
+                  <td><small class="text-muted">{{ act.subprocess.process.name }} > </small>{{ act.subprocess.name }}</td>
+                  <td><strong>{{ act.name }}</strong></td>
+                  <td>{{ act.owner_position.name|default:"-" }}</td>
+                  <td class="text-center">
+                      <a href="{% url 'op_risk:generic_update' tipo='actividad' pk=act.id %}" class="text-info mx-1"><i class="fas fa-edit"></i></a>
+                      <a href="{% url 'op_risk:generic_delete' tipo='actividad' pk=act.id %}" class="text-danger mx-1"><i class="fas fa-trash"></i></a>
+                  </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center">No hay actividades.</td></tr>
+              {% endfor %}
+          </tbody>
+      </table>
+  </div>
+
+</div>
+{% endblock %}

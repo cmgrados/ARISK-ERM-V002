@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title_header %}Dashboard de Metas{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Reset & Base Fonts */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Custom Color Variables */
+    :root {
+        --col-3m: #ffeba1;
+        --col-2m: #e8eaed;
+        --col-1m: #f5b7b1;
+        --col-meta: #73c6b6;
+        --col-result: #d4efdf;
+        --col-pct: #fcf3cf;
+        --col-head: #154360;
+    }
+
+    .box-red { background-color: #900C3F; color: white; padding: 10px; text-align: center; font-weight: bold; }
+    .box-red h1 { margin: 0; font-size: 3rem; font-weight: 900; }
+    .box-red h5 { margin: 0; letter-spacing: 2px; }
+
+    .breakdown-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-weight: bold; }
+    .breakdown-table td { padding: 4px 8px; border: 1px solid #ccc; font-size: 0.9rem;}
+    .bg-green-light { background-color: #a9dfbf; }
+    .bg-blue-light { background-color: #aed6f1; }
+    .bg-red-light { background-color: #e6b0aa; }
+    
+    .msg-box { border: 2px solid #ccc; padding: 15px; font-weight: bold; text-align: center; background: white; font-size: 1.1rem; }
+    .rule-text { color: #154360; font-weight: bold; font-size: 0.8rem; text-align: center; margin-top: 10px; }
+    .rule-text.red { color: #c0392b; }
+
+    .salary-boxes { display: flex; gap: 5px; justify-content: space-between; margin-top: 15px; margin-bottom: 20px;}
+    .s-box { 
+        border: 2px solid #5d6d7e; 
+        text-align: center; 
+        padding: 10px 5px; 
+        flex: 1; 
+        background: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .s-box.date-box { border: none; background: #d6eaf8; font-weight: bold;}
+    .s-box.date-box:last-child { background: #fcf3cf; }
+    .s-val { font-size: 1.2rem; font-weight: bold; color: #2874a6; margin-bottom: 5px; }
+    .s-lbl { font-size: 0.75rem; font-weight: bold; color: #000; text-transform: uppercase; }
+
+    /* Main Table */
+    .goals-table { width: 100%; border-collapse: collapse; border: 2px solid #ccc; background: white; }
+    .goals-table th { 
+        background-color: var(--col-head); 
+        color: white; 
+        text-align: center; 
+        padding: 10px; 
+        border: 1px solid white;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+    .goals-table td { 
+        padding: 8px 10px; 
+        border: 1px solid #ddd; 
+        font-weight: bold; 
+        font-size: 1.1rem;
+    }
+    
+    .goals-table td:nth-child(1) { background-color: #e5e8e8; text-align: right; text-transform: uppercase; color: #2c3e50; text-decoration: underline; }
+    .goals-table td:nth-child(2) { background-color: var(--col-3m); color: #21618c; text-align: right; }
+    .goals-table td:nth-child(3) { background-color: var(--col-2m); color: #154360; text-align: right; }
+    .goals-table td:nth-child(4) { background-color: var(--col-1m); color: #5b2c6f; text-align: right; }
+    .goals-table td:nth-child(5) { background-color: var(--col-meta); color: #900c3f; text-align: right; }
+    .goals-table td:nth-child(6) { background-color: var(--col-result); color: #1e8449; text-align: right; }
+    .goals-table td:nth-child(7) { background-color: var(--col-pct); text-align: right; font-size: 0.9rem;}
+    
+    .table-footer { background-color: #aed6f1; color: #154360; font-weight: bold; padding: 5px 15px; font-size: 0.85rem;}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Top Header / Filters -->
+<div class="row mb-3 align-items-center">
+    <div class="col-md-8">
+        <div class="row text-center font-weight-bold" style="font-size: 0.8rem;">
+            <div class="col-3">PRODUCTO</div>
+            <div class="col-6">COD-AG</div>
+            <div class="col-3">AÑOMES</div>
+        </div>
+        <div class="row">
+            <div class="col-3">
+                <select class="form-control form-control-sm"><option>Todas</option></select>
+            </div>
+            <div class="col-6">
+                <select class="form-control form-control-sm"><option>AGENCIA ATALAYA</option></select>
+            </div>
+            <div class="col-3">
+                <select class="form-control form-control-sm"><option>2026 05</option></select>
+            </div>
+        </div>
+        <div class="row mt-2 text-right">
+            <div class="col-9 font-weight-bold" style="font-size: 0.8rem;">RANGO DESEMB</div>
+            <div class="col-3">
+                <select class="form-control form-control-sm"><option>Todas</option></select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="box-red">
+            <h1>65.00 %</h1>
+            <h5>FACTOR AG1</h5>
+        </div>
+        <table class="breakdown-table">
+            {% for factor in factors %}
+            <tr>
+                <td>{{ factor.name }}</td>
+                <td class="text-center">{{ factor.weight|floatformat:2 }} %</td>
+                <td class="{% if forloop.counter == 1 %}bg-green-light{% elif forloop.counter == 2 %}bg-blue-light{% else %}bg-red-light{% endif %} text-center">{% if forloop.last %}0.00{% else %}{{ factor.weight|floatformat:2 }}{% endif %} %</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+<!-- Middle Section -->
+<div class="row align-items-center mb-2">
+    <div class="col-md-12">
+        <h4 class="text-center font-weight-bold text-primary mb-3" style="text-decoration: underline;">METAS DE AGENCIA</h4>
+        
+        <div class="salary-boxes">
+            <div class="s-box">
+                <div class="s-val">1,400.00</div>
+                <div class="s-lbl">SUELDO BASICO</div>
+            </div>
+            <div class="s-box">
+                <div class="s-val">S/ 1,100.00</div>
+                <div class="s-lbl">VAR.ADM.CART.</div>
+            </div>
+            <div class="s-box">
+                <div class="s-val">S/ 2,500.00</div>
+                <div class="s-lbl">BASICO+VAR.CART</div>
+            </div>
+            <div class="s-box">
+                <div class="s-val">100.00 %</div>
+                <div class="s-lbl">VAR ADM</div>
+            </div>
+            <div class="s-box">
+                <div class="s-val">S/ 1,625.00</div>
+                <div class="s-lbl">LOGRO VAR</div>
+            </div>
+            <div class="s-box">
+                <div class="s-val text-dark">S/ 4,125.00</div>
+                <div class="s-lbl">SUELDO ESTIMADO</div>
+            </div>
+            
+            <div class="s-box date-box ml-2">
+                <div class="s-val">31/05/2026</div>
+                <div class="s-lbl text-primary">FECHA META</div>
+            </div>
+            <div class="s-box date-box">
+                <div class="s-val">31/05/2026</div>
+                <div class="s-lbl text-warning">Fecha: CORTE</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Table -->
+<div class="row">
+    <div class="col-12">
+        <table class="goals-table">
+            <thead>
+                <tr>
+                    <th style="background: transparent; color: black; font-size: 1.2rem; text-decoration: underline;">DETALLE</th>
+                    <th>RES. HACE 3M</th>
+                    <th>RES. HACE 2M</th>
+                    <th>RES. HACE 1M</th>
+                    <th>METAS</th>
+                    <th colspan="2">RESULTADOS DEL MES</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SALDO DE CARTERA</td>
+                    <td>1,310,474.61</td>
+                    <td>1,627,204.68</td>
+                    <td>1,777,486.99</td>
+                    <td>1,794,486.99</td>
+                    <td>S/ 1,831,630.53</td>
+                    <td>100.00 %</td>
+                </tr>
+                <tr>
+                    <td>SALDO DE DPF</td>
+                    <td>299,950.47</td>
+                    <td>315,265.83</td>
+                    <td>308,534.62</td>
+                    <td>328,534.62</td>
+                    <td>S/ 349,456.93</td>
+                    <td>100.00 %</td>
+                </tr>
+                <tr>
+                    <td>SALDO DE APORTES</td>
+                    <td>211,551.30</td>
+                    <td>218,043.38</td>
+                    <td>231,358.62</td>
+                    <td>236,358.62</td>
+                    <td>S/ 242,136.33</td>
+                    <td>100.00 %</td>
+                </tr>
+                <tr>
+                    <td>TEM PROMEDIO</td>
+                    <td>3.73 %</td>
+                    <td>3.72 %</td>
+                    <td>3.84 %</td>
+                    <td>3.93 %</td>
+                    <td>3.85 %</td>
+                    <td>0.00 %</td>
+                </tr>
+                <tr>
+                    <td>NÚMERO DE SOCIOS</td>
+                    <td>289</td>
+                    <td>303</td>
+                    <td>337</td>
+                    <td>340</td>
+                    <td>365</td>
+                    <td>100.00 %</td>
+                </tr>
+                <tr>
+                    <td>P SALDO DE CRÉDITO</td>
+                    <td>4,173.49</td>
+                    <td>5,182.18</td>
+                    <td>5,152.14</td>
+                    <td>S/ 4,894.53</td>
+                    <td>S/ 4,897.41</td>
+                    <td>0.00 %</td>
+                </tr>
+                <tr>
+                    <td>MORA>3 DÍAS</td>
+                    <td>196,414.16</td>
+                    <td>195,458.75</td>
+                    <td>213,701.11</td>
+                    <td>0.00</td>
+                    <td>S/ 434,601.11</td>
+                    <td class="bg-red-light">0.00 %</td>
+                </tr>
+                <tr>
+                    <td>MORA>30 DÍAS</td>
+                    <td>196,414.16</td>
+                    <td>195,458.75</td>
+                    <td>160,147.48</td>
+                    <td>0.00</td>
+                    <td>S/ 140,660.40</td>
+                    <td class="bg-red-light">0.00 %</td>
+                </tr>
+                <tr>
+                    <td>PROVISIONES ESPEC.</td>
+                    <td>61,935.84</td>
+                    <td>67,718.94</td>
+                    <td>74,848.87</td>
+                    <td>0.00</td>
+                    <td>S/ 69,381.70</td>
+                    <td class="bg-red-light">0.00 %</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="table-footer mt-1 d-flex justify-content-between">
+            <span>ADM NIVEL VI -- > S/ 1'300,000 <= S/ 3'000,000 <br><span class="text-danger">CATEG-AG -2M</span></span>
+            <span>ADM NIVEL VI -- > S/ 1'300,000 <= S/ 3'000,000 <br><span class="text-danger">CATEG-AG -1M</span></span>
+            <span>ADM NIVEL VI -- > S/ 1'300,000 <= S/ 3'000,000 <br><span class="text-danger">CATEGxCERRAR</span></span>
+        </div>
+    </div>
+</div>
+{% endblock %}

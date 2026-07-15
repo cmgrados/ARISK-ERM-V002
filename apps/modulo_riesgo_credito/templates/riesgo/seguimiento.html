@@ -1,0 +1,372 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Dashboard de Riesgo de Crédito | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <div class="row mb-2 align-items-end">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark font-weight-bold" style="letter-spacing: -0.5px;">Dashboard Riesgo de Crédito</h1>
+          <p class="text-muted mb-0">Seguimiento de Cartera y Métricas Analíticas al <span class="badge badge-info">{{ cut_off_date|date:"d/m/Y" }}</span></p>
+        </div>
+        <div class="col-sm-6 text-right">
+            <a href="{% url 'modulo_riesgo_credito:exportar_anexo5' %}" class="btn btn-primary rounded-pill shadow-sm px-4">
+                <i class="fas fa-file-csv mr-2"></i> Descargar Anexo 5 (SBS)
+            </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content mt-4">
+    <div class="container-fluid">
+      
+      <!-- KPIs -->
+      <div class="row">
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-dark font-weight-bold" style="font-size: 1.8rem;">S/ {{ total_portfolio|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Cartera Total</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-wallet text-primary" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="{% if npl_ratio > 5 %}text-danger{% else %}text-warning{% endif %} font-weight-bold" style="font-size: 1.8rem;">{{ npl_ratio|floatformat:"2"|intcomma }}%</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Índice de Mora (>30 días)</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-chart-line text-warning" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-danger font-weight-bold" style="font-size: 1.8rem;">S/ {{ total_expected_loss|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Pérdida Esperada (EL)</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-exclamation-triangle text-danger" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-success font-weight-bold" style="font-size: 1.8rem;">{{ hhi_actividad|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">HHI Actividad Económica</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-bullseye text-success" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-info font-weight-bold" style="font-size: 1.8rem;">{{ total_credits|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Total Créditos</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-users text-info" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-danger font-weight-bold" style="font-size: 1.8rem;">S/ {{ car_balance|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Cartera Alto Riesgo ({{ car_ratio|floatformat:"2" }}%)</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-fire text-danger" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-secondary font-weight-bold" style="font-size: 1.8rem;">S/ {{ refinanced_balance|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Cartera Refinanciada</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-handshake text-secondary" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-3 col-6">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="{% if coverage_ratio < 100 %}text-danger{% else %}text-success{% endif %} font-weight-bold" style="font-size: 1.8rem;">{{ coverage_ratio|floatformat:"2"|intcomma }}%</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">Cobertura de Provisiones</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-shield-alt {% if coverage_ratio < 100 %}text-danger{% else %}text-success{% endif %}" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <div class="col-lg-6 col-12">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-secondary font-weight-bold" style="font-size: 1.8rem;">S/ {{ total_required_provision|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">PVR - Provisiones Requeridas</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-balance-scale-left text-secondary" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6 col-12">
+          <div class="small-box bg-white border rounded shadow-sm">
+            <div class="inner p-4">
+              <h3 class="text-secondary font-weight-bold" style="font-size: 1.8rem;">S/ {{ total_established_provision|floatformat:"2"|intcomma }}</h3>
+              <p class="text-muted mb-0 text-uppercase font-weight-bold" style="font-size: 0.8rem; letter-spacing: 1px;">PCI - Provisiones Constituidas</p>
+            </div>
+            <div class="icon">
+              <i class="fas fa-balance-scale-right text-secondary" style="opacity: 0.1;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row mt-3">
+        <!-- Gráfico de Buckets -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="card-title font-weight-bold text-dark">Distribución de Cartera por Buckets de Mora</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="bucketsChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabla Resumen -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="card-title font-weight-bold text-dark">Resumen Buckets</h5>
+                </div>
+                <div class="card-body p-0 mt-3">
+                    <table class="table table-hover table-borderless table-striped">
+                        <thead class="thead-light">
+                            <tr>
+                                <th class="text-muted text-uppercase" style="font-size: 0.8rem;">Bucket</th>
+                                <th class="text-muted text-uppercase text-right" style="font-size: 0.8rem;">Saldo (S/)</th>
+                                <th class="text-muted text-uppercase text-right" style="font-size: 0.8rem;">N° Créditos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in buckets %}
+                            <tr>
+                                <td class="font-weight-bold text-dark">{{ b.bucket_label }}</td>
+                                <td class="text-right">{{ b.total_balance|default:0|floatformat:"2"|intcomma }}</td>
+                                <td class="text-right">{{ b.total_count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No hay datos de cartera para la fecha de corte.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="row mt-4">
+        <!-- Gráfico de Clasificación SBS -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="card-title font-weight-bold text-dark">Clasificación de Cartera</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="sbsChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gráfico de Evolución -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="card-title font-weight-bold text-dark">Evolución de Cartera</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="evolutionChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+                </div>
+            </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% load l10n %}
+document.addEventListener("DOMContentLoaded", function() {
+    // Data from Django - Buckets
+    const bucketLabels = [{% for b in buckets %}"{{ b.bucket_label }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const bucketData = [{% for b in buckets %}{{ b.total_balance|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    // Configurar Chart.js - Buckets
+    const ctx = document.getElementById('bucketsChart').getContext('2d');
+    
+    // Paleta de colores de semáforo
+    const backgroundColors = [
+        'rgba(40, 167, 69, 0.8)',   // Bucket 0 (Verde)
+        'rgba(255, 193, 7, 0.8)',   // Bucket 1 (Amarillo)
+        'rgba(253, 126, 20, 0.8)',  // Bucket 2 (Naranja)
+        'rgba(220, 53, 69, 0.8)',   // Bucket 3 (Rojo)
+        'rgba(139, 0, 0, 0.8)',     // Bucket 4 (Rojo Oscuro)
+        'rgba(108, 117, 125, 0.8)'  // Desconocido (Gris)
+    ];
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: bucketLabels,
+            datasets: [{
+                label: 'Saldo Vigente (S/)',
+                data: bucketData,
+                backgroundColor: backgroundColors.slice(0, bucketLabels.length),
+                borderWidth: 0,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        borderDash: [2, 4],
+                        color: 'rgba(0,0,0,0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return 'S/ ' + (value / 1000000).toFixed(1) + 'M'; // Formato en Millones
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+    
+    // Clasificación SBS
+    const sbsLabels = [{% for s in sbs_class %}"{{ s.label }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const sbsData = [{% for s in sbs_class %}{{ s.balance|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    new Chart(document.getElementById('sbsChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: sbsLabels,
+            datasets: [{
+                data: sbsData,
+                backgroundColor: ['#28a745', '#17a2b8', '#ffc107', '#fd7e14', '#dc3545', '#6c757d'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': S/ ' + new Intl.NumberFormat('es-PE').format(context.parsed);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Evolución de Cartera
+    const evoLabels = [{% for e in evolution %}"{{ e.date }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const evoData = [{% for e in evolution %}{{ e.balance|default:0|unlocalize }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+    
+    new Chart(document.getElementById('evolutionChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: evoLabels,
+            datasets: [{
+                label: 'Saldo Vigente (S/)',
+                data: evoData,
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'S/ ' + new Intl.NumberFormat('es-PE').format(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

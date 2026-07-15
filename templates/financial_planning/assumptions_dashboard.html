@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title_header %}
+<div class="d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-sliders-h mr-2 text-indigo"></i> Módulo de Supuestos</span>
+    <a href="{% url 'financial_planning:plan_wizard_new' %}" class="btn btn-indigo shadow-sm">
+        <i class="fas fa-plus mr-1"></i> Nuevo Plan
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 rounded-lg">
+            <div class="card-header bg-white border-bottom pb-3 pt-3">
+                <h3 class="card-title font-weight-bold text-secondary mb-0">Seleccione un Plan Financiero Activo</h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="border-0 font-weight-600 pl-4">Plan Financiero</th>
+                                <th class="border-0 font-weight-600 text-center">Periodo Base</th>
+                                <th class="border-0 font-weight-600 text-center">Estado</th>
+                                <th class="border-0 font-weight-600 text-right pr-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for plan in plans %}
+                            <tr>
+                                <td class="pl-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-indigo-light text-indigo rounded p-2 mr-3">
+                                            <i class="fas fa-calculator"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 font-weight-bold">{{ plan.name }}</h6>
+                                            <small class="text-muted">Versión: {{ plan.get_version_type_display }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge badge-light border">{{ plan.start_date|date:"M Y"|title }}</span>
+                                </td>
+                                <td class="text-center align-middle">
+                                    <span class="badge badge-soft-success rounded-pill px-3 py-1">Activo</span>
+                                </td>
+                                <td class="text-right pr-4 align-middle">
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'financial_planning:manage_assumptions' plan.id %}" class="btn btn-sm btn-outline-success" title="Ingresar Supuestos">
+                                            <i class="fas fa-sliders-h mr-1"></i> Supuestos
+                                        </a>
+                                        <a href="{% url 'financial_planning:plan_wizard' plan.id %}" class="btn btn-sm btn-outline-indigo" title="Editar Plan">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar Plan" data-toggle="modal" data-target="#deletePlanModal{{ plan.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Modal -->
+                                    <div class="modal fade text-left" id="deletePlanModal{{ plan.id }}" tabindex="-1" role="dialog" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                            <div class="modal-content border-0 shadow">
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>Eliminar Plan</h5>
+                                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>¿Está seguro de que desea eliminar el plan <strong>{{ plan.name }}</strong>?</p>
+                                                    <p class="text-danger small"><i class="fas fa-info-circle mr-1"></i>Esta acción eliminará todos los supuestos y proyecciones asociadas y no se puede deshacer.</p>
+                                                </div>
+                                                <div class="modal-footer bg-light">
+                                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-dismiss="modal">Cancelar</button>
+                                                    <form action="{% url 'financial_planning:delete_plan' plan.id %}" method="POST" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-danger rounded-pill px-4">Sí, Eliminar</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-5 text-muted">
+                                    <i class="fas fa-folder-open fa-3x mb-3 opacity-50"></i>
+                                    <h5>No hay planes financieros activos</h5>
+                                    <p class="mb-0">Cree un nuevo plan para comenzar a configurar sus supuestos.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Panel de Alertas y Excesos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-danger card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Incumplimientos de Apetito y Tolerancia Detectados</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>KRI / Evento</th>
+                            <th>Severidad</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Responsable</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in breaches %}
+                        <tr class="{% if b.severity == 'Crítica' %}bg-light-danger{% endif %}">
+                            <td>#{{ b.id }}</td>
+                            <td>
+                                <strong>{{ b.measurement.kri.name }}</strong><br>
+                                <small class="text-muted">Valor: {{ b.measurement.value }} (Excedió {{ b.breach_type }})</small>
+                            </td>
+                            <td>
+                                <span class="badge {% if b.severity == 'Crítica' %}badge-danger{% else %}badge-warning{% endif %}">{{ b.severity }}</span>
+                            </td>
+                            <td>{{ b.event_date }}</td>
+                            <td>
+                                <span class="badge badge-{% if b.state == 'OPEN' %}danger{% elif b.state == 'REMEDIATING' %}info{% else %}success{% endif %}">{{ b.get_state_display }}</span>
+                            </td>
+                            <td>{{ b.responsible.get_full_name|default:"Sin asignar" }}</td>
+                            <td>
+                                <button class="btn btn-xs btn-primary">Gestionar</button>
+                                <button class="btn btn-xs btn-default">Ver Análisis</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center p-5 text-success">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i><br>
+                            No hay excesos de límites pendientes de atención.
+                        </td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card card-outline card-secondary">
+            <div class="card-header">
+                <h3 class="card-title">Dashboard de Brechas Históricas</h3>
+            </div>
+            <div class="card-body">
+                <div id="breach-trend" style="height: 250px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+<script>
+    var trendDom = document.getElementById('breach-trend');
+    var trendChart = echarts.init(trendDom);
+    var trendOption = {
+        xAxis: { type: 'category', data: ['Ene', 'Feb', 'Mar', 'Abr'] },
+        yAxis: { type: 'value' },
+        series: [{ data: [2, 5, 1, 3], type: 'line', smooth: true, color: '#dc3545', areaStyle: {} }]
+    };
+    trendChart.setOption(trendOption);
+</script>
+{% endblock %}

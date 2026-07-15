@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h2 class="font-weight-bold text-primary">Análisis de Brechas de Liquidez (Flujo de Caja)</h2>
+        </div>
+        <div class="col-md-4 text-right">
+            <form method="get" class="form-inline justify-content-end">
+                <label for="fecha_corte" class="mr-2 font-weight-bold">Fecha de Corte:</label>
+                <input type="date" id="fecha_corte" name="fecha_corte" class="form-control mr-2" value="{{ cutoff_date|date:'Y-m-d' }}">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-sync"></i> Calcular</button>
+            </form>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger shadow-sm">
+        <i class="fas fa-exclamation-circle"></i> Error al calcular el flujo: {{ error }}
+    </div>
+    {% endif %}
+
+    {% if report %}
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="card-title mb-0"><i class="fas fa-table text-info"></i> Flujo de Caja Proyectado (Moneda Nacional)</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th class="align-middle">Concepto</th>
+                            {% for band in report.bandas %}
+                            <th class="text-center align-middle">{{ band }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Saldo Inicial -->
+                        <tr class="bg-light">
+                            <td><strong>SALDO INICIAL DE CAJA</strong></td>
+                            <td colspan="{{ report.bandas|length }}" class="text-right text-primary">
+                                <strong>{{ report.saldo_inicial|floatformat:2 }}</strong>
+                            </td>
+                        </tr>
+
+                        <!-- Flujo de Ingresos -->
+                        <tr class="table-info">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>I. FLUJO DE INGRESOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_ingresos.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2 }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Flujo de Egresos -->
+                        <tr class="table-warning">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>II. FLUJO DE EGRESOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_egresos.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2 }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Flujo de Adeudados -->
+                        <tr class="table-secondary">
+                            <td colspan="{{ report.bandas|length|add:1 }}"><strong>III. FLUJO DE ADEUDADOS</strong></td>
+                        </tr>
+                        {% for key, band_dict in report.flujo_de_adeudados.items %}
+                        <tr>
+                            <td class="pl-4">{{ key }}</td>
+                            {% for val in band_dict.values %}
+                            <td class="text-right">{{ val|floatformat:2 }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+
+                        <!-- Totales -->
+                        <tr class="bg-dark text-white">
+                            <td><strong>FLUJO DE CAJA NETO (I - II + III)</strong></td>
+                            {% for val in report.total_flujo_caja.values %}
+                            <td class="text-right"><strong>{{ val|floatformat:2 }}</strong></td>
+                            {% endfor %}
+                        </tr>
+
+                        <tr class="bg-primary text-white">
+                            <td><strong>SALDO ACUMULADO (BRECHA ACUMULADA)</strong></td>
+                            {% for val in report.saldo_acumulado.values %}
+                            <td class="text-right"><strong>{{ val|floatformat:2 }}</strong></td>
+                            {% endfor %}
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

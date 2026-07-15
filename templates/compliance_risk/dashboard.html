@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title_header %}Dashboard de Cumplimiento{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Info Boxes -->
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box info-box-sm shadow-sm" style="min-height: 60px;">
+            <span class="info-box-icon bg-info" style="width: 50px; font-size: 1.2rem;"><i class="fas fa-balance-scale"></i></span>
+            <div class="info-box-content" style="padding: 5px 10px;">
+                <span class="info-box-text" style="font-size: 0.8rem;">Obligaciones Totales</span>
+                <span class="info-box-number" style="font-size: 1rem;">{{ risks.count }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-sm-6 col-md-3">
+        <div class="info-box info-box-sm shadow-sm" style="min-height: 60px;">
+            <span class="info-box-icon bg-danger" style="width: 50px; font-size: 1.2rem;"><i class="fas fa-exclamation-triangle"></i></span>
+            <div class="info-box-content" style="padding: 5px 10px;">
+                <span class="info-box-text" style="font-size: 0.8rem;">Riesgos Residuales Altos</span>
+                <span class="info-box-number" style="font-size: 1rem;">
+                    {% with high_risks=0 %}
+                        {% for r in risks %}
+                            {% if r.residual_risk_value >= 15 %}
+                                <!-- Increment logic in template is tricky without custom tags, showing placeholder -->
+                                1
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Distribución de Obligaciones por Fuente</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Fuente</th>
+                                <th class="text-center">Cantidad</th>
+                                <th>Estado de Monitoreo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in by_source %}
+                            <tr>
+                                <td>{{ item.source }}</td>
+                                <td class="text-center"><span class="badge badge-pill badge-primary">{{ item.count }}</span></td>
+                                <td>
+                                    <div class="progress progress-xs">
+                                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Próximos Monitoreos</h3>
+            </div>
+            <div class="card-body p-0">
+                <ul class="products-list product-list-in-card pl-2 pr-2">
+                    {% for risk in risks|slice:":5" %}
+                    <li class="item">
+                        <div class="product-info">
+                            <a href="javascript:void(0)" class="product-title">{{ risk.get_monitoring_frequency_display }}
+                                <span class="badge badge-warning float-right">{{ risk.residual_risk_category }}</span></a>
+                            <span class="product-description">
+                                {{ risk.requirement.description|truncatechars:40 }}
+                            </span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{% url 'compliance_risk:matrix' %}" class="uppercase">Ver Matriz Completa</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

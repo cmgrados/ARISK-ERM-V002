@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogos y Parámetros | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h4 class="m-0 text-dark font-weight-bold">Catálogos y Parámetros</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content mt-3">
+    <div class="container-fluid">
+        <div class="row">
+            {% for cat in catalogs %}
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm rounded-lg hover-elevate transition-all">
+                    <div class="card-body text-center d-flex flex-column justify-content-center py-4">
+                        <div class="mb-3">
+                            <i class="{{ cat.icon }} fa-3x text-primary" style="opacity: 0.8;"></i>
+                        </div>
+                        <h5 class="font-weight-bold text-dark">{{ cat.verbose_name_plural }}</h5>
+                        <p class="text-muted small mb-3">{{ cat.desc }}</p>
+                        <a href="{% url 'catalogs:catalog_list' cat.model_name %}" class="btn btn-outline-primary btn-sm mt-auto stretched-link rounded-pill px-4">Administrar</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+  </section>
+</div>
+
+<style>
+.hover-elevate:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+.transition-all {
+    transition: all .3s ease-in-out;
+}
+</style>
+{% endblock %}

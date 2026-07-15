@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Simulador de Estrés | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <h1 class="m-0 text-dark font-weight-bold">Stress Testing</h1>
+      <p class="text-muted">Simulador de Impacto en Pérdida Esperada</p>
+    </div>
+  </div>
+
+  <section class="content mt-4">
+    <div class="container-fluid">
+      <!-- Metodología -->
+      <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0 border-left-primary" style="border-left-width: 4px !important; border-left-color: #007bff !important;">
+                <div class="card-header bg-white border-bottom-0 pb-0">
+                    <h5 class="text-primary font-weight-bold mb-0"><i class="fas fa-info-circle mr-2"></i>Metodología de Stress Testing (Top-Down Sensitivity Analysis)</h5>
+                </div>
+                <div class="card-body pt-3">
+                    <p class="mb-3 text-justify text-muted" style="font-size: 0.95rem; line-height: 1.6;">
+                        El presente simulador implementa un <strong>Análisis de Sensibilidad Macro (Top-Down)</strong> alineado a las mejores prácticas de Basilea y requerimientos regulatorios. Su objetivo es evaluar la resiliencia financiera de la institución frente a escenarios macroeconómicos adversos sin necesidad de recalcular el scoring a nivel cliente individual (Bottom-Up).
+                    </p>
+                    
+                    <div class="row">
+                        <div class="col-md-6 border-right">
+                            <h6 class="font-weight-bold text-dark"><i class="fas fa-calculator mr-2 text-info"></i>1. Modelo Base (Pérdida Esperada)</h6>
+                            <p class="text-muted small text-justify">
+                                El modelo cuantifica el riesgo de crédito estructural mediante la fórmula: <br>
+                                <code class="d-block text-center my-2 p-2 bg-light rounded" style="font-size: 1rem;">EL = EAD × PD × LGD</code>
+                                <ul class="text-muted small mb-0 pl-3">
+                                    <li><strong>EAD (Exposure at Default):</strong> Exposición al momento del incumplimiento. Representado por el saldo contable adeudado.</li>
+                                    <li><strong>PD (Probability of Default):</strong> Probabilidad de que el deudor caiga en mora.</li>
+                                    <li><strong>LGD (Loss Given Default):</strong> Severidad de la pérdida (1 - Tasa de Recuperación). Fracción no recuperable ni con garantías.</li>
+                                </ul>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold text-dark"><i class="fas fa-bolt mr-2 text-warning"></i>2. Mecánica de Simulación de Shocks</h6>
+                            <p class="text-muted small text-justify">
+                                El sistema captura la <strong>Línea Base</strong> calculando las provisiones requeridas actuales sobre la cartera vigente (escenario neutral). Luego, permite inyectar perturbaciones exógenas (shocks):
+                                <ul class="text-muted small mb-0 pl-3 mt-1">
+                                    <li><strong>Shock PD:</strong> Incremento porcentual en la probabilidad de mora. Refleja crisis de desempleo, inflación o recesión.</li>
+                                    <li><strong>Shock LGD:</strong> Caída porcentual en el valor de ejecución de garantías (ej. crisis inmobiliaria o vehicular).</li>
+                                </ul>
+                                El motor multiplica estos factores sobre la pérdida base para proyectar inmediatamente la <strong>Pérdida Esperada Estresada</strong>: <br>
+                                <code class="d-block text-center mt-2">EL_Estresada = EL_Base × (1 + Shock_PD) × (1 + Shock_LGD)</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Controles de Shock -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-lg">
+                <div class="card-header bg-light">
+                    <h5 class="card-title font-weight-bold m-0">Parámetros de Shock</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label>Incremento en PD Global (%)</label>
+                            <input type="number" step="0.1" class="form-control" name="shock_pd" value="{{ shock_pd }}" placeholder="Ej: 5.0">
+                            <small class="text-muted">Aumento porcentual en la Probabilidad de Default.</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Deterioro en Garantías LGD (%)</label>
+                            <input type="number" step="0.1" class="form-control" name="shock_lgd" value="{{ shock_lgd }}" placeholder="Ej: 10.0">
+                            <small class="text-muted">Pérdida de valor de las garantías.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block mt-4 rounded-pill">
+                            <i class="fas fa-bolt mr-2"></i> Simular Impacto
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 rounded-lg h-100">
+                <div class="card-header bg-light">
+                    <h5 class="card-title font-weight-bold m-0">Resultados del Escenario</h5>
+                </div>
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+                    <div class="row">
+                        <div class="col-6 border-right">
+                            <p class="text-muted text-uppercase mb-1">Pérdida Esperada (Base)</p>
+                            <h2 class="text-dark font-weight-bold">S/ {{ base_el|floatformat:"2"|intcomma }}</h2>
+                        </div>
+                        <div class="col-6">
+                            <p class="text-muted text-uppercase mb-1 text-danger">Pérdida Esperada (Estresada)</p>
+                            <h2 class="text-danger font-weight-bold">S/ {{ simulated_el|floatformat:"2"|intcomma }}</h2>
+                        </div>
+                    </div>
+                    
+                    <!-- Desglose de Cartera Base -->
+                    <div class="mt-4 px-3 text-left">
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-list-alt mr-2 text-primary"></i>Desglose de Pérdida Esperada Base (Composición de Cartera)</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-striped text-center text-muted" style="font-size: 0.85rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="text-left">Clasificación SBS</th>
+                                        <th>EAD (Saldo Deudor)</th>
+                                        <th>Tasa Provisión SBS (%)</th>
+                                        <th>Pérdida Esperada Base (S/)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in portfolio_breakdown %}
+                                    <tr>
+                                        <td class="text-left font-weight-bold text-dark">{{ row.clasificacion }}</td>
+                                        <td>S/ {{ row.saldo|floatformat:"2"|intcomma }}</td>
+                                        <td>{{ row.tasa|floatformat:"0" }}%</td>
+                                        <td class="font-weight-bold text-primary">S/ {{ row.provision_base|floatformat:"2"|intcomma }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-light font-weight-bold text-dark">
+                                        <td class="text-left">Total Cartera</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td class="text-primary" style="font-size: 1rem;">S/ {{ base_el|floatformat:"2"|intcomma }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if simulated_el > base_el %}
+                    <div class="mt-4 px-3">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered text-center text-muted" style="font-size: 0.9rem;">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Pérdida Base</th>
+                                        <th>x Multiplicador PD</th>
+                                        <th>x Multiplicador LGD</th>
+                                        <th>= Pérdida Estresada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="align-middle text-dark font-weight-bold">S/ {{ base_el|floatformat:"2"|intcomma }}</td>
+                                        <td class="align-middle">{{ pd_mult|floatformat:"4" }}</td>
+                                        <td class="align-middle">{{ lgd_mult|floatformat:"4" }}</td>
+                                        <td class="align-middle text-danger font-weight-bold">S/ {{ simulated_el|floatformat:"2"|intcomma }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 text-left">
+                        <div class="alert alert-danger border-0 shadow-sm">
+                            <h6 class="font-weight-bold mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>Análisis de Impacto en Capital y Solvencia</h6>
+                            <p class="mb-2 text-justify" style="font-size: 0.95rem; line-height: 1.5;">
+                                El escenario macroeconómico adverso simulado asume un golpe uniforme sobre toda la cartera crediticia. Al incorporar el deterioro en la capacidad de pago (PD) y el menoscabo en el valor de las garantías (LGD), el modelo proyecta una <strong>Pérdida Esperada Estresada</strong> total de <strong>S/ {{ simulated_el|floatformat:"2"|intcomma }}</strong>.
+                            </p>
+                            <p class="mb-2 text-justify" style="font-size: 0.95rem; line-height: 1.5;">
+                                Esto generaría una brecha o requerimiento adicional de provisiones por un valor exacto de <strong>S/ {{ difference_el|floatformat:"2"|intcomma }}</strong> respecto al escenario actual (Línea Base).
+                            </p>
+                            <hr class="border-danger" style="opacity: 0.3;">
+                            <p class="mb-0 text-justify" style="font-size: 0.95rem; line-height: 1.5;">
+                                <strong>Impacto Contable y Regulatorio:</strong> Este "agujero" en el balance impactaría directamente el Estado de Resultados a través de un incremento en el Gasto por Provisiones, reduciendo la Utilidad Neta del ejercicio. Como consecuencia, el Patrimonio Efectivo (Tier 1 Capital) disminuiría. El Comité de Riesgos debe evaluar preventivamente si el colchón de capital actual es suficiente para absorber este shock sin incumplir los ratios regulatorios de liquidez y solvencia exigidos por la Superintendencia.
+                            </p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mt-4 text-left">
+                        <div class="alert alert-info border-0 shadow-sm">
+                            <h6 class="font-weight-bold mb-2"><i class="fas fa-info-circle mr-2"></i>Análisis del Escenario Actual</h6>
+                            <p class="mb-0" style="font-size: 0.95rem;">Actualmente está visualizando el escenario <strong>Base (Normal)</strong>. Ingrese los parámetros de shock en el panel izquierdo (por ejemplo, un incremento del 10% en PD) y presione <strong>Simular Impacto</strong> para generar el análisis de estrés.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

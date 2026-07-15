@@ -1,0 +1,2 @@
+Command '['git', 'show', 'HEAD:templates/financial_planning/wizard.html']' returned non-zero exit status 128.
+Output: fatal: not a git repository (or any of the parent directories): .git

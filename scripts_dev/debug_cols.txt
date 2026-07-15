@@ -1,0 +1,10 @@
+--- NUEVA CARGA: plantilla_carga_creditos_v32024-2026.xlsx ---
+Columnas detectadas: SBS=None, ID=CODIGO_SOCIO/CLIENTE, OP=REFINANCIADO_VIGENTE, Bal=SALDO, Type=None, Prod=PRODUCTO
+--- NUEVA CARGA: plantilla_carga_creditos_v32024-2026.xlsx ---
+Columnas detectadas: SBS=None, ID=CODIGO_SOCIO/CLIENTE, OP=REFINANCIADO_VIGENTE, Bal=SALDO, Type=None, Prod=PRODUCTO
+--- NUEVA CARGA: plantilla_carga_creditos_v32024-2026.xlsx ---
+Columnas detectadas: SBS=None, ID=CODIGO_SOCIO/CLIENTE, OP=REFINANCIADO_VIGENTE, Bal=SALDO, Type=None, Prod=PRODUCTO
+--- NUEVA CARGA: plantilla_carga_creditos_v32024-2026.xlsx ---
+Columnas detectadas: SBS=None, ID=CODIGO_SOCIO/CLIENTE, OP=REFINANCIADO_VIGENTE, Bal=SALDO, Type=None, Prod=PRODUCTO
+--- NUEVA CARGA: plantilla_carga_creditos_v32024-2026.xlsx ---
+Columnas detectadas: SBS=None, ID=CODIGO_SOCIO/CLIENTE, OP=REFINANCIADO_VIGENTE, Bal=SALDO, Type=None, Prod=PRODUCTO

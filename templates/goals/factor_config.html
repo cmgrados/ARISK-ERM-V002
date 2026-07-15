@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block title_header %}Configuración de Factores{% endblock %}
+
+{% block extra_css %}
+<style>
+    .node-card {
+        border-radius: 8px;
+        margin-bottom: 10px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .node-header {
+        padding: 12px 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        border-radius: 8px 8px 0 0;
+        cursor: move;
+    }
+    .node-body {
+        padding: 15px;
+    }
+    .node-title {
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .weight-badge {
+        font-size: 0.85rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    .weight-ok { background: #dcfce7; color: #166534; }
+    .weight-warn { background: #fee2e2; color: #991b1b; }
+    
+    .children-container {
+        margin-left: 30px;
+        margin-top: 15px;
+        border-left: 2px dashed #cbd5e1;
+        padding-left: 20px;
+        min-height: 20px;
+    }
+    
+    .btn-xs { padding: 0.15rem 0.4rem; font-size: 0.75rem; }
+    .ghost-sortable { opacity: 0.4; background-color: #f1f5f9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row" id="app-container">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title"><i class="fas fa-sitemap text-indigo mr-2"></i> Estructura Jerárquica de Metas</h3>
+                <button class="btn btn-primary btn-sm ml-auto" onclick="openModal('factor', null, null)"><i class="fas fa-plus"></i> Nuevo Factor</button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info text-sm">
+                    <i class="fas fa-info-circle"></i> Configure los factores, variables e indicadores que definirán las metas. La ponderación de los elementos en cada nivel debe sumar idealmente el 100%. Arrastre los elementos para reordenarlos.
+                </div>
+                
+                <!-- Root Container for Factors -->
+                <div id="tree-root" class="mt-4">
+                    <div class="text-center text-muted py-4" id="loading-spinner">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i><br>Cargando estructura...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Create/Edit -->
+<div class="modal fade" id="nodeModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Nuevo Elemento</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="nodeForm">
+                <div class="modal-body">
+                    <input type="hidden" id="nodeType">
+                    <input type="hidden" id="nodeId">
+                    <input type="hidden" id="parentId">
+                    
+                    <div class="form-group">
+                        <label for="nodeName">Nombre</label>
+                        <input type="text" class="form-control" id="nodeName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nodeWeight">Ponderación (%)</label>
+                        <input type="number" class="form-control" id="nodeWeight" step="0.01" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nodeDesc">Descripción (Opcional)</label>
+                        <textarea class="form-control" id="nodeDesc" rows="2"></textarea>
+                    </div>
+                    <div class="form-group custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="nodeActive" checked>
+                        <label class="custom-control-label" for="nodeActive">Activo</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- SortableJS for Drag and Drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<script>
+    let treeData = [];
+    
+    // Fetch and render
+    function loadTree() {
+        $.ajax({
+            url: "{% url 'goals:api_get_tree' %}",
+            method: "GET",
+            success: function(res) {
+                if(res.status === 'success') {
+                    treeData = res.data;
+                    renderTree();
+                }
+            }
+        });
+    }
+
+    function renderTree() {
+        const root = document.getElementById('tree-root');
+        root.innerHTML = '';
+        
+        let totalFactorsWeight = treeData.filter(f => f.is_active).reduce((sum, f) => sum + f.weight, 0);
+        let headerStatus = totalFactorsWeight === 100 ? 
+            `<span class="weight-badge weight-ok">Total: ${totalFactorsWeight}%</span>` : 
+            `<span class="weight-badge weight-warn">Total: ${totalFactorsWeight}% (Falta ${(100-totalFactorsWeight).toFixed(2)}%)</span>`;
+            
+        let html = `<div class="mb-3 d-flex align-items-center gap-2"><strong>Factores Globales</strong> ${headerStatus}</div>`;
+        html += `<div class="sortable-list" id="factors-list" data-type="factor">`;
+        
+        treeData.forEach(factor => {
+            html += createNodeHtml(factor, 'factor', null);
+        });
+        
+        html += `</div>`;
+        root.innerHTML = html;
+        
+        initSortable();
+    }
+
+    function createNodeHtml(node, type, parentId) {
+        let childType = type === 'factor' ? 'variable' : (type === 'variable' ? 'indicator' : null);
+        let children = type === 'factor' ? node.variables : (type === 'variable' ? node.indicators : []);
+        
+        let totalChildWeight = children.filter(c => c.is_active).reduce((sum, c) => sum + c.weight, 0);
+        let weightBadge = '';
+        if (childType) {
+            if (children.length === 0) {
+                weightBadge = `<span class="weight-badge weight-warn">Sin elementos (0%)</span>`;
+            } else if (totalChildWeight === 100) {
+                weightBadge = `<span class="weight-badge weight-ok">Hijos: 100%</span>`;
+            } else {
+                weightBadge = `<span class="weight-badge weight-warn">Hijos: ${totalChildWeight}%</span>`;
+            }
+        }
+        
+        let inactiveStyle = node.is_active ? '' : 'opacity: 0.6; text-decoration: line-through;';
+        let icon = type === 'factor' ? 'fa-bullseye text-success' : (type === 'variable' ? 'fa-cube text-primary' : 'fa-chart-pie text-info');
+        
+        let hasChildren = childType && children.length > 0;
+        let collapseIcon = hasChildren ? `<i class="fas fa-chevron-down text-secondary mr-2 collapse-icon" onclick="toggleCollapse(this, event)" style="cursor: pointer; width: 16px; text-align: center;"></i>` : `<span style="display:inline-block; width: 24px;"></span>`;
+        
+        let html = `
+            <div class="node-card" data-id="${node.id}" style="${inactiveStyle}">
+                <div class="node-header">
+                    <h5 class="node-title">
+                        ${collapseIcon}
+                        <i class="fas ${icon}"></i> 
+                        ${node.name} <span class="badge badge-secondary">${node.weight}%</span>
+                        ${weightBadge}
+                    </h5>
+                    <div class="actions">
+                        ${childType ? `<button class="btn btn-xs btn-outline-primary mr-1" onclick="openModal('${childType}', null, ${node.id})" title="Añadir ${childType}"><i class="fas fa-plus"></i></button>` : ''}
+                        <button class="btn btn-xs btn-outline-info mr-1" onclick='editNode(${JSON.stringify(node)}, "${type}", ${parentId})' title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-xs btn-outline-danger" onclick="deleteNode(${node.id}, '${type}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+        `;
+        
+        if (childType) {
+            html += `<div class="node-body children-container sortable-list" data-type="${childType}">`;
+            children.forEach(child => {
+                html += createNodeHtml(child, childType, node.id);
+            });
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        return html;
+    }
+
+    function toggleCollapse(iconEl, event) {
+        if(event) event.stopPropagation();
+        let card = $(iconEl).closest('.node-card');
+        let body = card.children('.node-body');
+        if (body.is(':visible')) {
+            body.slideUp(200);
+            $(iconEl).removeClass('fa-chevron-down').addClass('fa-chevron-right');
+        } else {
+            body.slideDown(200);
+            $(iconEl).removeClass('fa-chevron-right').addClass('fa-chevron-down');
+        }
+    }
+
+    // Modal Handling
+    function openModal(type, node, parentId) {
+        document.getElementById('nodeForm').reset();
+        document.getElementById('nodeType').value = type;
+        document.getElementById('parentId').value = parentId || '';
+        document.getElementById('nodeId').value = '';
+        
+        let typeLabels = { 'factor': 'Factor', 'variable': 'Variable', 'indicator': 'Indicador' };
+        
+        if (node) {
+            document.getElementById('modalTitle').innerText = `Editar ${typeLabels[type]}`;
+            document.getElementById('nodeId').value = node.id;
+            document.getElementById('nodeName').value = node.name;
+            document.getElementById('nodeWeight').value = node.weight;
+            document.getElementById('nodeDesc').value = node.description;
+            document.getElementById('nodeActive').checked = node.is_active;
+        } else {
+            document.getElementById('modalTitle').innerText = `Nuevo ${typeLabels[type]}`;
+        }
+        
+        $('#nodeModal').modal('show');
+    }
+
+    function editNode(node, type, parentId) {
+        openModal(type, node, parentId);
+    }
+
+    // Save
+    $('#nodeForm').submit(function(e) {
+        e.preventDefault();
+        let payload = {
+            type: $('#nodeType').val(),
+            id: $('#nodeId').val(),
+            parent_id: $('#parentId').val(),
+            name: $('#nodeName').val(),
+            weight: parseFloat($('#nodeWeight').val()),
+            description: $('#nodeDesc').val(),
+            is_active: $('#nodeActive').is(':checked')
+        };
+        
+        $.ajax({
+            url: "{% url 'goals:api_manage_node' %}",
+            method: "POST",
+            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+            contentType: "application/json",
+            data: JSON.stringify(payload),
+            success: function(res) {
+                if(res.status === 'success') {
+                    $('#nodeModal').modal('hide');
+                    loadTree();
+                } else {
+                    alert('Error: ' + res.message);
+                }
+            }
+        });
+    });
+
+    // Delete
+    function deleteNode(id, type) {
+        if(confirm('¿Está seguro de eliminar este elemento y todos sus dependientes?')) {
+            $.ajax({
+                url: "{% url 'goals:api_manage_node' %}",
+                method: "DELETE",
+                headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                contentType: "application/json",
+                data: JSON.stringify({ id: id, type: type }),
+                success: function(res) {
+                    if(res.status === 'success') loadTree();
+                }
+            });
+        }
+    }
+
+    // Sortable
+    function initSortable() {
+        const lists = document.querySelectorAll('.sortable-list');
+        lists.forEach(list => {
+            new Sortable(list, {
+                group: list.dataset.type, // Only allow sorting within same type
+                animation: 150,
+                ghostClass: 'ghost-sortable',
+                handle: '.node-header',
+                onEnd: function (evt) {
+                    let items = [];
+                    let container = evt.to;
+                    let type = container.dataset.type;
+                    
+                    container.querySelectorAll(`:scope > .node-card`).forEach((el, index) => {
+                        items.push({ id: el.dataset.id, order: index });
+                    });
+                    
+                    if(items.length > 0) {
+                        $.ajax({
+                            url: "{% url 'goals:api_reorder_nodes' %}",
+                            method: "POST",
+                            headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+                            contentType: "application/json",
+                            data: JSON.stringify({ type: type, items: items }),
+                            success: function(res) {
+                                if(res.status === 'success') loadTree();
+                            }
+                        });
+                    }
+                },
+            });
+        });
+    }
+
+    // Initial load
+    $(document).ready(function() {
+        loadTree();
+    });
+</script>
+{% endblock %}

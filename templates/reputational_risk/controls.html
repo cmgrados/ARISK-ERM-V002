@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-header text-white" style="background-color: #dc3545;">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Manual de Gestión de Crisis Reputacional</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="p-3 border rounded h-100">
+                    <h6 class="text-bold">Nivel 1: Incidente Menor</h6>
+                    <p class="small">Respuesta por CM en menos de 2 horas. No requiere comunicado oficial.</p>
+                    <span class="badge badge-success">Activo</span>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="p-3 border rounded h-100">
+                    <h6 class="text-bold">Nivel 2: Crisis Local</h6>
+                    <p class="small">Activación de Gerencia de Imagen. Comunicado en redes sociales.</p>
+                    <span class="badge badge-warning">Simulacro OK</span>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="p-3 border rounded h-100">
+                    <h6 class="text-bold">Nivel 3: Crisis Institucional</h6>
+                    <p class="small">Comité de Crisis (Gerencia General + Directorio). Rueda de prensa.</p>
+                    <span class="badge badge-danger">Crítico</span>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <button class="btn btn-sm btn-danger"><i class="fas fa-phone-alt mr-1"></i> Notificar a Voceros Oficiales</button>
+    </div>
+</div>
+{% endblock %}

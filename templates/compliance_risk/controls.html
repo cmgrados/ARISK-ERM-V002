@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card card-outline shadow-sm border-0" style="border-top-color: #ffcc00;">
+    <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-tasks text-warning mr-2"></i>Programa Anual de Autoevaluación de Cumplimiento</h3>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped table-valign-middle">
+            <thead>
+                <tr><th>Código Revisión</th><th>Área/Departamento</th><th>Frecuencia</th><th>Última Auditoría</th><th>Resultado</th><th>Plan Remediación</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>REV-CUMP-01</td><td>Créditos MYPE</td><td>Trimestral</td><td>15/03/2026</td><td><span class="badge badge-success">Conforme</span></td><td><button class="btn btn-xs btn-outline-secondary" disabled>Ver Plan</button></td></tr>
+                <tr><td>REV-CUMP-02</td><td>Captaciones / Ahorros</td><td>Semestral</td><td>10/01/2026</td><td><span class="badge badge-warning">Observaciones Menores</span></td><td><button class="btn btn-xs btn-outline-info">Ver Plan</button></td></tr>
+                <tr><td>REV-CUMP-03</td><td>Comité de Créditos</td><td>Mensual</td><td>01/04/2026</td><td><span class="badge badge-danger">Hallazgos Graves</span></td><td><button class="btn btn-xs btn-danger">Requiere Aprobación</button></td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

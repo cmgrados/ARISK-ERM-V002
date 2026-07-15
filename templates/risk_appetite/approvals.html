@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Gobernanza y Aprobaciones{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-dark">
+                <h3 class="card-title">Trazabilidad de Gobiernos de Riesgo (Actas y Acuerdos)</h3>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-sm">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Instancia</th>
+                            <th>Decisión</th>
+                            <th>Marco Relacionado</th>
+                            <th>Comentario</th>
+                            <th>Firma Digital</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in approvals %}
+                        <tr>
+                            <td>{{ a.date }}</td>
+                            <td>{{ a.instance }}</td>
+                            <td><span class="badge badge-{% if a.decision == 'Aprobado' %}success{% else %}danger{% endif %}">{{ a.decision }}</span></td>
+                            <td>{{ a.framework.name }} (v{{ a.framework.version }})</td>
+                            <td>{{ a.comment|truncatechars:50 }}</td>
+                            <td><i class="fas fa-signature text-success"></i> {{ a.approver.last_name }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center p-4">No se han registrado actos de aprobación formal.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

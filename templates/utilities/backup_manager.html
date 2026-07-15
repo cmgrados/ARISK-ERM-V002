@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        
+        <!-- Action Cards -->
+        <div class="row mb-4">
+            <!-- Manual Backup -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-database fa-3x text-primary mb-3"></i>
+                        <h5 class="font-weight-bold">Backup Manual</h5>
+                        <p class="text-muted small">Crea una copia de seguridad instantánea del estado actual de la base de datos (Toda la información del sistema).</p>
+                        <form method="POST" action="{% url 'utilities:create_backup' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary" onclick="this.innerHTML='<span class=\'spinner-border spinner-border-sm\'></span> Creando...';">
+                                <i class="fas fa-save mr-1"></i> Generar Backup Ahora
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Restore -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-upload fa-3x text-success mb-3"></i>
+                        <h5 class="font-weight-bold">Restaurar Sistema</h5>
+                        <p class="text-muted small">Sube un archivo de backup previo (<code>.sqlite3</code>) para restaurar el sistema a esa fecha exacta.</p>
+                        <form method="POST" action="{% url 'utilities:restore_backup' %}" enctype="multipart/form-data" id="restore-form">
+                            {% csrf_token %}
+                            <div class="custom-file mb-3 text-left">
+                                <input type="file" name="backup_file" class="custom-file-input" id="customFile" accept=".sqlite3" required>
+                                <label class="custom-file-label" for="customFile">Seleccionar archivo...</label>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="confirmRestore()">
+                                <i class="fas fa-undo mr-1"></i> Restaurar Sistema
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Schedule Backup -->
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body text-center p-4">
+                        <i class="fas fa-clock fa-3x text-info mb-3"></i>
+                        <h5 class="font-weight-bold">Programar Backup</h5>
+                        <p class="text-muted small">Configura la hora para ejecutar una copia de seguridad automáticamente todos los días.</p>
+                        <form method="POST" action="{% url 'utilities:schedule_backup' %}">
+                            {% csrf_token %}
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
+                                </div>
+                                <input type="time" name="backup_time" class="form-control" value="02:00" required>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100">
+                                <i class="fas fa-save mr-1"></i> Guardar Hora
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h3 class="card-title font-weight-bold mb-0">
+                    <i class="fas fa-history mr-2 text-info"></i>Historial de Backups
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Fecha y Hora</th>
+                                <th>Nombre de Archivo</th>
+                                <th>Tamaño</th>
+                                <th>Tipo</th>
+                                <th>Estado</th>
+                                <th class="text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for backup in backups %}
+                            <tr>
+                                <td class="align-middle font-weight-bold">{{ backup.created_at|date:"d/m/Y H:i:s" }}</td>
+                                <td class="align-middle text-muted"><code>{{ backup.file_name }}</code></td>
+                                <td class="align-middle">{{ backup.size_bytes|filesizeformat }}</td>
+                                <td class="align-middle">
+                                    {% if backup.is_scheduled %}
+                                        <span class="badge badge-info"><i class="fas fa-clock mr-1"></i>Automático</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary"><i class="fas fa-user mr-1"></i>Manual</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle">
+                                    {% if backup.status == 'Success' %}
+                                        <span class="text-success"><i class="fas fa-check-circle"></i> Éxito</span>
+                                    {% else %}
+                                        <span class="text-danger"><i class="fas fa-times-circle"></i> {{ backup.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="align-middle text-right">
+                                    <a href="{% url 'utilities:download_backup' backup.id %}" class="btn btn-sm btn-outline-primary" title="Descargar">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <form method="POST" action="{% url 'utilities:delete_backup' backup.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="return confirm('¿Seguro que deseas eliminar este backup permanentemente?');">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="fas fa-database fa-3x mb-3 text-light"></i><br>
+                                    Aún no se ha generado ninguna copia de seguridad.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.querySelector('.custom-file-input').addEventListener('change', function(e) {
+        var fileName = document.getElementById("customFile").files[0].name;
+        var nextSibling = e.target.nextElementSibling;
+        nextSibling.innerText = fileName;
+    });
+
+    function confirmRestore() {
+        const fileInput = document.getElementById('customFile');
+        if (!fileInput.value) {
+            alert('Por favor, selecciona un archivo de backup primero.');
+            return;
+        }
+        
+        if (confirm('PELIGRO: Esto sobrescribirá completamente la base de datos actual y reemplazarla con la versión del archivo subido. Todos los usuarios serán cerrados de su sesión y cualquier cambio no guardado en el backup se perderá para siempre.\n\n¿Estás absolutamente seguro de que deseas proceder con la restauración?')) {
+            document.getElementById('restore-form').submit();
+        }
+    }
+</script>
+{% endblock %}

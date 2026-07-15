@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title_header %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0" style="border-left: 5px solid #161065;">
+    <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold"><i class="fas fa-columns text-primary mr-2"></i>Balanced Scorecard (Cuadro de Mando Integral)</h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="p-3 border rounded text-center bg-light mb-2">
+                    <h5 class="font-weight-bold">Financiera</h5>
+                    <h3 class="text-success">92%</h3>
+                    <small>ROA/ROE dentro de metas</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded text-center bg-light mb-2">
+                    <h5 class="font-weight-bold">Clientes</h5>
+                    <h3 class="text-warning">78%</h3>
+                    <small>NPS en observación</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded text-center bg-light mb-2">
+                    <h5 class="font-weight-bold">Procesos</h5>
+                    <h3 class="text-primary">85%</h3>
+                    <small>Eficiencia operativa</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="p-3 border rounded text-center bg-light mb-2">
+                    <h5 class="font-weight-bold">Aprendizaje</h5>
+                    <h3 class="text-danger">45%</h3>
+                    <small>Capacitación retrasada</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

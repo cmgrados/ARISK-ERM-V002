@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Nuevo {{ verbose_name }} | A.RISK ERM{% endblock %}
+
+{% block content %}
+<div class="content-wrapper bg-white">
+  <div class="content-header pb-0">
+    <div class="container-fluid">
+      <div class="row mb-4 mt-2">
+        <div class="col-sm-6">
+          <h4 class="m-0 text-dark font-weight-bold">
+            Nuevo {{ verbose_name }}
+          </h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content">
+    <div class="container-fluid">
+        <div class="card border-0 shadow-sm rounded-lg" style="background-color: #FAFAFA;">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        {% for field in form %}
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <div class="col-md-4 mb-4 mt-2">
+                                    <div class="custom-control custom-switch">
+                                        {{ field }}
+                                        <label class="custom-control-label font-weight-bold text-dark" for="{{ field.id_for_label }}">
+                                            {{ field.label }}
+                                        </label>
+                                        {% if field.help_text %}
+                                        <small class="form-text text-muted">{{ field.help_text|safe }}</small>
+                                        {% endif %}
+                                    </div>
+                                    {% if field.errors %}
+                                    <small class="text-danger">{{ field.errors.0 }}</small>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="font-weight-bold text-muted small text-uppercase">{{ field.label }}</label>
+                                    {{ field }}
+                                    {% if field.errors %}
+                                    <small class="text-danger">{{ field.errors.0 }}</small>
+                                    {% endif %}
+                                    {% if field.help_text %}
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">{{ field.help_text|safe }}</small>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-right mt-4 pt-3 border-top">
+                        <a href="{% url 'catalogs:catalog_list' model_name %}" class="btn btn-light px-4 mr-2">Cancelar</a>
+                        <button type="submit" class="btn btn-dark px-5 font-weight-bold shadow-sm">
+                            <i class="fas fa-save mr-2"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
