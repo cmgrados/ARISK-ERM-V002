@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title_header %}Panel de Control General (A.RISK Executive){% endblock %}
+
+{% block content %}
+<!-- Tarjetas KPI Principales -->
+<div class="row">
+    <!-- Riesgo Operacional -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger shadow-sm">
+            <div class="inner">
+                <h3>{{ open_incidents }}</h3>
+                <p>Incidentes Activos (OpRisk)</p>
+                <small class="text-white">Pérdidas: S/ {{ total_losses|floatformat:2|intcomma }}</small>
+            </div>
+            <div class="icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <a href="{% url 'op_risk:incidents' %}" class="small-box-footer">Ver Detalle <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    
+    <!-- Riesgo de Mercado -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning shadow-sm">
+            <div class="inner">
+                <h3>S/ {{ worst_ear|floatformat:0|intcomma }}</h3>
+                <p>Peor Impacto EaR (Market)</p>
+                <small class="text-white">Brecha Total: S/ {{ cumulative_gap|floatformat:0|intcomma }}</small>
+            </div>
+            <div class="icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <a href="{% url 'market_risk:dashboard' %}" class="small-box-footer">Ver Detalle <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    
+    <!-- Riesgo de Crédito -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-info shadow-sm">
+            <div class="inner">
+                <h3>{{ npl_ratio|floatformat:1 }}<sup style="font-size: 20px">%</sup></h3>
+                <p>Morosidad Global (Credit)</p>
+                <small class="text-white">Mora S/ {{ total_mora|floatformat:0|intcomma }}</small>
+            </div>
+            <div class="icon">
+                <i class="fas fa-money-check-alt"></i>
+            </div>
+            <a href="/credit_risk/graficos/" class="small-box-footer">Ver Detalle <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    
+    <!-- Riesgo de Liquidez -->
+    <div class="col-lg-3 col-6">
+        <div class="small-box bg-success shadow-sm">
+            <div class="inner">
+                <h3>12<sup style="font-size: 20px">%</sup></h3>
+                <p>Ratio de Liquidez (Liq)</p>
+                <small class="text-white">Cobertura Óptima > 8%</small>
+            </div>
+            <div class="icon">
+                <i class="fas fa-tint"></i>
+            </div>
+            <a href="/liquidity_risk/" class="small-box-footer">Ver Detalle <i class="fas fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos Principales -->
+<div class="row">
+    <!-- Radar Chart: Consumo de Apetito de Riesgo -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-bullseye mr-2 text-primary"></i>Apetito de Riesgo (Consumo por Tipo)</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="radarChart" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mapa de Calor (Simulado) o Distribución -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white">
+                <h3 class="card-title font-weight-bold text-dark"><i class="fas fa-fire mr-2 text-danger"></i>Concentración de Riesgos Críticos</h3>
+            </div>
+            <div class="card-body p-0">
+                <div id="barChart" style="height: 400px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Inicializar Gráfico de Radar
+    var radarChart = echarts.init(document.getElementById('radarChart'));
+    var radarOption = {
+        tooltip: { trigger: 'item' },
+        radar: {
+            indicator: [
+                { name: 'Riesgo Operacional', max: 100 },
+                { name: 'Riesgo Mercado', max: 100 },
+                { name: 'Riesgo Liquidez', max: 100 },
+                { name: 'Riesgo Crédito', max: 100 },
+                { name: 'Riesgo Estratégico', max: 100 }
+            ],
+            shape: 'circle',
+            splitNumber: 5,
+            axisName: { color: '#333', fontWeight: 'bold' },
+            splitLine: { lineStyle: { color: ['rgba(238, 197, 102, 0.1)', 'rgba(238, 197, 102, 0.2)', 'rgba(238, 197, 102, 0.4)', 'rgba(238, 197, 102, 0.6)', 'rgba(238, 197, 102, 0.8)'].reverse() } },
+            splitArea: { show: false },
+            axisLine: { lineStyle: { color: 'rgba(238, 197, 102, 0.5)' } }
+        },
+        series: [{
+            name: 'Consumo vs Límite (%)',
+            type: 'radar',
+            lineStyle: { width: 2, color: '#dc3545' },
+            data: [{
+                value: {{ radar_data|safe }},
+                name: 'Consumo de Límite Actual',
+                areaStyle: { color: 'rgba(220, 53, 69, 0.3)' }
+            }]
+        }]
+    };
+    radarChart.setOption(radarOption);
+
+    // Inicializar Gráfico de Barras de Distribución
+    var barChart = echarts.init(document.getElementById('barChart'));
+    var barOption = {
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: { type: 'value', boundaryGap: [0, 0.01] },
+        yAxis: { type: 'category', data: ['Crédito Consumo', 'Liquidez Corto Plazo', 'Mercado FX', 'Fallas TI (OpRisk)', 'Fraude Interno'] },
+        series: [
+            {
+                name: 'Nivel de Exposición (Simulado)',
+                type: 'bar',
+                data: [85, 60, 45, {{ radar_data.0|default:90 }}, 30],
+                itemStyle: {
+                    color: function(params) {
+                        var colors = ['#dc3545', '#ffc107', '#17a2b8', '#007bff', '#28a745'];
+                        return colors[params.dataIndex];
+                    },
+                    borderRadius: [0, 5, 5, 0]
+                }
+            }
+        ]
+    };
+    barChart.setOption(barOption);
+
+    // Responsividad
+    window.addEventListener('resize', function() {
+        radarChart.resize();
+        barChart.resize();
+    });
+});
+</script>
+{% endblock %}

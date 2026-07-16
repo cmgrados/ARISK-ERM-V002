@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title_header %}Guía de Requerimiento de Información{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info shadow-sm border-0 d-flex align-items-center mb-4">
+    <i class="fas fa-magic fa-2x me-3 mr-3"></i>
+    <div>
+        <h5 class="alert-heading mb-1">Carga Automatizada (SSOT)</h5>
+        <p class="mb-0">El módulo de Riesgo de Mercado ya no requiere una carga de archivos manual. Se alimenta de forma automática de los modelos de <strong>Riesgo de Liquidez y Riesgo de Crédito</strong>. Esta guía detalla la información que esos módulos extraen de la contabilidad.</p>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title font-weight-bold m-0"><i class="fas fa-book-open mr-2"></i>REQUERIMIENTO DE INFORMACIÓN: RIESGO DE MERCADO</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-bullseye"></i> Objetivo</h5>
+                    Extraer las posiciones activas y pasivas sensibles a riesgo de tasa de interés y riesgo cambiario, con fecha de corte a fin de mes.
+                </div>
+
+                <h4 class="font-weight-bold text-success border-bottom pb-2 mt-4 mb-3">1. ¿Qué productos o cuentas se deben extraer?</h4>
+                <p>Solo se requiere extraer los saldos de aquellas cuentas que generan o cuestan dinero (sensibles a tasas) o que estén en moneda extranjera.</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="callout callout-success">
+                            <h5 class="text-success"><i class="fas fa-plus-circle mr-2"></i>Activos (ASSET)</h5>
+                            <ul>
+                                <li><strong>Cartera de Créditos:</strong> (Vigentes, Refinanciados, Reestructurados). <em>Excluir la cartera atrasada o en cobranza judicial si se asume que ya no genera flujos financieros.</em></li>
+                                <li><strong>Fondos Disponibles:</strong> (Caja, saldos en bancos).</li>
+                                <li><strong>Inversiones:</strong> (Depósitos a plazo en otras entidades, bonos, fondos mutuos).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="callout callout-danger">
+                            <h5 class="text-danger"><i class="fas fa-minus-circle mr-2"></i>Pasivos (LIABILITY)</h5>
+                            <ul>
+                                <li><strong>Depósitos del Público:</strong> (Cuentas de Ahorro, Plazo Fijo - DPF, CTS).</li>
+                                <li><strong>Obligaciones Financieras:</strong> (Adeudos o préstamos tomados con COFIDE, bancos, etc.).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-danger small"><i class="fas fa-exclamation-triangle mr-1"></i> <strong>Nota:</strong> No se deben incluir cuentas de Patrimonio, Activo Fijo (muebles, inmuebles), cuentas de orden ni gastos pagados por anticipado.</p>
+
+                <h4 class="font-weight-bold text-success border-bottom pb-2 mt-5 mb-3">2. Estructura de los datos solicitados (Columnas del archivo)</h4>
+                <p>Por cada operación o bolsa de operaciones (si lo agrupan contablemente), el archivo debe contener las siguientes columnas (idénticas a la plantilla CSV del sistema):</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="bg-light">
+                            <tr>
+                                <th>Columna</th>
+                                <th>Descripción</th>
+                                <th>Valores Esperados / Ejemplo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Cuenta_Codigo</strong></td>
+                                <td>El código contable, número de crédito o identificador único del depósito.</td>
+                                <td><code>CRED-100450</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tipo_Posicion</strong></td>
+                                <td>Indicar si es un Activo o Pasivo.</td>
+                                <td><code>ASSET</code> o <code>LIABILITY</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Moneda</strong></td>
+                                <td>Moneda Nacional o Extranjera.</td>
+                                <td><code>MN</code> o <code>ME</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Saldo</strong></td>
+                                <td>El saldo capital o contable al momento del corte.</td>
+                                <td><code>15000.00</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Tasa_Interes</strong></td>
+                                <td>La Tasa Efectiva Anual (TEA). Para cuentas sin tasa (Caja), colocar 0.</td>
+                                <td><code>25.5</code> o <code>0</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Fecha_Reprecio</strong></td>
+                                <td><em>(Opcional)</em> Fecha en que vence o cambia la tasa (DD/MM/YYYY).</td>
+                                <td><code>15/12/2026</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Banda_Temporal</strong></td>
+                                <td>En qué bloque de tiempo (maduración) cae el flujo de esa cuenta.</td>
+                                <td>
+                                    <code>1 a 30 dias</code><br>
+                                    <code>31 a 90 dias</code><br>
+                                    <code>91 a 180 dias</code><br>
+                                    <code>181 a 360 dias</code><br>
+                                    <code>Mas de 360 dias</code>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 class="font-weight-bold text-success border-bottom pb-2 mt-5 mb-3">3. Ejemplo de un archivo correctamente llenado:</h4>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="bg-dark text-white">
+                            <tr>
+                                <th>Cuenta_Codigo</th>
+                                <th>Tipo_Posicion</th>
+                                <th>Moneda</th>
+                                <th>Saldo</th>
+                                <th>Tasa_Interes</th>
+                                <th>Banda_Temporal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>CRED-100450</td>
+                                <td>ASSET</td>
+                                <td>MN</td>
+                                <td>15000.00</td>
+                                <td>25.5</td>
+                                <td>31 a 90 dias</td>
+                            </tr>
+                            <tr>
+                                <td>DPF-994332</td>
+                                <td>LIABILITY</td>
+                                <td>ME</td>
+                                <td>5000.00</td>
+                                <td>4.5</td>
+                                <td>91 a 180 dias</td>
+                            </tr>
+                            <tr>
+                                <td>CAJA-BÓVEDA</td>
+                                <td>ASSET</td>
+                                <td>MN</td>
+                                <td>45000.00</td>
+                                <td>0.0</td>
+                                <td>1 a 30 dias</td>
+                            </tr>
+                            <tr>
+                                <td>AHO-VISTA-01</td>
+                                <td>LIABILITY</td>
+                                <td>MN</td>
+                                <td>120000.00</td>
+                                <td>0.5</td>
+                                <td>1 a 30 dias</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="alert alert-warning mt-4">
+                    <h5><i class="icon fas fa-lightbulb"></i> Tip Estratégico</h5>
+                    Si el área de Sistemas te entrega la información cruda, tú puedes consolidarla antes de subirla. Por ejemplo, en lugar de subir 5,000 cuentas de ahorro de 100 soles cada una, puedes sumar todo y subir una sola línea agregada que diga: <code>AHO-VISTA-TOTAL | LIABILITY | MN | 500000.00 | 0.5 | 1 a 30 dias</code>. El sistema A.RISK lo procesará de manera óptima y exacta.
+                </div>
+
+                <div class="mt-4">
+                    <a href="{% url 'market_risk:positions' %}" class="btn btn-primary"><i class="fas fa-arrow-left mr-2"></i> Ir a Cargar Posiciones</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title_header %}Sincronización de Posiciones{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-success shadow-sm border-0 d-flex align-items-center">
+            <i class="fas fa-check-circle fa-2x me-3 mr-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">¡Sincronización Automatizada Activa!</h5>
+                <p class="mb-0">El módulo de Riesgo de Mercado ahora está integrado al motor de <strong>Riesgo de Liquidez y Riesgo de Crédito</strong>. Ya no es necesario cargar archivos CSV manualmente. El sistema proyecta los flujos de caja y saldos de forma centralizada (Single Source of Truth).</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 text-center">
+        <div class="card bg-light border-primary shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-hand-holding-usd fa-3x text-primary mb-3"></i>
+                <h4 class="text-primary">Activos Sensibles</h4>
+                <p class="text-muted">Proyectados desde la cartera de créditos y disponible del balance.</p>
+                <a href="{% url 'credit_risk:dashboard' %}" class="btn btn-outline-primary mt-2">Ir a Riesgo Crédito</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 text-center">
+        <div class="card bg-light border-danger shadow-sm h-100">
+            <div class="card-body">
+                <i class="fas fa-money-check-alt fa-3x text-danger mb-3"></i>
+                <h4 class="text-danger">Pasivos Sensibles</h4>
+                <p class="text-muted">Proyectados desde captaciones a plazo y ahorros libres con volatilidad LaR.</p>
+                <a href="{% url 'liquidity_risk:dashboard' %}" class="btn btn-outline-danger mt-2">Ir a Riesgo Liquidez</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

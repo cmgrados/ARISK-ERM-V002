@@ -39,6 +39,7 @@ urlpatterns = [
     path('liquidez/', include('liquidity_risk.urls', namespace='liquidity_risk')),
     path('auditoria/', include('audit.urls')),
     path('riesgo-operacional/', include('apps.op_risk.urls')),
+    path('mercado/', include('apps.market_risk.urls', namespace='market_risk')),
 ]
 
 if settings.DEBUG:

@@ -21,7 +21,7 @@
     <div class="col-lg-3 col-6">
         <div class="small-box shadow-sm bg-white border">
             <div class="inner">
-                <h3 class="text-danger">- S/ 450K</h3>
+                <h3 class="text-danger">S/ {{ total_ear|default:"0.00"|floatformat:2 }}</h3>
                 <p>Earnings at Risk (EaR)</p>
             </div>
             <div class="icon text-danger"><i class="fas fa-level-down-alt"></i></div>
@@ -39,7 +39,7 @@
     <div class="col-lg-3 col-6">
         <div class="small-box shadow-sm" style="background-color: #ffcc00; color: #141313;">
             <div class="inner">
-                <h3>$ 3.5M</h3>
+                <h3>$ {{ net_usd|default:"0.00"|floatformat:2 }}</h3>
                 <p>Exposición Neta USD</p>
             </div>
             <div class="icon"><i class="fas fa-exchange-alt"></i></div>
@@ -95,12 +95,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var optionGap = {
         tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
         legend: { data: ['Activo Sensible', 'Pasivo Sensible', 'Brecha Sensible'] },
-        xAxis: { type: 'category', data: ['Hasta 1 mes', '1 a 3 meses', '3 a 6 meses', '6 a 12 meses', '> 1 año'] },
-        yAxis: { type: 'value', name: 'Millones S/' },
+        xAxis: { type: 'category', data: {{ echart_bands|safe }} },
+        yAxis: { type: 'value', name: 'Soles' },
         series: [
-            { name: 'Activo Sensible', type: 'bar', itemStyle: { color: '#161065' }, data: [120, 150, 180, 200, 300] },
-            { name: 'Pasivo Sensible', type: 'bar', itemStyle: { color: '#E84A5F' }, data: [180, 140, 100, 80, 50] },
-            { name: 'Brecha Sensible', type: 'line', itemStyle: { color: '#ffcc00' }, lineStyle:{width: 3}, data: [-60, 10, 80, 120, 250] }
+            { name: 'Activo Sensible', type: 'bar', itemStyle: { color: '#161065' }, data: {{ echart_assets|safe }} },
+            { name: 'Pasivo Sensible', type: 'bar', itemStyle: { color: '#E84A5F' }, data: {{ echart_liabilities|safe }} },
+            { name: 'Brecha Sensible', type: 'line', itemStyle: { color: '#ffcc00' }, lineStyle:{width: 3}, data: {{ echart_gaps|safe }} }
         ]
     };
     chartGap.setOption(optionGap);
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
             name: 'Monedas', type: 'pie', radius: ['40%', '70%'],
             itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
             color: ['#161065', '#ffcc00', '#50a3ba'],
-            data: [ { value: 75, name: 'Soles (PEN)' }, { value: 25, name: 'Dólares (USD)' } ]
+            data: {{ echart_fx_data|safe }}
         }]
     };
     chartFx.setOption(optionFx);
@@ -140,8 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var chartEar = echarts.init(document.getElementById('earChart'));
     var optionEar = {
         tooltip: { trigger: 'axis' },
-        xAxis: { type: 'category', data: ['-200 pbs', '-100 pbs', 'Base', '+100 pbs', '+200 pbs'] },
-        yAxis: { type: 'value', name: 'Δ Margen (Millones S/)' },
+        xAxis: { type: 'category', data: {{ echart_scen_names|safe }} },
+        yAxis: { type: 'value', name: 'Δ Margen' },
         series: [{
             name: 'Sensibilidad', type: 'bar',
             itemStyle: {
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return params.value < 0 ? '#E84A5F' : '#161065';
                 }
             },
-            data: [-2.5, -1.2, 0, 1.5, 3.2]
+            data: {{ echart_scen_impacts|safe }}
         }]
     };
     chartEar.setOption(optionEar);
@@ -163,9 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         series: [{
             name: 'Escenarios', type: 'scatter', symbolSize: 20,
             itemStyle: { color: '#ffcc00', borderColor: '#141313', borderWidth: 2 },
-            data: [
-                [0, 0], [5, 100], [10, 200], [-2, -50], [15, 250]
-            ]
+            data: {{ echart_dual_scatter|safe }}
         }]
     };
     chartScenario.setOption(optionScenario);

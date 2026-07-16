@@ -3,13 +3,13 @@ from django.utils import timezone
 from .engine.cashflow import get_cashflow_projections
 from .engine.validator import validar_cruce_maestro
 from liquidity_risk.models import CarteraPasivoCarga, VolatileBalanceLar, SbsParameter, LiqBalanceDetail
-from credit_risk.models import CarteraCreditoCarga
+from credit_risk.models import CreditOperation
 from datetime import datetime
 from decimal import Decimal
 
 def validacion_maestra(request):
     pasivos_periods = list(CarteraPasivoCarga.objects.values_list('fecha_corte', flat=True).distinct())
-    creditos_periods = list(CarteraCreditoCarga.objects.values_list('fecha_corte', flat=True).distinct())
+    creditos_periods = list(CreditOperation.objects.values_list('load_date', flat=True).distinct())
     contabilidad_periods = list(LiqBalanceDetail.objects.values_list('period', flat=True).distinct())
     periods = sorted(list(set(pasivos_periods + creditos_periods + contabilidad_periods)), reverse=True)
     
@@ -34,7 +34,7 @@ def validacion_maestra(request):
 
 def dashboard(request):
     pasivos_periods = list(CarteraPasivoCarga.objects.values_list('fecha_corte', flat=True).distinct())
-    creditos_periods = list(CarteraCreditoCarga.objects.values_list('fecha_corte', flat=True).distinct())
+    creditos_periods = list(CreditOperation.objects.values_list('load_date', flat=True).distinct())
     contabilidad_periods = list(LiqBalanceDetail.objects.values_list('period', flat=True).distinct())
     periods = sorted(list(set(pasivos_periods + creditos_periods + contabilidad_periods)), reverse=True)
     
@@ -92,7 +92,7 @@ def metodologia_lar(request):
     
     # Periods for dropdown
     pasivos_periods = list(CarteraPasivoCarga.objects.values_list('fecha_corte', flat=True).distinct())
-    creditos_periods = list(CarteraCreditoCarga.objects.values_list('fecha_corte', flat=True).distinct())
+    creditos_periods = list(CreditOperation.objects.values_list('load_date', flat=True).distinct())
     periods = sorted(list(set(pasivos_periods + creditos_periods)), reverse=True)
 
     return render(request, 'liquidity_risk/metodologia_lar.html', {

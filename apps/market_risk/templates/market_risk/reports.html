@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title_header %}Generación de Reportes{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-dark text-white">
+        <h3 class="card-title m-0"><i class="fas fa-file-pdf mr-2"></i>Reportes de Riesgo de Mercado</h3>
+    </div>
+    <div class="card-body py-5">
+        <div class="row text-center">
+            <div class="col-md-6 mb-4">
+                <div class="border rounded p-4 shadow-sm bg-white">
+                    <i class="fas fa-file-csv fa-4x text-success mb-3"></i>
+                    <h4>Reporte de Brechas (Gaps)</h4>
+                    <p class="text-muted">Descarga el consolidado de Activos y Pasivos agrupados por sus respectivas bandas temporales.</p>
+                    <a href="{% url 'market_risk:export_gaps_csv' %}" class="btn btn-outline-success font-weight-bold">
+                        <i class="fas fa-download mr-1"></i> Descargar CSV
+                    </a>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="border rounded p-4 shadow-sm bg-white">
+                    <i class="fas fa-file-csv fa-4x text-warning mb-3"></i>
+                    <h4>Reporte de Escenarios de Estrés</h4>
+                    <p class="text-muted">Descarga la evaluación histórica de los impactos de todos los escenarios de estrés simulados.</p>
+                    <a href="{% url 'market_risk:export_stress_csv' %}" class="btn btn-outline-warning font-weight-bold">
+                        <i class="fas fa-download mr-1"></i> Descargar CSV
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

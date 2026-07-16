@@ -1,0 +1,8 @@
+Codigo_Cuenta,Descripcion,Tipo_Posicion,Moneda,Saldo,Tasa_Interes_Anual,Fecha_Reprecio,Banda_Temporal
+1401,Creditos de Consumo,ASSET,MN,1250000.00,18.5,2026-08-15,1 a 3 meses
+1402,Creditos Microempresa,ASSET,MN,3400000.00,24.0,2026-12-01,3 a 6 meses
+2101,Depositos a Plazo Fijo,LIABILITY,MN,2000000.00,7.5,2026-09-10,1 a 3 meses
+2102,Depositos de Ahorro,LIABILITY,ME,500000.00,2.5,,Hasta 1 mes
+1101,Inversiones Bonos Soberanos,INVESTMENT,MN,800000.00,5.5,2030-10-15,> 1 año
+1403,Creditos Hipotecarios,ASSET,ME,1500000.00,8.5,2035-01-01,> 1 año
+2103,Obligaciones con Bancos,LIABILITY,MN,1000000.00,9.0,2027-05-20,6 a 12 meses

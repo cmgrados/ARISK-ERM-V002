@@ -20,7 +20,7 @@ def dashboard(request):
     
     # Heatmap data (Residual Risk)
     heatmap_data = [[0 for _ in range(5)] for _ in range(5)]
-    risks = Risk.objects.filter(status__code='APPROVED').select_related('inherent_probability', 'inherent_impact', 'residual_probability', 'residual_impact')
+    risks = Risk.objects.all().select_related('inherent_probability', 'inherent_impact', 'residual_probability', 'residual_impact')
     
     top_risks = []
     
@@ -44,13 +44,39 @@ def dashboard(request):
             
     # Sort top risks by score descending
     top_risks.sort(key=lambda x: x['score'], reverse=True)
-    top_risks = top_risks[:5]
+    top_risks = top_risks[:15]
+
+    # Risk by Category
+    from django.db.models import Count
+    categories = Risk.objects.values('category__name').annotate(total=Count('id')).order_by('-total')
+    category_labels = [c['category__name'] or 'Sin Categoría' for c in categories]
+    category_data = [c['total'] for c in categories]
+
+    # Open Issues
+    issues = ActionPlan.objects.values('status').annotate(total=Count('id'))
+    issue_data = {
+        'OPEN': 0, 'IN_PROGRESS': 0, 'COMPLETED': 0, 'OVERDUE': 0
+    }
+    for i in issues:
+        issue_data[i['status']] = i['total']
     
+    # Control Performance
+    controls = Control.objects.all()
+    control_data = {'High': 0, 'Medium': 0, 'Low': 0}
+    for c in controls:
+        avg_eff = (c.design_efficacy + c.operational_effectiveness) / 2
+        if avg_eff >= 80:
+            control_data['High'] += 1
+        elif avg_eff >= 50:
+            control_data['Medium'] += 1
+        else:
+            control_data['Low'] += 1
+
     from .models import OperationalCapitalCalculation
     capital_calc = OperationalCapitalCalculation.objects.order_by('-year').first()
     
     context = {
-        'page_title': 'Dashboard - Riesgo Operacional',
+        'page_title': 'Panel de KPI de Gestión de Riesgos',
         'macro_count': macro_count,
         'process_count': process_count,
         'event_count': event_count,
@@ -58,6 +84,10 @@ def dashboard(request):
         'heatmap_data': heatmap_data,
         'top_risks': top_risks,
         'capital_calc': capital_calc,
+        'category_labels': category_labels,
+        'category_data': category_data,
+        'issue_data': issue_data,
+        'control_data': control_data,
     }
     return render(request, 'op_risk/dashboard.html', context)
 

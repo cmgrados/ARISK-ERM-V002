@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title_header %}Value at Risk (VaR) por Portafolio{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h3 class="card-title m-0"><i class="fas fa-chart-pie mr-2"></i>Modelo VaR Avanzado</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Este módulo avanzado calculará el VaR con un nivel de confianza del 99% segmentado por tipo de portafolio.</p>
+                <div id="varChart" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var chartVar = echarts.init(document.getElementById('varChart'));
+    var optionVar = {
+        title: { text: 'Simulación VaR por Portafolio', left: 'center' },
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '0' },
+        color: ['#161065', '#E84A5F', '#2A363B', '#50a3ba'],
+        series: [{
+            type: 'pie', radius: '50%',
+            data: [
+                { value: 650000, name: 'Consumo (Simulado)' },
+                { value: 350000, name: 'Microempresa (Simulado)' },
+                { value: 150000, name: 'Inversiones (Simulado)' },
+                { value: 50000, name: 'Hipotecario (Simulado)' }
+            ]
+        }]
+    };
+    chartVar.setOption(optionVar);
+    window.addEventListener('resize', function() { chartVar.resize(); });
+});
+</script>
+{% endblock %}

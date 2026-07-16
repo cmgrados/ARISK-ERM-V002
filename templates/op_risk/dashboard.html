@@ -139,103 +139,257 @@
 </div>
 
 <div class="row">
-    <!-- Heatmap -->
-    <div class="col-md-7">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                <h6 class="m-0 font-weight-bold text-primary">Mapa de Calor (Perfil de Riesgo)</h6>
+    <!-- Left Column: Corporate Risk -->
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="m-0 font-weight-bold text-center">Riesgos Corporativos</h6>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered text-center table-sm m-0" style="table-layout: fixed;">
-                        <thead>
-                            <tr>
-                                <th rowspan="6" style="vertical-align: middle; width: 40px; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">Probabilidad</th>
-                                <td style="width: 140px; vertical-align: middle; font-weight: bold;">5 - Casi Certeza</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.4.0 }}</td>
-                                <td style="background-color: #fd7e14;">{{ heatmap_data.4.1 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.2 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.3 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.4.4 }}</td>
-                            </tr>
-                                <tr>
-                                    <td style="vertical-align: middle; font-weight: bold;">4 - Probable</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.3.0 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.3.1 }}</td>
-                                <td style="background-color: #fd7e14;">{{ heatmap_data.3.2 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.3.3 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.3.4 }}</td>
-                            </tr>
-                            <tr>
-                                <td style="vertical-align: middle; font-weight: bold;">3 - Posible</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.2.0 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.2.1 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.2.2 }}</td>
-                                <td style="background-color: #fd7e14;">{{ heatmap_data.2.3 }}</td>
-                                <td style="background-color: #dc3545; color: white;">{{ heatmap_data.2.4 }}</td>
-                            </tr>
-                            <tr>
-                                <td style="vertical-align: middle; font-weight: bold;">2 - Improbable</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.1.0 }}</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.1.1 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.1.2 }}</td>
-                                <td style="background-color: #fd7e14;">{{ heatmap_data.1.3 }}</td>
-                                <td style="background-color: #fd7e14;">{{ heatmap_data.1.4 }}</td>
-                            </tr>
-                            <tr>
-                                <td style="vertical-align: middle; font-weight: bold;">1 - Raro</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.0 }}</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.1 }}</td>
-                                <td style="background-color: #28a745; color: white;">{{ heatmap_data.0.2 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.0.3 }}</td>
-                                <td style="background-color: #ffc107;">{{ heatmap_data.0.4 }}</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none;"></td>
-                                <td style="font-weight: bold; padding: 10px 5px;">1 - Insignificante</td>
-                                <td style="font-weight: bold; padding: 10px 5px;">2 - Menor</td>
-                                <td style="font-weight: bold; padding: 10px 5px;">3 - Moderado</td>
-                                <td style="font-weight: bold; padding: 10px 5px;">4 - Mayor</td>
-                                <td style="font-weight: bold; padding: 10px 5px;">5 - Catastrófico</td>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-                <div class="text-center mt-2 pb-2">
-                    <strong>Impacto</strong>
-                </div>
+                <table class="table table-sm table-striped m-0 text-center">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="text-left">Nombre del Riesgo</th>
+                            <th>Puntuación</th>
+                            <th>Tendencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in top_risks %}
+                        <tr>
+                            <td class="text-left">
+                                <a href="{% url 'op_risk:generic_update' tipo='riesgo' pk=item.risk.id %}" class="text-dark">{{ item.risk.name }}</a><br>
+                                <small class="text-muted"><i class="fas fa-project-diagram"></i> Proceso: {{ item.risk.process.name|default:"Sin Proceso" }}</small>
+                            </td>
+                            <td style="vertical-align: middle;">
+                                {% if item.score >= 15 %}
+                                    <span class="badge" style="background-color: #dc3545; color: white; width: 100%;">Alto ({{ item.score }})</span>
+                                {% elif item.score >= 8 %}
+                                    <span class="badge" style="background-color: #ffc107; color: black; width: 100%;">Medio ({{ item.score }})</span>
+                                {% else %}
+                                    <span class="badge" style="background-color: #28a745; color: white; width: 100%;">Bajo ({{ item.score }})</span>
+                                {% endif %}
+                            </td>
+                            <td style="vertical-align: middle;">
+                                <!-- Simulated trend arrows for aesthetics as requested -->
+                                {% if forloop.counter|divisibleby:2 %}
+                                    <i class="fas fa-arrow-up text-danger"></i>
+                                {% elif forloop.counter|divisibleby:3 %}
+                                    <i class="fas fa-minus text-warning"></i>
+                                {% else %}
+                                    <i class="fas fa-arrow-down text-success"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-muted">No hay riesgos evaluados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
-    <!-- Top Riesgos -->
-    <div class="col-md-5">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Top 5 Riesgos (Severidad)</h3>
+
+    <!-- Right Column: Charts and Heatmap -->
+    <div class="col-md-7">
+        <!-- Top Row: Pie Charts -->
+        <div class="row">
+            <!-- Control Performance -->
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white py-2">
+                        <h6 class="m-0 font-weight-bold text-center">Rendimiento de Controles</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="controlChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <ul class="products-list product-list-in-card pl-2 pr-2">
-                    {% for item in top_risks %}
-                    <li class="item">
-                        <div class="product-info ml-0">
-                            <a href="{% url 'op_risk:generic_update' tipo='riesgo' pk=item.risk.id %}" class="product-title">{{ item.risk.name }}
-                                <span class="badge badge-danger float-right">Score: {{ item.score }}</span>
-                            </a>
-                            <span class="product-description">
-                                Proceso: {{ item.risk.process.name }} | P: {{ item.prob_level }} x I: {{ item.imp_level }}
-                            </span>
+
+            <!-- Open Issues -->
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white py-2">
+                        <h6 class="m-0 font-weight-bold text-center">Problemas Abiertos</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="issuesChart" style="min-height: 250px; height: 250px; max-height: 250px; max-width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row: Risk Map -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white py-2">
+                        <h6 class="m-0 font-weight-bold text-center">Mapa de Riesgos (Perfil de Riesgo)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+<style>
+    .heatmap-cell {
+        width: 90px !important;
+        height: 90px !important;
+        min-width: 90px;
+        max-width: 90px;
+        vertical-align: middle !important;
+        font-size: 1.1rem;
+    }
+    .heatmap-table {
+        width: auto !important;
+        margin: 0 auto !important;
+    }
+</style>
+                            <table class="table table-bordered text-center table-sm m-0 heatmap-table">
+                                <thead>
+                                    <tr>
+                                        <th rowspan="6" style="vertical-align: middle; width: 40px; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; background-color: #f4f6f9; border: none;">Probabilidad</th>
+                                        <td style="width: 130px; vertical-align: middle; font-weight: bold; background-color: #f4f6f9; border: none; white-space: nowrap;">5 - Casi Certeza</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.4.0|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #fd7e14;">{{ heatmap_data.4.1|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.4.2|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.4.3|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.4.4|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="vertical-align: middle; font-weight: bold; background-color: #f4f6f9; border: none; white-space: nowrap;">4 - Probable</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.3.0|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.3.1|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #fd7e14;">{{ heatmap_data.3.2|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.3.3|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.3.4|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="vertical-align: middle; font-weight: bold; background-color: #f4f6f9; border: none; white-space: nowrap;">3 - Posible</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.2.0|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.2.1|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.2.2|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #fd7e14;">{{ heatmap_data.2.3|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #dc3545; color: white;">{{ heatmap_data.2.4|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="vertical-align: middle; font-weight: bold; background-color: #f4f6f9; border: none; white-space: nowrap;">2 - Improbable</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.1.0|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.1.1|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.1.2|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #fd7e14;">{{ heatmap_data.1.3|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #fd7e14;">{{ heatmap_data.1.4|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="vertical-align: middle; font-weight: bold; background-color: #f4f6f9; border: none; white-space: nowrap;">1 - Raro</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.0.0|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.0.1|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #28a745; color: white;">{{ heatmap_data.0.2|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.0.3|default:"-" }}</td>
+                                        <td class="heatmap-cell" style="background-color: #ffc107;">{{ heatmap_data.0.4|default:"-" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: none;"></td>
+                                        <td style="font-weight: bold; padding: 10px 5px; background-color: #f4f6f9; border: none; width: 90px;">1 - Insignificante</td>
+                                        <td style="font-weight: bold; padding: 10px 5px; background-color: #f4f6f9; border: none; width: 90px;">2 - Menor</td>
+                                        <td style="font-weight: bold; padding: 10px 5px; background-color: #f4f6f9; border: none; width: 90px;">3 - Moderado</td>
+                                        <td style="font-weight: bold; padding: 10px 5px; background-color: #f4f6f9; border: none; width: 90px;">4 - Mayor</td>
+                                        <td style="font-weight: bold; padding: 10px 5px; background-color: #f4f6f9; border: none; width: 90px;">5 - Catastrófico</td>
+                                    </tr>
+                                </thead>
+                            </table>
                         </div>
-                    </li>
-                    {% empty %}
-                    <li class="item text-center text-muted">No hay riesgos evaluados y aprobados.</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            <div class="card-footer text-center">
-                <a href="{% url 'op_risk:risk_matrix' %}" class="uppercase">Ver todos los Riesgos</a>
+                        <div class="text-center pb-2" style="background-color: #f4f6f9;">
+                            <strong>Impacto</strong>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row">
+    <!-- Risk by Category -->
+    <div class="col-md-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white py-2">
+                <h6 class="m-0 font-weight-bold text-center">Riesgos por Categoría</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" style="min-height: 300px; height: 300px; max-height: 300px; max-width: 100%;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Control Performance Chart
+        var ctxControl = document.getElementById('controlChart').getContext('2d');
+        var controlChart = new Chart(ctxControl, {
+            type: 'pie',
+            data: {
+                labels: ['Alta Efectividad', 'Media Efectividad', 'Baja Efectividad'],
+                datasets: [{
+                    data: [{{ control_data.High|default:0 }}, {{ control_data.Medium|default:0 }}, {{ control_data.Low|default:0 }}],
+                    backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        // Open Issues Chart
+        var ctxIssues = document.getElementById('issuesChart').getContext('2d');
+        var issuesChart = new Chart(ctxIssues, {
+            type: 'pie',
+            data: {
+                labels: ['Abiertos', 'En Progreso', 'Atrasados', 'Completados'],
+                datasets: [{
+                    data: [{{ issue_data.OPEN|default:0 }}, {{ issue_data.IN_PROGRESS|default:0 }}, {{ issue_data.OVERDUE|default:0 }}, {{ issue_data.COMPLETED|default:0 }}],
+                    backgroundColor: ['#007bff', '#17a2b8', '#dc3545', '#28a745'],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                }
+            }
+        });
+
+        // Risk by Category Chart
+        var ctxCategory = document.getElementById('categoryChart').getContext('2d');
+        var categoryLabels = {{ category_labels|safe }};
+        var categoryData = {{ category_data|safe }};
+        
+        var categoryChart = new Chart(ctxCategory, {
+            type: 'bar',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    label: 'Cantidad de Riesgos',
+                    data: categoryData,
+                    backgroundColor: '#17a2b8',
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { beginAtZero: true, ticks: { stepSize: 1 } }
+                }
+            }
+        });
+    });
+</script>
 {% endblock %}

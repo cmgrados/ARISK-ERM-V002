@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'liquidity_risk',
     'ai_assistant',
     'apps.op_risk',
+    'apps.market_risk',
 ]
 
 MIDDLEWARE = [

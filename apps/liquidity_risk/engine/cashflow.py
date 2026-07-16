@@ -3,7 +3,8 @@ from decimal import Decimal
 from datetime import timedelta
 from django.utils import timezone
 from liquidity_risk.models import LiqTimeBand, CarteraPasivoCarga, VolatileBalanceLar
-from credit_risk.models import CarteraCreditoCarga
+from credit_risk.models import CreditOperation
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -98,31 +99,25 @@ def get_cashflow_projections(cutoff_date):
     report['activos']['Disponible'][band_names[0]] += Decimal('31027364.00')
 
     # Créditos
-    creditos = CarteraCreditoCarga.objects.filter(fecha_corte=cutoff_date, skcr__gt=0)
+    creditos = CreditOperation.objects.filter(load_date=cutoff_date, balance__gt=0)
     for credito in creditos:
-        saldo = credito.skcr or Decimal('0.00')
-        cuotas_prog = credito.ncpr or 1
-        cuotas_pagadas = credito.ncpa or 0
-        cuotas_pendientes = cuotas_prog - cuotas_pagadas
+        saldo = credito.balance or Decimal('0.00')
+        dias_per = credito.payment_periodicity or 30
+        if dias_per <= 0: dias_per = 30
         
-        if cuotas_pendientes <= 0: cuotas_pendientes = 1
+        fecha_vencimiento = credito.maturity_date
+        if not fecha_vencimiento:
+            fecha_proyectada = cutoff_date + timedelta(days=dias_per)
+            cuotas_pendientes = 1
+        elif fecha_vencimiento <= cutoff_date:
+            fecha_proyectada = cutoff_date + timedelta(days=dias_per)
+            cuotas_pendientes = 1
+        else:
+            dias_restantes = (fecha_vencimiento - cutoff_date).days
+            cuotas_pendientes = max(1, int(math.ceil(dias_restantes / dias_per)))
+            fecha_proyectada = cutoff_date + timedelta(days=dias_per)
             
-        try:
-            dias_per = int(credito.pcuo) if credito.pcuo else 30
-        except ValueError:
-            pcuo_str = (credito.pcuo or '').upper()
-            if 'DIARIO' in pcuo_str: dias_per = 1
-            elif 'SEMANAL' in pcuo_str: dias_per = 7
-            elif 'QUINCENAL' in pcuo_str: dias_per = 15
-            elif 'BIMESTRAL' in pcuo_str: dias_per = 60
-            elif 'TRIMESTRAL' in pcuo_str: dias_per = 90
-            elif 'SEMESTRAL' in pcuo_str: dias_per = 180
-            elif 'ANUAL' in pcuo_str: dias_per = 360
-            else: dias_per = 30
-            
-        dias_gracia = credito.dgr or 0
-        fecha_proyectada = credito.fvga or (cutoff_date + timedelta(days=dias_gracia + dias_per))
-        tea_dec = float(credito.tea or Decimal('0.00')) / 100.0
+        tea_dec = float(credito.rate or Decimal('0.00')) / 100.0
         
         if tea_dec > 0 and cuotas_pendientes > 0:
             r = (1.0 + tea_dec)**(dias_per / 360.0) - 1.0
@@ -138,18 +133,18 @@ def get_cashflow_projections(cutoff_date):
         saldo_iter = float(saldo)
         
         # Determine classification
-        tcr = str(credito.tcr or '').upper().strip()
-        if tcr in ['13'] or 'HIPOTE' in tcr:
+        tcr = str(credito.credit_type or '').upper().strip()
+        if 'HIPOTE' in tcr or tcr == 'HIPOTECARIO':
             clasif = 'Créditos - Hipotecario'
-        elif tcr in ['11', '12'] or 'CONSUMO' in tcr:
+        elif 'CONSUMO' in tcr:
             clasif = 'Créditos - consumo'
-        elif tcr in ['10'] or 'MICRO' in tcr:
+        elif 'MICRO' in tcr:
             clasif = 'Créditos - micro-empresas'
-        elif tcr in ['09'] or 'PEQUE' in tcr:
+        elif 'PEQUE' in tcr:
             clasif = 'Créditos - pequeñas empresas'
-        elif tcr in ['08'] or 'MEDIANA' in tcr:
+        elif 'MEDIANA' in tcr:
             clasif = 'Créditos - medianas empresas'
-        elif tcr in ['06', '07', '20'] or 'CORPORATIVO' in tcr or 'GRANDE' in tcr:
+        elif 'CORPORATIVO' in tcr or 'GRANDE' in tcr:
             clasif = 'Créditos - grandes empresas'
         else:
             # Fallback

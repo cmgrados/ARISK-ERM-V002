@@ -121,9 +121,9 @@
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column text-sm nav-flat" data-widget="treeview" role="menu" data-accordion="false">
           <li class="nav-item">
-            <a href="/" class="nav-link active">
+            <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
               <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>Dashboard ERM</p>
+              <p>Dashboard Ejecutivo</p>
             </a>
           </li>
           <li class="nav-header" style="color: #ffffff; opacity:0.6;">MÓDULOS DE RIESGO</li>
@@ -136,13 +136,13 @@
               <li class="nav-item">
                 <a href="{% url 'credit_risk:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'credit_risk' %}active{% endif %}">
                   <i class="fas fa-chart-line nav-icon"></i>
-                  <p>Dashboard Antiguo</p>
+                  <p>Dashboard 01</p>
                 </a>
               </li>
               <li class="nav-item">
                 <a href="{% url 'modulo_riesgo_credito:seguimiento' %}" class="nav-link {% if request.resolver_match.app_name == 'modulo_riesgo_credito' %}active{% endif %}">
                   <i class="fas fa-chart-pie nav-icon text-success"></i>
-                  <p>Dashboard A. RISK 2.0</p>
+                  <p>Dashboard 02</p>
                 </a>
               </li>
               
@@ -228,6 +228,63 @@
                 <a href="{% url 'liquidity_risk:dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' and request.resolver_match.app_name == 'liquidity_risk' %}active{% endif %}">
                   <i class="fas fa-chart-bar nav-icon text-info"></i>
                   <p>Brechas de Liquidez</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+          
+          <li class="nav-item has-treeview {% if request.resolver_match.app_name == 'market_risk' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.app_name == 'market_risk' %}active{% endif %}">
+              <i class="nav-icon fas fa-chart-area"></i>
+              <p>Riesgo Mercado <i class="right fas fa-angle-left"></i></p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'market_risk:guide' %}" class="nav-link {% if request.resolver_match.url_name == 'guide' %}active{% endif %}">
+                  <i class="fas fa-book-open nav-icon text-success"></i>
+                  <p>Guía de Requisitos</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:positions' %}" class="nav-link {% if request.resolver_match.url_name == 'positions' %}active{% endif %}">
+                  <i class="fas fa-file-upload nav-icon text-info"></i>
+                  <p>Carga de Posiciones</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:gaps' %}" class="nav-link {% if request.resolver_match.url_name == 'gaps' or request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                  <i class="fas fa-stream nav-icon text-primary"></i>
+                  <p>Brechas de Tasas</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:sensitivity' %}" class="nav-link {% if request.resolver_match.url_name == 'sensitivity' %}active{% endif %}">
+                  <i class="fas fa-wave-square nav-icon text-success"></i>
+                  <p>Sensibilidad</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:stress' %}" class="nav-link {% if request.resolver_match.url_name == 'stress' %}active{% endif %}">
+                  <i class="fas fa-bolt nav-icon text-warning"></i>
+                  <p>Escenarios y Estrés</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:limits' %}" class="nav-link {% if request.resolver_match.url_name == 'limits' %}active{% endif %}">
+                  <i class="fas fa-shield-alt nav-icon text-danger"></i>
+                  <p>Límites y Alertas</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                  <i class="fas fa-file-pdf nav-icon text-secondary"></i>
+                  <p>Reportes</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'market_risk:var' %}" class="nav-link {% if request.resolver_match.url_name == 'var' %}active{% endif %}">
+                  <i class="fas fa-chart-pie nav-icon" style="color: #6f42c1;"></i>
+                  <p>VaR (Avanzado)</p>
                 </a>
               </li>
             </ul>
