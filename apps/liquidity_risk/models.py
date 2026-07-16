@@ -69,7 +69,7 @@ class LiqLiabilityDetail(models.Model):
         ]
 
 class CarteraPasivoCarga(models.Model):
-    fecha_corte = models.DateField()
+    fecha_corte = models.DateField(db_index=True)
     of = models.CharField(max_length=50, null=True, blank=True)
     id_socio = models.CharField(max_length=50, null=True, blank=True)
     id_ahorro = models.CharField(max_length=50, null=True, blank=True)
@@ -128,7 +128,7 @@ class SbsParameter(models.Model):
         return f"{self.indicator} {self.sign} {self.limit_value}"
 
 class VolatileBalanceLar(models.Model):
-    period = models.DateField("F. Cálculo")
+    period = models.DateField("F. Cálculo", db_index=True)
     segment = models.CharField("Segmento", max_length=100)
     currency = models.CharField("Moneda", max_length=20, default="MN")
     total_balance = models.DecimalField("Saldo Total", max_digits=18, decimal_places=4, default=0)

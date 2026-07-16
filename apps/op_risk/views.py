@@ -135,20 +135,20 @@ def control_matrix(request):
 
 @login_required
 def event_log(request):
-    events = RiskEvent.objects.select_related('process', 'reported_by').all()
+    events = RiskEvent.objects.select_related('process', 'reported_by').all()[:200]
     context = {'page_title': 'Registro de Eventos', 'items': events, 'type': 'event'}
     return render(request, 'op_risk/generic_list.html', context)
 
 @login_required
 def kpi_kri(request):
     from .models import KeyRiskIndicator
-    kris = KeyRiskIndicator.objects.select_related('process', 'risk', 'owner').all()
+    kris = KeyRiskIndicator.objects.select_related('process', 'risk', 'owner').all()[:200]
     context = {'page_title': 'KRIs y KPIs', 'items': kris, 'type': 'kri'}
     return render(request, 'op_risk/generic_list.html', context)
 
 @login_required
 def action_plans(request):
-    plans = ActionPlan.objects.select_related('owner', 'risk', 'event').all()
+    plans = ActionPlan.objects.select_related('owner', 'risk', 'event').all()[:200]
     context = {'page_title': 'Planes de Acción', 'items': plans, 'type': 'plan'}
     return render(request, 'op_risk/generic_list.html', context)
 
@@ -711,7 +711,7 @@ def get_executive_report_data():
 
     # Detailed lists for all sections (as requested by user)
     all_processes = Process.objects.all().select_related('macroprocess')
-    all_risks = Risk.objects.all().select_related('process', 'inherent_probability', 'inherent_impact', 'residual_probability', 'residual_impact')
+    all_risks = Risk.objects.all().select_related('process', 'inherent_probability', 'inherent_impact', 'residual_probability', 'residual_impact').prefetch_related('controls')
     for r in all_risks:
         prob = r.residual_probability or r.inherent_probability
         imp = r.residual_impact or r.inherent_impact

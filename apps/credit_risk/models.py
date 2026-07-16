@@ -124,7 +124,7 @@ class CreditRiskPeriodParameter(models.Model):
 
 class CarteraCreditoCarga(models.Model):
     # Metadatos de Carga
-    fecha_corte = models.DateField("Fecha de Corte", null=True, blank=True)
+    fecha_corte = models.DateField("Fecha de Corte", null=True, blank=True, db_index=True)
     fecha_carga = models.DateTimeField("Fecha de Carga", auto_now_add=True)
     
     n = models.CharField("Registro", max_length=50, blank=True, null=True)
