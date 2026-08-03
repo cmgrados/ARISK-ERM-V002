@@ -1,5 +1,6 @@
-"""Serializers for users app."""
+"""Serializers for users app with type hints."""
 
+from typing import Any, Dict, Optional
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Organization, Role
