@@ -1,0 +1,26 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.testing"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = """
+    --strict-markers
+    --cov=apps
+    --cov-report=html
+    --cov-report=term-missing
+    --cov-report=xml
+    --cov-fail-under=20
+    -v
+    --tb=short
+"""
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+norecursedirs = [".git", ".tox", "dist", "build", "*.egg"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
