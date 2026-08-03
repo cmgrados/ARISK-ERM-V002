@@ -1,3 +1,4 @@
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -5,6 +6,8 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.http import HttpResponse
 from .models import PlanFinanciero, PeriodoFinanciero, SimulacionEscenario, ProyeccionMensual
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def dashboard(request):
@@ -1325,8 +1328,9 @@ def save_scenario_fragment(request, plan_id=None):
 
             return JsonResponse({'status': 'success', 'msg': 'Simulaciones guardadas correctamente.'})
         except Exception as e:
-            import traceback
-            print(traceback.format_exc())
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("Error in save_simulations", exc_info=True)
             return JsonResponse({'status': 'error', 'msg': str(e)})
     return JsonResponse({'status': 'error', 'msg': 'Método no permitido'})
 @login_required
@@ -1578,7 +1582,7 @@ def api_sync_budget_trends(request, plan_id):
             'synced_count': synced_count,
         })
     except Exception as e:
-        print(traceback.format_exc())
+        logger.error("Error in trends synchronization", exc_info=True)
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 
@@ -1890,7 +1894,7 @@ def api_seed_budget_items(request, plan_id):
             'new': len(created_codes),
         })
     except Exception as e:
-        print(traceback.format_exc())
+        logger.error("Error updating budget items", exc_info=True)
         return JsonResponse({'status': 'error', 'message': str(e)})
 
 @login_required

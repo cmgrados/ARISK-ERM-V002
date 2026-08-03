@@ -1,3 +1,4 @@
+import logging
 import pandas as pd
 import math
 import io
@@ -7,6 +8,8 @@ from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 from credit_risk.models import Customer, CreditOperation
 # Commented out due to refactor
 # from liquidity_risk.models import LiabilityOperation, LiquidAsset, HistoricalDepositBalance
@@ -1161,7 +1164,7 @@ def bulk_load_socios(request):
         call_command('makemigrations', 'utilities', interactive=False)
         call_command('migrate', interactive=False)
     except Exception as e:
-        print(f"Auto-migration failed: {e}")
+        logger.error(f"Auto-migration failed: {e}")
         
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES.get('file')
@@ -1301,7 +1304,7 @@ def bulk_load_socios(request):
         except Exception as e:
             import traceback
             messages.error(request, f"Error en la carga: {str(e)}")
-            print(f"ERROR CARGA SOCIOS: {str(e)}\n{traceback.format_exc()}")
+            logger.error(f"ERROR CARGA SOCIOS: {str(e)}", exc_info=True)
             return render(request, 'utilities/bulk_load_socios.html', {
                 'page_title': f"Error en la carga: {str(e)}",
                 'history': BulkLoadLog.objects.filter(load_type='SOCIO').order_by('-load_date'),
