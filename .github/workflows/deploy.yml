@@ -1,0 +1,64 @@
+﻿name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Get version from tag
+      id: tag_name
+      run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag_name.outputs.VERSION }}
+        release_name: Release ${{ steps.tag_name.outputs.VERSION }}
+        draft: false
+        prerelease: false
+    
+    - name: Deploy notification
+      run: |
+        echo "🚀 Deployment of ${{ steps.tag_name.outputs.VERSION }} completed"
+        echo "Available deployment options:"
+        echo "1. Docker Hub (configure DOCKER_USERNAME & DOCKER_PASSWORD)"
+        echo "2. AWS ECR (configure AWS credentials)"
+        echo "3. Heroku (configure HEROKU_API_KEY)"
+        echo "4. Manual deployment using deployment guide"
+
+  deploy-docker-hub:
+    runs-on: ubuntu-latest
+    # Uncomment and add secrets to enable
+    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/arisk-erm:latest
+          ${{ secrets.DOCKER_USERNAME }}/arisk-erm:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
