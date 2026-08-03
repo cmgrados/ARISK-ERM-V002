@@ -14,6 +14,23 @@ class OrganizationFactory(DjangoModelFactory):
         model = 'users.Organization'
 
     name = factory.Sequence(lambda n: f'Organization {n}')
+    ruc = factory.Sequence(lambda n: f'{n:011d}')
+    is_active = True
+
+
+class RoleFactory(DjangoModelFactory):
+    """Factory for Role model."""
+
+    class Meta:
+        model = 'users.Role'
+
+    name = factory.Sequence(lambda n: f'Role {n}')
+    description = factory.Faker('text', max_nb_chars=200)
+    permissions = {
+        'integral_risk': {'acceder': True, 'editar': True},
+        'financial_planning': {'acceder': True},
+        'strategic_planning': {'acceder': True},
+    }
 
 
 class UserFactory(DjangoModelFactory):
@@ -27,6 +44,10 @@ class UserFactory(DjangoModelFactory):
     first_name = factory.Faker('first_name')
     last_name = factory.Faker('last_name')
     is_active = True
+    organization = factory.SubFactory(OrganizationFactory)
+    role = factory.SubFactory(RoleFactory)
+    is_risk_manager = False
+    is_auditor = False
 
     @classmethod
     def create(cls, **kwargs):
@@ -36,6 +57,18 @@ class UserFactory(DjangoModelFactory):
         obj.set_password(password)
         obj.save()
         return obj
+
+
+class RiskManagerUserFactory(UserFactory):
+    """Factory for risk manager user."""
+
+    is_risk_manager = True
+
+
+class AuditorUserFactory(UserFactory):
+    """Factory for auditor user."""
+
+    is_auditor = True
 
 
 class AdminUserFactory(UserFactory):

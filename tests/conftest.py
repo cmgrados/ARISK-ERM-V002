@@ -111,32 +111,79 @@ def authenticated_api_client(authenticated_user):
 
 @pytest.fixture
 def organization(db):
-    """Create a test organization."""
-    from apps.users.models import Organization
-    return Organization.objects.create(
-        name='Test Organization',
-        description='A test organization for unit tests'
-    )
+    """Create a test organization using factory."""
+    from tests.factories import OrganizationFactory
+    return OrganizationFactory()
 
 
 @pytest.fixture
-def user_with_org(db, organization, authenticated_user):
-    """Create a user associated with an organization."""
-    authenticated_user.organization = organization
-    authenticated_user.save()
-    return authenticated_user
+def role(db):
+    """Create a test role using factory."""
+    from tests.factories import RoleFactory
+    return RoleFactory()
+
+
+@pytest.fixture
+def user_with_org(db, organization):
+    """Create a user associated with an organization using factory."""
+    from tests.factories import UserFactory
+    return UserFactory(organization=organization)
+
+
+@pytest.fixture
+def risk_manager(db, organization):
+    """Create a risk manager user."""
+    from tests.factories import RiskManagerUserFactory
+    return RiskManagerUserFactory(organization=organization)
+
+
+@pytest.fixture
+def auditor(db, organization):
+    """Create an auditor user."""
+    from tests.factories import AuditorUserFactory
+    return AuditorUserFactory(organization=organization)
+
+
+@pytest.fixture
+def admin_test_user(db):
+    """Create an admin user using factory."""
+    from tests.factories import AdminUserFactory
+    return AdminUserFactory()
 
 
 @pytest.fixture
 def risk(db, organization):
-    """Create a test risk."""
-    from apps.risks.models import Risk
-    return Risk.objects.create(
-        name='Test Risk',
-        description='A test risk for unit tests',
-        organization=organization,
-        status='active'
-    )
+    """Create a test risk using factory."""
+    from tests.factories import RiskFactory
+    return RiskFactory(organization=organization)
+
+
+@pytest.fixture
+def active_risk(db, organization):
+    """Create an active risk."""
+    from tests.factories import ActiveRiskFactory
+    return ActiveRiskFactory(organization=organization)
+
+
+@pytest.fixture
+def customer(db, organization):
+    """Create a test customer."""
+    from tests.factories import CustomerFactory
+    return CustomerFactory(organization=organization)
+
+
+@pytest.fixture
+def credit_operation(db, organization, customer):
+    """Create a test credit operation."""
+    from tests.factories import CreditOperationFactory
+    return CreditOperationFactory(customer=customer)
+
+
+@pytest.fixture
+def past_due_credit(db, organization, customer):
+    """Create a past-due credit operation."""
+    from tests.factories import PastDueCreditFactory
+    return PastDueCreditFactory(customer=customer)
 
 
 @pytest.fixture

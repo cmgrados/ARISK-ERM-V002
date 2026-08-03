@@ -12,5 +12,23 @@ class RiskFactory(DjangoModelFactory):
 
     name = factory.Sequence(lambda n: f'Risk {n}')
     description = factory.Faker('text')
-    status = 'active'
+    status = factory.Faker('random_element', elements=['active', 'inactive', 'mitigated'])
     organization = factory.SubFactory('tests.factories.users.OrganizationFactory')
+
+
+class ActiveRiskFactory(RiskFactory):
+    """Factory for active risk."""
+
+    status = 'active'
+
+
+class MitigatedRiskFactory(RiskFactory):
+    """Factory for mitigated risk."""
+
+    status = 'mitigated'
+
+
+class InactiveRiskFactory(RiskFactory):
+    """Factory for inactive risk."""
+
+    status = 'inactive'

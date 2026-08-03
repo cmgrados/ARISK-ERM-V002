@@ -17,14 +17,60 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from rest_framework.routers import DefaultRouter
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from django.conf import settings
 from django.conf.urls.static import static
 
 from strategic_risk import views as strategic_views
 
+# Initialize DRF Router
+router = DefaultRouter()
+
+# Register User ViewSets
+from apps.users.api_views import UserViewSet, OrganizationViewSet, RoleViewSet
+router.register(r'users', UserViewSet, basename='user')
+router.register(r'organizations', OrganizationViewSet, basename='organization')
+router.register(r'roles', RoleViewSet, basename='role')
+
+# Register Risk ViewSets
+from apps.risks.api_views import (
+    RiskViewSet, RiskCauseViewSet, RiskConsequenceViewSet,
+    RiskAssessmentViewSet, ProbabilityScaleViewSet, ImpactScaleViewSet,
+    RiskMatrixConfigurationViewSet
+)
+router.register(r'risks', RiskViewSet, basename='risk')
+router.register(r'risk-causes', RiskCauseViewSet, basename='risk-cause')
+router.register(r'risk-consequences', RiskConsequenceViewSet, basename='risk-consequence')
+router.register(r'risk-assessments', RiskAssessmentViewSet, basename='risk-assessment')
+router.register(r'probability-scales', ProbabilityScaleViewSet, basename='probability-scale')
+router.register(r'impact-scales', ImpactScaleViewSet, basename='impact-scale')
+router.register(r'risk-matrix-configs', RiskMatrixConfigurationViewSet, basename='risk-matrix-config')
+
+# Register Credit Risk ViewSets
+from apps.credit_risk.api_views import (
+    CustomerViewSet, CreditOperationViewSet, CreditRiskMetricsViewSet,
+    CreditRiskPeriodParameterViewSet
+)
+router.register(r'customers', CustomerViewSet, basename='customer')
+router.register(r'credit-operations', CreditOperationViewSet, basename='credit-operation')
+router.register(r'credit-risk-metrics', CreditRiskMetricsViewSet, basename='credit-risk-metric')
+router.register(r'credit-risk-parameters', CreditRiskPeriodParameterViewSet, basename='credit-risk-parameter')
+
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
+
+    # API v1 - DRF Router
+    path('api/v1/', include(router.urls)),
+
+    # OpenAPI / Swagger Documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Traditional URLs
     path('', include('dashboards.urls')),
     path('utilities/', RedirectView.as_view(url='/utilitarios/', permanent=True)),
     path('utilities/bulk-load/liability/', RedirectView.as_view(url='/utilitarios/carga-masiva-pasivos/', permanent=True)),

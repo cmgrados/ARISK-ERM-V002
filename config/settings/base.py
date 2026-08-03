@@ -104,6 +104,8 @@ class Settings(BaseSettings):
             'django.contrib.staticfiles',
             'django.contrib.humanize',
             'rest_framework',
+            'drf_spectacular',
+            'django_filters',
             # Internal apps
             'core',
             'users',
@@ -389,3 +391,60 @@ FORMAT_MODULE_PATH = [
     'config.formats',
     'apps.core.formats',
 ]
+
+# ============================================================================
+# REST FRAMEWORK CONFIGURATION
+# ============================================================================
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# ============================================================================
+# SPECTACULAR/OpenAPI CONFIGURATION
+# ============================================================================
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'A.RISK ERM API',
+    'DESCRIPTION': 'Enterprise Risk Management API with comprehensive risk analysis',
+    'VERSION': '1.0.0',
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAuthenticated'],
+    'SERVE_INCLUDE_SCHEMA': False,
+    'SCHEMA_PATH_PREFIX': r'/api/v1',
+    'SECURITY_DEFINITIONS': {
+        'basicAuth': {
+            'type': 'http',
+            'scheme': 'basic',
+        },
+        'sessionAuth': {
+            'type': 'apiKey',
+            'in': 'cookie',
+            'name': 'sessionid',
+        },
+    },
+    'TAGS': [
+        {'name': 'users', 'description': 'User management and authentication'},
+        {'name': 'organizations', 'description': 'Organization/Cooperative management'},
+        {'name': 'roles', 'description': 'Role and permission management'},
+        {'name': 'risks', 'description': 'Risk management and assessment'},
+        {'name': 'credit-operations', 'description': 'Credit operations and portfolio'},
+        {'name': 'customers', 'description': 'Customer/Member management'},
+    ],
+}
