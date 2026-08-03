@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: arisk-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-arisk_erm}
+      POSTGRES_USER: ${DB_USER:-arisk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-arisk_secure_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-arisk}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arisk-network
+
+  # Django Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: arisk-web
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application
+               --bind 0.0.0.0:8000
+               --workers 4
+               --worker-class sync
+               --timeout 120
+               --access-logfile -"
+    environment:
+      DEBUG: ${DEBUG:-False}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: postgresql://${DB_USER:-arisk}:${DB_PASSWORD:-arisk_secure_password}@db:5432/${DB_NAME:-arisk_erm}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-True}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-True}
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - arisk-network
+    restart: unless-stopped
+
+  # Redis Cache (Optional but Recommended)
+  redis:
+    image: redis:7-alpine
+    container_name: arisk-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arisk-network
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy (Production)
+  nginx:
+    image: nginx:alpine
+    container_name: arisk-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+    networks:
+      - arisk-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  redis_data:
+
+networks:
+  arisk-network:
+    driver: bridge
