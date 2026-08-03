@@ -37,6 +37,9 @@
                 </div>
                 <div id="cf-edit-actions" class="d-flex align-items-center">
                     <div class="dropdown mr-2">
+                        <button class="btn btn-sm btn-outline-info font-weight-bold rounded-pill shadow-sm mr-2" type="button" onclick="generateCFTrend()">
+                            <i class="fas fa-magic mr-1"></i> Generar Tendencia
+                        </button>
                         <button class="btn btn-sm btn-outline-primary font-weight-bold rounded-pill shadow-sm" type="button" onclick="openCFAdjustmentModal()">
                             <i class="fas fa-edit mr-1"></i> Ajuste Manual
                         </button>
@@ -119,13 +122,19 @@
                             </div>
                             <select class="form-control border-left-0 font-weight-bold text-dark bg-light rounded-right" id="cf-adj-concept" style="font-size: 1.1rem; box-shadow: none; border-color: #d1d3e2;">
                                 <option value="">Seleccione un concepto...</option>
-                                <option value="ingresos_cartera">Ingresos: Recuperación de Cartera</option>
-                                <option value="ingresos_captacion">Ingresos: Captación de Ahorros/DPF</option>
-                                <option value="ingresos_otros">Otros Ingresos Operativos</option>
-                                <option value="egresos_desembolsos">Egresos: Desembolsos de Crédito</option>
-                                <option value="egresos_retiros">Egresos: Retiro de Ahorros/DPF</option>
-                                <option value="egresos_gastos">Egresos: Gastos Administrativos/Personal</option>
-                                <option value="egresos_otros">Otros Egresos</option>
+                                <option value="COB_REPROG">Entradas: Cobranza de Créditos Reprogramados</option>
+                                <option value="COB_OTROS">Entradas: Cobranza de otros créditos</option>
+                                <option value="NUEVOS_DEP">Entradas: Nuevos depósitos</option>
+                                <option value="NUEVOS_ADEUD">Entradas: Nuevos adeudados</option>
+                                <option value="ING_INT_COM">Entradas: Ingresos por intereses y comisiones</option>
+                                <option value="OTRAS_ENTRADAS">Entradas: Otras entradas de efectivo</option>
+                                <option value="DESEM_CRED">Salidas: Desembolso de créditos</option>
+                                <option value="SALIDA_DEP">Salidas: Salida de depósitos</option>
+                                <option value="PAGO_PLANILLA">Salidas: Pago de planilla</option>
+                                <option value="PAGO_ADEUD">Salidas: Pago de adeudados</option>
+                                <option value="PAGO_SERV">Salidas: Pago de servicios</option>
+                                <option value="GASTOS_FIN">Salidas: Gastos financieros</option>
+                                <option value="OTRAS_SALIDAS">Salidas: Otras salidas de efectivo</option>
                             </select>
                         </div>
                     </div>
@@ -238,6 +247,20 @@
 </div>
 
 <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
     let currentCFData = null;
 
     function formatNumber(val, decimals=2) {
@@ -339,9 +362,10 @@
             return;
         }
 
-        const values = [];
+        const adjustments = {};
         document.querySelectorAll('.cf-adj-month-input').forEach(input => {
-            values.push(parseFloat(input.value) || 0);
+            let m = input.getAttribute('data-month');
+            adjustments[m] = parseFloat(input.value) || 0;
         });
 
         const btn = event.currentTarget;
@@ -356,9 +380,9 @@
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                concept: concept,
+                code: concept,
                 scenario: scenario,
-                values: values
+                adjustments: adjustments
             })
         })
         .then(response => response.json())
@@ -454,6 +478,50 @@
             }
         }
     };
+
+    function generateCFTrend() {
+        const scenario = document.getElementById('cf-scenario').value;
+        Swal.fire({
+            title: '¿Generar Flujo en base a Tendencia?',
+            text: 'Esto proyectará las salidas y entradas de efectivo no calculadas utilizando la base histórica y la tasa de crecimiento del escenario actual. Sobrescribirá los ajustes manuales de esos conceptos.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, generar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Calculando...',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                fetch(`/planificacion-financiera/plan/{{ plan.id }}/api/generate_cf_trend/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        scenario: scenario
+                    })
+                })
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        Swal.fire('Éxito', 'Tendencias generadas correctamente.', 'success');
+                        loadCFTrends();
+                    } else {
+                        Swal.fire('Error', res.message || 'Error al generar.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    Swal.fire('Error', 'Error de red.', 'error');
+                });
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         loadCFTrends();

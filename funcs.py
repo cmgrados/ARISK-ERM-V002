@@ -266,35 +266,56 @@ def api_get_cash_flow_data(request, plan_id):
     if not version:
         version = BudgetVersion.objects.filter(plan_financiero=plan, organization=organization, scenario='BASE').order_by('-created_at').first()
         
-    ingresos_op = [0.0]*36
-    egresos_op = [0.0]*36
+    ing_int_com = [0.0]*36
+    otras_entradas = [0.0]*36
+    
+    pago_planilla = [0.0]*36
+    pago_servicios = [0.0]*36
+    gastos_fin = [0.0]*36
+    otras_salidas = [0.0]*36
+    
     if version:
         lines = BudgetLine.objects.filter(version=version).select_related('item').prefetch_related('details')
         for line in lines:
             details = sorted(list(line.details.all()), key=lambda d: d.period_index)
             cat = line.item.category
-            is_income = cat in ['ING_FIN', 'ING_SERV', 'OTROS_ING']
+            
             for i in range(12):
-                if i < len(details):
-                    val = float(details[i].amount)
-                    if is_income: ingresos_op[i] += val
-                    else: egresos_op[i] += val
+                val = float(details[i].amount) if i < len(details) else 0.0
+                if cat in ['ING_FIN', 'ING_SERV']: ing_int_com[i] += val
+                elif cat == 'OTROS_ING': otras_entradas[i] += val
+                elif cat == 'GASTOS_PER': pago_planilla[i] += val
+                elif cat == 'GASTOS_ADMIN': pago_servicios[i] += val
+                elif cat in ['EGR_FIN', 'EGR_SERV']: gastos_fin[i] += val
+                else: otras_salidas[i] += val
             
             y2 = float(line.total_amount_y2 or 0)
             y3 = float(line.total_amount_y3 or 0)
-            if is_income:
-                for i in range(12, 24): ingresos_op[i] += y2/12
-                for i in range(24, 36): ingresos_op[i] += y3/12
-            else:
-                for i in range(12, 24): egresos_op[i] += y2/12
-                for i in range(24, 36): egresos_op[i] += y3/12
+            
+            for i in range(12, 24):
+                val2 = y2/12
+                if cat in ['ING_FIN', 'ING_SERV']: ing_int_com[i] += val2
+                elif cat == 'OTROS_ING': otras_entradas[i] += val2
+                elif cat == 'GASTOS_PER': pago_planilla[i] += val2
+                elif cat == 'GASTOS_ADMIN': pago_servicios[i] += val2
+                elif cat in ['EGR_FIN', 'EGR_SERV']: gastos_fin[i] += val2
+                else: otras_salidas[i] += val2
+                
+            for i in range(24, 36):
+                val3 = y3/12
+                if cat in ['ING_FIN', 'ING_SERV']: ing_int_com[i] += val3
+                elif cat == 'OTROS_ING': otras_entradas[i] += val3
+                elif cat == 'GASTOS_PER': pago_planilla[i] += val3
+                elif cat == 'GASTOS_ADMIN': pago_servicios[i] += val3
+                elif cat in ['EGR_FIN', 'EGR_SERV']: gastos_fin[i] += val3
+                else: otras_salidas[i] += val3
 
     rows = []
-    def add_row(code, name, values):
+    def add_row(code, name, category, values):
         r = {
             "code": code,
             "name": name,
-            "cat": "Flujo de Caja",
+            "cat": category,
             "is_total": False,
             "base": sum(values[:12]) / 12 if values else 0,
             "m1_12": values[:12],
@@ -322,22 +343,16 @@ def api_get_cash_flow_data(request, plan_id):
         rows.append(r)
         return m1_12_actual + [y2_actual/12]*12 + [y3_actual/12]*12
         
-    ingresos_arr = add_row('ING', 'Ingresos Operativos', ingresos_op)
-    egresos_arr = add_row('EGR', '(-) Egresos Operativos', [-x for x in egresos_op])
-    
     prev_c = float(sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('14') and not str(x['account_code']).startswith('149')))
     recup = [0.0]*36
     desem = [0.0]*36
     for i in range(36):
         c = proj_cartera[i] if i < len(proj_cartera) else prev_c
         delta = c - prev_c
-        if delta > 0: desem[i] = -delta
+        if delta > 0: desem[i] = delta
         else: recup[i] = -delta
         prev_c = c
         
-    recup_arr = add_row('RECUP', 'Recuperación de Cartera', recup)
-    desem_arr = add_row('DESEM', '(-) Desembolsos de Cartera', desem)
-    
     prev_p = float(sum(x['balance'] for x in dec_qs if str(x['account_code']).startswith('211') or str(x['account_code']).startswith('212')))
     ing_pas = [0.0]*36
     ret_pas = [0.0]*36
@@ -349,31 +364,48 @@ def api_get_cash_flow_data(request, plan_id):
         if delta > 0: ing_pas[i] = delta
         else: ret_pas[i] = -delta
         prev_p = p
-        
-    ingpas_arr = add_row('ING_PAS', 'Captaciones del Público', ing_pas)
-    retpas_arr = add_row('RET_PAS', '(-) Retiros del Público', ret_pas)
+
+    # ENTRADAS DE EFECTIVO
+    add_row('COB_REPROG', 'Cobranza de Créditos Reprogramados', 'ENTRADAS DE EFECTIVO', [0.0]*36)
+    add_row('COB_OTROS', 'Cobranza de otros créditos', 'ENTRADAS DE EFECTIVO', recup)
+    add_row('NUEVOS_DEP', 'Nuevos depósitos', 'ENTRADAS DE EFECTIVO', ing_pas)
+    add_row('NUEVOS_ADEUD', 'Nuevos adeudados', 'ENTRADAS DE EFECTIVO', [0.0]*36)
+    add_row('ING_INT_COM', 'Ingresos por intereses y comisiones percibidos', 'ENTRADAS DE EFECTIVO', ing_int_com)
+    add_row('OTRAS_ENTRADAS', 'Otras entradas de efectivo', 'ENTRADAS DE EFECTIVO', otras_entradas)
     
+    # SALIDAS DE EFECTIVO
+    add_row('DESEM_CRED', 'Desembolso de créditos', 'SALIDAS DE EFECTIVO', desem)
+    add_row('SALIDA_DEP', 'Salida de depósitos', 'SALIDAS DE EFECTIVO', ret_pas)
+    add_row('PAGO_PLANILLA', 'Pago de planilla', 'SALIDAS DE EFECTIVO', pago_planilla)
+    add_row('PAGO_ADEUD', 'Pago de adeudados', 'SALIDAS DE EFECTIVO', [0.0]*36)
+    add_row('PAGO_SERV', 'Pago de servicios', 'SALIDAS DE EFECTIVO', pago_servicios)
+    add_row('GASTOS_FIN', 'Gastos financieros', 'SALIDAS DE EFECTIVO', gastos_fin)
+    add_row('OTRAS_SALIDAS', 'Otras salidas de efectivo', 'SALIDAS DE EFECTIVO', otras_salidas)
+
     flujo_neto = {
-        "name": "Flujo Neto Mensual",
+        "name": "FLUJO NETO (total de entradas - salidas)",
         "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0,
         "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
     
     for i in range(12):
-        s = sum(r["m1_12"][i] for r in rows)
+        entradas_mes = sum(r["m1_12"][i] for r in rows if r["cat"] == "ENTRADAS DE EFECTIVO")
+        salidas_mes = sum(r["m1_12"][i] for r in rows if r["cat"] == "SALIDAS DE EFECTIVO")
+        s = entradas_mes - salidas_mes
         flujo_neto["m1_12"][i] = s
         flujo_neto["months"][i] = s
-    flujo_neto["y1"] = sum(r["y1"] for r in rows)
-    flujo_neto["y2"] = sum(r["y2"] for r in rows)
-    flujo_neto["y3"] = sum(r["y3"] for r in rows)
+        
+    flujo_neto["y1"] = sum(r["y1"] for r in rows if r["cat"] == "ENTRADAS DE EFECTIVO") - sum(r["y1"] for r in rows if r["cat"] == "SALIDAS DE EFECTIVO")
+    flujo_neto["y2"] = sum(r["y2"] for r in rows if r["cat"] == "ENTRADAS DE EFECTIVO") - sum(r["y2"] for r in rows if r["cat"] == "SALIDAS DE EFECTIVO")
+    flujo_neto["y3"] = sum(r["y3"] for r in rows if r["cat"] == "ENTRADAS DE EFECTIVO") - sum(r["y3"] for r in rows if r["cat"] == "SALIDAS DE EFECTIVO")
     
     saldo_inicial = {
-        "name": "Saldo Inicial de Caja",
+        "name": "Saldo inicial de fondos disponibles sin restricción",
         "m1_12": [0]*12, "y1": saldo_inicial_caja, "y2": 0, "y3": 0,
         "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
     saldo_final = {
-        "name": "Saldo Final de Caja",
+        "name": "Saldo final de fondos disponibles sin restricción",
         "m1_12": [0]*12, "y1": 0, "y2": 0, "y3": 0,
         "cat": "RESULTADOS", "months": [0]*12, "base": 0, "is_total": True
     }
@@ -395,7 +427,7 @@ def api_get_cash_flow_data(request, plan_id):
     current_saldo += flujo_neto["y3"]
     saldo_final["y3"] = current_saldo
     
-    rows.append(saldo_inicial)
+    rows.insert(0, saldo_inicial)
     rows.append(flujo_neto)
     rows.append(saldo_final)
     
@@ -441,6 +473,94 @@ def api_save_cf_adjustment(request, plan_id):
         else:
             hist['cf_adjustments'][scenario][code][str(k)] = v
             
+    plan.historical_data = hist
+    plan.save()
+    
+    return JsonResponse({'status': 'success'})
+
+@login_required
+@require_http_methods(["POST"])
+def api_generate_cf_trend(request, plan_id):
+    import json
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    from financial_planning.models import PlanFinanciero, SimulacionEscenario
+    from liquidity_risk.models import LiqBalanceDetail
+    from django.db.models import Max
+    
+    organization = getattr(request.user, 'organization', None)
+    if not organization:
+        from users.models import Organization
+        organization = Organization.objects.first()
+        
+    plan = get_object_or_404(PlanFinanciero, id=plan_id, organization=organization)
+    body = json.loads(request.body)
+    scenario = body.get('scenario', 'BASE')
+    
+    sim_cartera = SimulacionEscenario.objects.filter(plan=plan, organization=organization, variable_id='cartera').first()
+    trend_rate = 0.0
+    if sim_cartera:
+        if scenario == 'OPTIMISTIC': trend_rate = sim_cartera.tasa_optimista or 0
+        elif scenario == 'PESSIMISTIC': trend_rate = sim_cartera.tasa_pesimista or 0
+        else: trend_rate = sim_cartera.tasa_base or 0
+
+    base_year = plan.anio_base - 1
+    
+    base_totals = {
+        'PAGO_PLANILLA': 0.0,
+        'PAGO_SERV': 0.0,
+        'GASTOS_FIN': 0.0,
+        'OTRAS_SALIDAS': 0.0,
+        'OTRAS_ENTRADAS': 0.0,
+        'COB_REPROG': 0.0,
+        'NUEVOS_ADEUD': 0.0,
+        'PAGO_ADEUD': 0.0,
+        'ING_INT_COM': 0.0
+    }
+    
+    max_month_dict = LiqBalanceDetail.objects.filter(
+        period__year=base_year, upload__status='SUCCESS'
+    ).aggregate(max_month=Max('period__month'))
+    max_month = max_month_dict['max_month'] if max_month_dict['max_month'] else 12
+    
+    dec_qs = list(LiqBalanceDetail.objects.filter(
+        period__year=base_year, 
+        period__month=max_month,
+        upload__status='SUCCESS'
+    ).values('account_code', 'balance'))
+    
+    for r in dec_qs:
+        code = str(r['account_code'])
+        name = str(r.get('account_name', '')).lower()
+        bal = abs(float(r['balance']))
+        if code.startswith('41'): base_totals['PAGO_PLANILLA'] += bal
+        elif code.startswith('42'): base_totals['GASTOS_FIN'] += bal
+        elif code.startswith('43'): base_totals['PAGO_SERV'] += bal
+        elif code.startswith('44') or code.startswith('45'): base_totals['OTRAS_SALIDAS'] += bal
+        elif code.startswith('52') or code.startswith('54') or code.startswith('55') or code.startswith('56') or code.startswith('57') or code.startswith('59'): base_totals['OTRAS_ENTRADAS'] += bal
+        elif code.startswith('51'): base_totals['ING_INT_COM'] += bal
+        elif code.startswith('14') and ('reprog' in name or 'refinan' in name or 'reestruc' in name):
+            base_totals['COB_REPROG'] += bal
+        elif code.startswith('26'):
+            # Estimación simple: 50% pago, 50% nuevos para balancear si es saldo vivo
+            base_totals['NUEVOS_ADEUD'] += (bal * 0.5)
+            base_totals['PAGO_ADEUD'] += (bal * 0.5)
+        
+    hist = plan.historical_data or {}
+    if 'cf_adjustments' not in hist: hist['cf_adjustments'] = {}
+    if scenario not in hist['cf_adjustments']: hist['cf_adjustments'][scenario] = {}
+    
+    multiplier = 1 + (float(trend_rate) / 100.0)
+    
+    for key in ['PAGO_PLANILLA', 'PAGO_SERV', 'GASTOS_FIN', 'OTRAS_SALIDAS', 'OTRAS_ENTRADAS', 'ING_INT_COM', 'COB_REPROG', 'NUEVOS_ADEUD', 'PAGO_ADEUD']:
+        monthly_base = (base_totals[key] / 12) if max_month == 12 else (base_totals[key] / max_month)
+        if key not in hist['cf_adjustments'][scenario]:
+            hist['cf_adjustments'][scenario][key] = {}
+        for i in range(1, 37):
+            year = (i - 1) // 12
+            proj_val = monthly_base * (multiplier ** year)
+            hist['cf_adjustments'][scenario][key][str(i)] = round(proj_val, 2)
+
     plan.historical_data = hist
     plan.save()
     

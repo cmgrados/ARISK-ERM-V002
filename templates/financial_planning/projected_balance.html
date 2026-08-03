@@ -448,19 +448,25 @@ function clearOtherTrends() {
         title: '¿Qué tipo de datos desea quitar?',
         text: "Puede eliminar la tendencia automática o los datos sincronizados del Presupuesto.",
         icon: 'question',
-        showDenyButton: true,
+        input: 'radio',
+        inputOptions: {
+            'all': 'Quitar Ambas (Todo)',
+            'auto': 'Quitar Auto Tendencia',
+            'sync': 'Quitar Sync Datos'
+        },
+        inputValidator: (value) => {
+            if (!value) {
+                return 'Debes seleccionar una opción'
+            }
+        },
         showCancelButton: true,
-        confirmButtonText: 'Quitar Auto Tendencia',
-        denyButtonText: 'Quitar Sync Datos',
+        confirmButtonText: 'Aceptar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ffc107',
-        denyButtonColor: '#dc3545'
+        confirmButtonColor: '#dc3545'
     }).then((result) => {
         let clear_type = null;
-        if (result.isConfirmed) {
-            clear_type = 'auto';
-        } else if (result.isDenied) {
-            clear_type = 'sync';
+        if (result.isConfirmed && result.value) {
+            clear_type = result.value;
         }
         
         if (clear_type) {
@@ -702,7 +708,8 @@ function openBGAdjustmentModal() {
                         if (lastGroup && currentGroup !== lastGroup) {
                             if (lastGroup === '1' && totActivo) {
                                 html += `<tr class="bg-info text-white font-weight-bold">
-                                    <td colspan="2" class="text-right text-uppercase">TOTAL ACTIVO</td>
+                                    <td class="text-right text-uppercase">TOTAL ACTIVO</td>
+                                    <td class="d-none"></td>
                                     <td class="text-right">${formatMoney(totActivo.base)}</td>
                                     ${totActivo.m1_12.map(v => `<td class="text-right">${formatMoney(v)}</td>`).join('')}
                                     <td class="text-right">${formatMoney(totActivo.y1)}</td>
@@ -711,7 +718,8 @@ function openBGAdjustmentModal() {
                                 </tr>`;
                             } else if (lastGroup === '2' && totPasivo) {
                                 html += `<tr class="bg-info text-white font-weight-bold">
-                                    <td colspan="2" class="text-right text-uppercase">TOTAL PASIVO</td>
+                                    <td class="text-right text-uppercase">TOTAL PASIVO</td>
+                                    <td class="d-none"></td>
                                     <td class="text-right">${formatMoney(totPasivo.base)}</td>
                                     ${totPasivo.m1_12.map(v => `<td class="text-right">${formatMoney(v)}</td>`).join('')}
                                     <td class="text-right">${formatMoney(totPasivo.y1)}</td>
@@ -787,7 +795,8 @@ function openBGAdjustmentModal() {
                     // Add TOTAL PATRIMONIO at the end
                     if (totPatrimonio) {
                         html += `<tr class="bg-info text-white font-weight-bold">
-                            <td colspan="2" class="text-right text-uppercase">TOTAL PATRIMONIO</td>
+                            <td class="text-right text-uppercase">TOTAL PATRIMONIO</td>
+                            <td class="d-none"></td>
                             <td class="text-right">${formatMoney(totPatrimonio.base)}</td>
                             ${totPatrimonio.m1_12.map(v => `<td class="text-right">${formatMoney(v)}</td>`).join('')}
                             <td class="text-right">${formatMoney(totPatrimonio.y1)}</td>
@@ -799,7 +808,8 @@ function openBGAdjustmentModal() {
                     // Add TOTAL PASIVO Y PATRIMONIO
                     if (totPasPat.base !== 0) {
                         html += `<tr class="bg-dark text-white font-weight-bold mt-3">
-                            <td colspan="2" class="text-right text-uppercase">TOTAL PASIVO Y PATRIMONIO</td>
+                            <td class="text-right text-uppercase">TOTAL PASIVO Y PATRIMONIO</td>
+                            <td class="d-none"></td>
                             <td class="text-right">${formatMoney(totPasPat.base)}</td>
                             ${totPasPat.m1_12.map(v => `<td class="text-right">${formatMoney(v)}</td>`).join('')}
                             <td class="text-right">${formatMoney(totPasPat.y1)}</td>
@@ -816,7 +826,8 @@ function openBGAdjustmentModal() {
                             let diffY3 = totActivo.y3 - totPasPat.y3;
                             
                             html += `<tr class="table-danger text-danger">
-                                <td colspan="2" class="font-weight-bold pl-4 text-right">Diferencia (Descuadre)</td>
+                                <td class="font-weight-bold pl-4 text-right">Diferencia (Descuadre)</td>
+                                <td class="d-none"></td>
                                 <td class="text-right font-weight-bold">${formatMoney(diffBase)}</td>
                                 ${diffM.map(v => `<td class="text-right font-weight-bold">${formatMoney(v)}</td>`).join('')}
                                 <td class="text-right font-weight-bold">${formatMoney(diffY1)}</td>

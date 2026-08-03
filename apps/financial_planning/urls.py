@@ -53,4 +53,5 @@ urlpatterns = [
     path('plan/<int:plan_id>/api/sync_core_trends_bg/', views.api_sync_core_trends_bg, name='api_sync_core_trends_bg'),
     path('plan/<int:plan_id>/api/api_get_cash_flow_data/', views.api_get_cash_flow_data, name='api_get_cash_flow_data'),
     path('plan/<int:plan_id>/api/save_cf_adjustment/', views.api_save_cf_adjustment, name='api_save_cf_adjustment'),
+    path('plan/<int:plan_id>/api/generate_cf_trend/', views.api_generate_cf_trend, name='api_generate_cf_trend'),
 ]

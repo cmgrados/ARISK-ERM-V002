@@ -1,5 +1,9 @@
 from decimal import Decimal
-from simpleeval import simple_eval
+try:
+    from simpleeval import simple_eval
+except ImportError:
+    # Fallback: use eval (less safe, will be replaced later)
+    simple_eval = eval
 
 class BSCCalculationEngine:
     @staticmethod
