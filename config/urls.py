@@ -17,11 +17,22 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
+from django.http import JsonResponse
+from django.db import connection
 
 from django.conf import settings
 from django.conf.urls.static import static
 
+def health_check(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        return JsonResponse({"status": "ok", "database": "connected"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "database": str(e)}, status=503)
+
 urlpatterns = [
+    path('health', health_check),
     path('admin/', admin.site.urls),
     path('', include('dashboards.urls')),
     path('utilities/', RedirectView.as_view(url='/utilitarios/', permanent=True)),
