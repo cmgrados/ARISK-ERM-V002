@@ -19,9 +19,17 @@ from django.urls import path, include
 from django.views.generic import RedirectView
 from django.http import JsonResponse
 from django.db import connection
+from rest_framework.routers import DefaultRouter
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from django.conf import settings
 from django.conf.urls.static import static
+
+# Import viewsets
+from apps.users.api_views import UserViewSet
+from apps.risks.api_views import RiskViewSet, RiskCauseViewSet, RiskConsequenceViewSet, RiskAssessmentViewSet
+from apps.credit_risk.api_views import CustomerViewSet, CreditOperationViewSet
+
 
 def health_check(request):
     try:
@@ -31,9 +39,28 @@ def health_check(request):
     except Exception as e:
         return JsonResponse({"status": "error", "database": str(e)}, status=503)
 
+
+# API Router
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
+router.register(r'risks', RiskViewSet, basename='risk')
+router.register(r'risk-causes', RiskCauseViewSet, basename='risk-cause')
+router.register(r'risk-consequences', RiskConsequenceViewSet, basename='risk-consequence')
+router.register(r'risk-assessments', RiskAssessmentViewSet, basename='risk-assessment')
+router.register(r'customers', CustomerViewSet, basename='customer')
+router.register(r'credit-operations', CreditOperationViewSet, basename='credit-operation')
+
 urlpatterns = [
     path('health', health_check),
     path('admin/', admin.site.urls),
+
+    # API endpoints
+    path('api/v1/', include(router.urls)),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Web UI
     path('', include('dashboards.urls')),
     path('utilities/', RedirectView.as_view(url='/utilitarios/', permanent=True)),
     path('utilities/bulk-load/liability/', RedirectView.as_view(url='/utilitarios/carga-masiva-pasivos/', permanent=True)),

@@ -51,11 +51,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third party dependencies
     'django.contrib.humanize',
     'django_apscheduler',
-    
+    'rest_framework',
+    'drf_spectacular',
+    'django_filters',
+
     # Internal apps
     'core',
     'users',
@@ -187,6 +190,51 @@ FORMAT_MODULE_PATH = [
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
+# Django REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour'
+    }
+}
+
+# drf-spectacular Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'ARISK ERM API',
+    'DESCRIPTION': 'API REST para ARISK ERM - Enterprise Risk Management System',
+    'VERSION': '1.0.0',
+    'SERVE_PERMISSIONS': ['rest_framework.permissions.IsAuthenticated'],
+    'CONTACT': {
+        'name': 'ARISK Support',
+        'email': 'support@arisk-erm.com',
+    },
+    'LICENSE': {
+        'name': 'MIT',
+    },
+    'TAGS': [
+        {'name': 'Users', 'description': 'User and organization management'},
+        {'name': 'Risks', 'description': 'Risk management and assessment'},
+        {'name': 'Credit Risk', 'description': 'Credit risk operations and metrics'},
+    ]
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
