@@ -1,9 +1,52 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title_header %}{{ page_title }}{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-4">
+
+{# ── Selector de Fecha de Corte ─────────────────────────────────────────── #}
+<div class="row mb-3">
+    <div class="col-12">
         <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
+            <div class="card-body py-2">
+                <form method="GET" action="" class="d-flex align-items-center flex-wrap gap-2">
+                    <label class="mb-0 mr-2 font-weight-bold text-dark" style="white-space:nowrap;">
+                        <i class="fas fa-calendar-alt text-primary mr-1"></i> Fecha de Corte:
+                    </label>
+                    <select name="load_date" id="sel-corte"
+                            class="form-control form-control-sm mr-2"
+                            style="max-width:200px; font-weight:600; border-radius:6px;"
+                            onchange="this.form.submit()">
+                        {% for d in available_dates %}
+                        <option value="{{ d|date:'Y-m-d' }}"
+                            {% if d == selected_date %}selected{% endif %}>
+                            {{ d|date:"d/m/Y" }}
+                        </option>
+                        {% empty %}
+                        <option disabled>Sin datos</option>
+                        {% endfor %}
+                    </select>
+                    {% if selected_date %}
+                    <span class="badge badge-primary px-3 py-2" style="font-size:0.82rem; border-radius:20px;">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Período seleccionado: <strong>{{ selected_date|date:"F Y" }}</strong>
+                    </span>
+                    {% endif %}
+                    {% if available_dates|length > 1 %}
+                    <span class="text-muted ml-3" style="font-size:0.78rem;">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        {{ available_dates|length }} cortes disponibles
+                    </span>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Fila 1: Límites y Alertas ──────────────────────────────────────────── #}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card card-outline shadow-sm h-100" style="border-top-color: #161065;">
             <div class="card-header">
                 <h3 class="card-title"><i class="fas fa-sliders-h mr-2"></i>Límites de Exposición</h3>
             </div>
@@ -30,12 +73,12 @@
         </div>
     </div>
     <div class="col-md-8">
-        <div class="card shadow-sm border">
+        <div class="card shadow-sm border h-100">
             <div class="card-header bg-white border-bottom">
                 <h3 class="card-title"><i class="fas fa-bell text-danger mr-2"></i>Alertas por Deterioro Temprano</h3>
             </div>
             <div class="card-body table-responsive p-0">
-                <table class="table table-striped table-valign-middle">
+                <table class="table table-striped table-valign-middle mb-0">
                   <thead>
                   <tr>
                     <th>Regla de Control Operativo</th>
@@ -46,7 +89,7 @@
                   </thead>
                   <tbody>
                   <tr>
-                    <td>Validación de Otorgamiento Excesivo > S/ 500k</td>
+                    <td>Validación de Otorgamiento Excesivo &gt; S/ 500k</td>
                     <td>Diario</td>
                     <td><span class="text-success"><i class="fas fa-check-circle"></i> Activo / Efectivo</span></td>
                     <td>Hoy, 14:00</td>
@@ -69,4 +112,162 @@
         </div>
     </div>
 </div>
+
+{# ── Fila 2: Top 20 Principales Deudores ────────────────────────────────── #}
+<div class="row">
+    <div class="col-12">
+        <div class="card card-outline shadow-sm" style="border-top-color: #c0392b;">
+            <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                <h3 class="card-title mb-0 mr-auto">
+                    <i class="fas fa-users text-danger mr-2"></i>
+                    Top 20 Principales Deudores
+                    {% if selected_date %}
+                    <small class="text-muted ml-2" style="font-size:0.75rem;">
+                        Corte: <strong>{{ selected_date|date:"d/m/Y" }}</strong>
+                        &nbsp;|&nbsp; Cartera Total: <strong>S/ {{ total_cartera|floatformat:0|intcomma }}</strong>
+                    </small>
+                    {% endif %}
+                </h3>
+                {% if top_debtors %}
+                <button class="btn btn-sm btn-outline-success ml-2" onclick="exportarTopDeudoresCSV()">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar CSV
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if top_debtors %}
+                <div class="table-responsive">
+                <table id="tbl-top-deudores" class="table table-hover table-sm mb-0" style="font-size:0.85rem;">
+                    <thead style="background: linear-gradient(135deg,#161065,#c0392b); color:#fff;">
+                        <tr>
+                            <th class="text-center" style="width:40px;">#</th>
+                            <th>Documento</th>
+                            <th>Nombre / Razón Social</th>
+                            <th>Tipo de Crédito</th>
+                            <th class="text-center">Clasif. SBS</th>
+                            <th class="text-center">Ops.</th>
+                            <th class="text-right">Saldo (S/)</th>
+                            <th class="text-right">Provisión (S/)</th>
+                            <th style="min-width:130px;">% Cartera</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for d in top_debtors %}
+                    <tr>
+                        <td class="text-center font-weight-bold text-muted">{{ d.rank }}</td>
+                        <td class="font-weight-bold" style="font-family:monospace;">{{ d.document_id }}</td>
+                        <td><span class="font-weight-bold">{{ d.name }}</span></td>
+                        <td>
+                            <span class="badge badge-light border">{{ d.credit_type|default:"—" }}</span>
+                        </td>
+                        <td class="text-center">
+                            {% if d.sbs_classification == "Normal" or d.sbs_classification == "0" %}
+                                <span class="badge badge-success">{{ d.sbs_classification }}</span>
+                            {% elif d.sbs_classification == "CPP" or d.sbs_classification == "1" %}
+                                <span class="badge badge-info">{{ d.sbs_classification }}</span>
+                            {% elif d.sbs_classification == "Deficiente" or d.sbs_classification == "2" %}
+                                <span class="badge badge-warning">{{ d.sbs_classification }}</span>
+                            {% elif d.sbs_classification == "Dudoso" or d.sbs_classification == "3" %}
+                                <span class="badge" style="background:#e67e22;color:#fff;">{{ d.sbs_classification }}</span>
+                            {% elif d.sbs_classification == "Pérdida" or d.sbs_classification == "4" %}
+                                <span class="badge badge-danger">{{ d.sbs_classification }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ d.sbs_classification|default:"—" }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">{{ d.num_ops }}</td>
+                        <td class="text-right font-weight-bold">{{ d.total_balance|floatformat:0|intcomma }}</td>
+                        <td class="text-right text-danger">{{ d.total_provision|floatformat:0|intcomma }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 mr-2" style="height:8px;border-radius:4px;">
+                                    <div class="progress-bar bg-danger"
+                                         role="progressbar"
+                                         style="width:{{ d.pct_cartera }}%;"
+                                         aria-valuenow="{{ d.pct_cartera }}"
+                                         aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <span style="min-width:38px;font-size:0.78rem;" class="font-weight-bold text-danger">{{ d.pct_cartera }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                    <tfoot style="background:#f8f9fa;">
+                        <tr>
+                            <td colspan="6" class="text-right font-weight-bold pr-2">TOTAL TOP 20</td>
+                            <td class="text-right font-weight-bold"><span id="tot-saldo">—</span></td>
+                            <td class="text-right font-weight-bold text-danger"><span id="tot-provision">—</span></td>
+                            <td class="font-weight-bold text-danger"><span id="tot-pct">—</span>%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+                </div>
+                {% elif selected_date %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-search fa-3x mb-3 d-block"></i>
+                    <p>No hay datos de cartera para el corte <strong>{{ selected_date|date:"d/m/Y" }}</strong>.</p>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-database fa-3x mb-3 d-block"></i>
+                    <p>No hay datos de cartera cargados.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Calcular totales pie de tabla ──────────────────────────────────────────
+(function(){
+    const rows = document.querySelectorAll('#tbl-top-deudores tbody tr');
+    if (!rows.length) return;
+    let sumSaldo = 0, sumProv = 0, sumPct = 0;
+    rows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        sumSaldo += parseFloat(cells[6].textContent.replace(/,/g,'')) || 0;
+        sumProv  += parseFloat(cells[7].textContent.replace(/,/g,'')) || 0;
+        sumPct   += parseFloat(cells[8].textContent.replace('%','')) || 0;
+    });
+    const fmt = n => n.toLocaleString('es-PE', {minimumFractionDigits:0, maximumFractionDigits:0});
+    const el = document.getElementById('tot-saldo');
+    const ep = document.getElementById('tot-provision');
+    const epc = document.getElementById('tot-pct');
+    if(el)  el.textContent  = fmt(sumSaldo);
+    if(ep)  ep.textContent  = fmt(sumProv);
+    if(epc) epc.textContent = sumPct.toFixed(2);
+})();
+
+// ── Exportar CSV ───────────────────────────────────────────────────────────
+function exportarTopDeudoresCSV(){
+    const fecha = document.getElementById('sel-corte')?.value || 'sin_fecha';
+    const headers = ['#','Documento','Nombre','Tipo Crédito','Clasif. SBS','Ops.','Saldo','Provisión','% Cartera'];
+    const rows = document.querySelectorAll('#tbl-top-deudores tbody tr');
+    let csv = headers.join(';') + '\n';
+    rows.forEach(r => {
+        const cells = r.querySelectorAll('td');
+        csv += [
+            cells[0].textContent.trim(),
+            cells[1].textContent.trim(),
+            cells[2].textContent.trim(),
+            cells[3].textContent.trim(),
+            cells[4].textContent.trim(),
+            cells[5].textContent.trim(),
+            cells[6].textContent.trim().replace(/,/g,''),
+            cells[7].textContent.trim().replace(/,/g,''),
+            cells[8].textContent.trim().replace('%',''),
+        ].join(';') + '\n';
+    });
+    const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `top20_deudores_${fecha}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
 {% endblock %}

@@ -128,27 +128,125 @@ def dashboard(request):
     return render(request, 'utilities/dashboard.html', context)
 
 def download_credit_template(request):
+    # Anexo 6: Reporte de Deudores - SBS
     cols = [
-        'CODIGO SOCIO/CLIENTE', 'APELLIDOS NOMBRES', 'EDAD', 'SEXO', 
-        'FECHA DE NACIMIENTO', 'FECHA DESEMBOLSO', 'FECHA VENCIMIENTO', 'PERIODICIDAD PAGO', 'NRO PAGARÉ', 
-        'MONTO PRESTAMO', 'TEA', 'PLAZO', 'ULTIMA FECHA MOV', 'SALDO', 
-        'DIAS ATRASO', 'CLASIFICACIÓN', 'TIPO DE CRÉDITO', 
-        'PROVISIÓN GENERICA', 'PROVISIÓN ESPECIFICA', 'PROV REQUERIDA', 
-        'PROV CONSTITUIDA', 'INTERES POR COBRAR', 'INTERES SUSPENSO', 
-        'CARTERA VIGENTE', 'CARTERA VENCIDA', 'CARTERA JUDICIAL', 'REFINANCIADO VIGENTE', 
-        'REFINANCIADO VENCIDA', 'REPROGRAMACION VIGENTE', 'REPROGRAMACION VENCIDA', 
-        'PRODUCTO', 'CONVENIO', 'ANALISTA SOLICITUD CRED.', 'NOMBRE ANALISTA SOLICITUD CRED.', 
-        'AGENCIA', 'FECHA DE CORTE'
+        'N',       # 1  Registro (Código de Ifa)
+        'NCL',     # 2  Apellidos y Nombres / Razón Social
+        'FNAC',    # 3  Fecha de Nacimiento (aaaammdd)
+        'GEN',     # 4  Género (M/F/0)
+        'EC',      # 5  Estado Civil
+        'EMP',     # 6  Sigla de la Empresa
+        'CSOC',    # 7  Código Socio
+        'PR',      # 8  Partida Registral
+        'TID',     # 9  Tipo de Documento (1=DNI,2=CE,5=Pasaporte,6=RUC)
+        'NID',     # 10 Número de Documento
+        'TPER',    # 11 Tipo de Persona (1=Natural,2=Jurídica,3=Mancomunados)
+        'DOM',     # 12 Domicilio
+        'RCO',     # 13 Relación Laboral con la Cooperativa
+        'CAL',     # 14 Clasificación del Deudor (0-4)
+        'CALINT',  # 15 Clasificación con Alineamiento Interno
+        'CAGE',    # 16 Código de Agencia
+        'MON',     # 17 Moneda del crédito (01=Soles,02=Dólares)
+        'CCR',     # 18 Número de Crédito (código interno)
+        'TCR',     # 19 Tipo de Crédito (06-20)
+        'STCR',    # 20 Sub Tipo de Crédito (01-16)
+        'FOT',     # 21 Fecha de Desembolso (aaaammdd)
+        'MORG',    # 22 Monto de Desembolso
+        'TEA',     # 23 Tasa de Interés Anual (%)
+        'SKCR',    # 24 Saldo de Colocaciones
+        'CC',      # 25 Cuenta Contable
+        'KVI',     # 26 Capital Vigente
+        'KRE',     # 27 Capital Reestructurado
+        'KRF',     # 28 Capital Refinanciado
+        'KVE',     # 29 Capital Vencido
+        'KJU',     # 30 Capital en Cobranza Judicial
+        'KCO',     # 31 Capital Contingente
+        'CCO',     # 32 Cuenta Contable - Capital Contingente
+        'DAK',     # 33 Días de Mora
+        'SGP',     # 34 Saldos de Garantías Preferidas
+        'SCA',     # 35 Saldos de Garantías Autoliquidables
+        'PVR',     # 36 Provisiones Requeridas
+        'PCI',     # 37 Provisiones Constituidas
+        'SCC',     # 38 Saldo de Créditos Castigados
+        'CCC',     # 39 Cuenta Contable - Crédito Castigado
+        'SN',      # 40 Rendimiento Devengado
+        'SIS',     # 41 Intereses en Suspenso
+        'SID',     # 42 Ingresos Diferidos
+        'TPR',     # 43 Tipo de Producto (definido por COOPAC)
+        'NCPR',    # 44 Número de Cuotas Programadas
+        'NCPA',    # 45 Número de Cuotas Pagadas
+        'PCUO',    # 46 Periodicidad de la cuota (días)
+        'DGR',     # 47 Periodo de Gracia (días)
+        'FVGO',    # 48 Fecha Vencimiento Original (aaaammdd)
+        'FVGA',    # 49 Fecha Vencimiento Actual (aaaammdd)
+        'SSC',     # 50 Saldo Créditos con Sustitución de Contraparte
+        'SSS',     # 51 Saldo Créditos sin cobertura
+        'SCR',     # 52 Saldo Capital de Créditos Reprogramados
+        'SKCO',    # 53 Saldo Capital en Cuenta de Orden por efecto COVID 19
+        'SCOR',    # 54 Sub cuenta de Orden
+        'SINC',    # 55 Rendimiento Devengado por efecto COVID 19
+        'SGS',     # 56 Saldo de Garantías con Sustitución de Contraparte
     ]
     df = pd.DataFrame(columns=cols)
-    example = {'CODIGO SOCIO/CLIENTE': '12345678', 'APELLIDOS NOMBRES': 'ABAD APESTEGUIA CARLOS ALBERTO', 'EDAD': 71, 'SEXO': 'M', 'FECHA DE NACIMIENTO': '1954-01-01', 'FECHA DESEMBOLSO': '2025-01-15', 'NRO PAGARÉ': 'CRED-001', 'MONTO PRESTAMO': 10000.00, 'TEA': 18.5, 'PLAZO': 24, 'ULTIMA FECHA MOV': '2025-04-10', 'SALDO': 8500.00, 'DIAS ATRASO': 0, 'CLASIFICACIÓN': 'Normal', 'TIPO DE CRÉDITO': 'MYPE', 'PROVISIÓN GENERICA': 100.00, 'PROVISIÓN ESPECIFICA': 0.00, 'PROV REQUERIDA': 100.00, 'PROV CONSTITUIDA': 100.00, 'INTERES POR COBRAR': 45.00, 'INTERES SUSPENSO': 0.00, 'CARTERA VIGENTE': 8500.00, 'CARTERA VENCIDA': 0.00, 'REFINANCIADO VIGENTE': 0.00, 'REFINANCIADO VENCIDA': 0.00, 'REPROGRAMACION VIGENTE': 0.00, 'REPROGRAMACION VENCIDA': 0.00, 'PRODUCTO': 'CRÉDITO CAPITAL DE TRABAJO', 'CONVENIO': 'NINGUNO', 'ANALISTA SOLICITUD CRED.': 'A01', 'NOMBRE ANALISTA SOLICITUD CRED.': 'ASESOR_X', 'AGENCIA': 'AGENCIA_01', 'FECHA DE CORTE': '2026-04-30'}
+    example = {
+        'N': '001', 'NCL': 'PEREZ GARCIA JUAN CARLOS', 'FNAC': '19850315',
+        'GEN': 'M', 'EC': 'C', 'EMP': '', 'CSOC': '00012345', 'PR': '',
+        'TID': '1', 'NID': '12345678', 'TPER': '1', 'DOM': 'AV. LIMA 123',
+        'RCO': '0', 'CAL': '0', 'CALINT': '0', 'CAGE': 'AG01',
+        'MON': '01', 'CCR': 'CRED-2025-001', 'TCR': '10', 'STCR': '01',
+        'FOT': '20250115', 'MORG': 15000.00, 'TEA': 18.50, 'SKCR': 12500.00,
+        'CC': '1401', 'KVI': 12500.00, 'KRE': 0.00, 'KRF': 0.00,
+        'KVE': 0.00, 'KJU': 0.00, 'KCO': 0.00, 'CCO': '', 'DAK': 0,
+        'SGP': 20000.00, 'SCA': 0.00, 'PVR': 125.00, 'PCI': 125.00,
+        'SCC': 0.00, 'CCC': '', 'SN': 45.00, 'SIS': 0.00, 'SID': 0.00,
+        'TPR': 'CAPITAL DE TRABAJO', 'NCPR': 24, 'NCPA': 3, 'PCUO': 30,
+        'DGR': 0, 'FVGO': '20270115', 'FVGA': '20270115',
+        'SSC': 0.00, 'SSS': 12500.00, 'SCR': 0.00, 'SKCO': 0.00,
+        'SCOR': '', 'SINC': 0.00, 'SGS': 0.00,
+    }
     df = pd.concat([df, pd.DataFrame([example])], ignore_index=True)
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Plantilla_Creditos')
+        df.to_excel(writer, index=False, sheet_name='Anexo6_Reporte_Deudores')
+        # Agregar hoja de referencia con los campos
+        ref_data = []
+        descriptions = [
+            'Registro (Código de Ifa)', 'Apellidos y Nombres / Razón Social',
+            'Fecha de Nacimiento (aaaammdd)', 'Género (M/F/0)', 'Estado Civil (S/C/D/V/0)',
+            'Sigla de la Empresa', 'Código Socio', 'Partida Registral',
+            'Tipo de Documento (1=DNI,2=CE,5=Pasaporte,6=RUC)', 'Número de Documento',
+            'Tipo de Persona (1=Natural,2=Jurídica,3=Mancomunados)', 'Domicilio',
+            'Relación Laboral con la Cooperativa (0-5)', 'Clasificación del Deudor (0=Normal,1=CPP,2=Deficiente,3=Dudoso,4=Pérdida)',
+            'Clasificación con Alineamiento Interno', 'Código de Agencia',
+            'Moneda (01=Soles,02=Dólares)', 'Número de Crédito (código interno)',
+            'Tipo de Crédito SBS (06-20)', 'Sub Tipo de Crédito (01-16)',
+            'Fecha de Desembolso (aaaammdd)', 'Monto de Desembolso',
+            'Tasa de Interés Anual (%)', 'Saldo de Colocaciones',
+            'Cuenta Contable', 'Capital Vigente', 'Capital Reestructurado',
+            'Capital Refinanciado', 'Capital Vencido', 'Capital en Cobranza Judicial',
+            'Capital Contingente', 'Cuenta Contable Capital Contingente',
+            'Días de Mora', 'Saldos Garantías Preferidas',
+            'Saldos Garantías Autoliquidables', 'Provisiones Requeridas',
+            'Provisiones Constituidas', 'Saldo Créditos Castigados',
+            'Cuenta Contable Crédito Castigado', 'Rendimiento Devengado',
+            'Intereses en Suspenso', 'Ingresos Diferidos',
+            'Tipo de Producto (COOPAC)', 'Número Cuotas Programadas',
+            'Número Cuotas Pagadas', 'Periodicidad de la cuota (días)',
+            'Periodo de Gracia (días)', 'Fecha Vencimiento Original (aaaammdd)',
+            'Fecha Vencimiento Actual (aaaammdd)',
+            'Saldo Créditos con Sustitución de Contraparte',
+            'Saldo Créditos sin cobertura', 'Saldo Capital Créditos Reprogramados',
+            'Saldo Capital Cuenta de Orden COVID 19', 'Sub cuenta de Orden',
+            'Rendimiento Devengado COVID 19', 'Saldo Garantías con Sustitución de Contraparte',
+        ]
+        for i, (c, d) in enumerate(zip(cols, descriptions), start=1):
+            ref_data.append({'N°': i, 'Nemónico': c, 'Campo': d})
+        ref_df = pd.DataFrame(ref_data)
+        ref_df.to_excel(writer, index=False, sheet_name='Referencia_Campos')
     response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=plantilla_carga_creditos_v3.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=plantilla_anexo6_reporte_deudores_sbs.xlsx'
     return response
+
 
 def download_liability_template(request):
     cols = [
@@ -337,34 +435,44 @@ def bulk_load_credit(request):
                 messages.error(request, "No se identificaron fechas de corte válidas en el archivo.")
                 return redirect('utilities:bulk_load_credit')
 
-            # --- Detección de Columnas Robusta ---
-            col_sbs = get_col_robust(['CLASIFICACION', 'CATEGORIA', 'CALIFICACION', 'SBS', 'SITUACION'], df.columns)
-            col_agency = get_col_robust(['AGENCIA', 'OFICINA', 'SUCURSAL', 'LOCALIDAD', 'CENTRO'], df.columns)
-            col_balance = get_col_robust(['SALDO', 'MONTO_PENDIENTE', 'DEUDA', 'CAPITAL'], df.columns)
-            col_id = get_col_robust(['DOCUMENTO', 'DNI', 'RUC', 'CODIGO_SOCIO', 'COD_USUARIO', 'CLIENTE'], df.columns)
+            # --- Detección de Columnas Robusta (Anexo 6 SBS + Legacy) ---
+            col_sbs = get_col_robust(['CAL', 'CALINT', 'CLASIFICACION', 'CATEGORIA', 'CALIFICACION', 'SBS', 'SITUACION'], df.columns)
+            col_agency = get_col_robust(['CAGE', 'AGENCIA', 'OFICINA', 'SUCURSAL', 'LOCALIDAD', 'CENTRO'], df.columns)
+            col_balance = get_col_robust(['SKCR', 'SALDO', 'MONTO_PENDIENTE', 'DEUDA', 'CAPITAL'], df.columns)
+            col_id = get_col_robust(['NID', 'CSOC', 'DOCUMENTO', 'DNI', 'RUC', 'CODIGO_SOCIO', 'COD_USUARIO', 'CLIENTE'], df.columns)
+            col_name = get_col_robust(['NCL', 'NOMBRE', 'CLIENTE', 'SOCIO', 'APELLIDOS_NOMBRES'], df.columns)
             
-            col_op_ref = get_col_robust(['OP_REF', 'PAGARE', 'OPERACION', 'CREDITO', 'CONTRATO', 'NUM_OPER', 'NRO_OP'], df.columns)
+            col_op_ref = get_col_robust(['CCR', 'OP_REF', 'PAGARE', 'OPERACION', 'CREDITO', 'CONTRATO', 'NUM_OPER', 'NRO_OP'], df.columns)
             if not col_op_ref: col_op_ref = get_col_robust(['NRO', 'NUMERO', 'COD_OP'], df.columns)
             
-            col_tea = get_col_robust(['TASA', 'TEA', 'TREA', 'INT'], df.columns)
-            col_term = get_col_robust(['PLAZO', 'MESES', 'DIAS', 'TERM'], df.columns)
-            col_past_due = get_col_robust(['ATRASO', 'DIAS_ATRASO', 'MORA', 'MOROSIDAD', 'DIAS_MORA'], df.columns)
-            col_maturity = get_col_robust(['VENCIMIENTO', 'FECHA_VENC', 'MATURITY', 'VENCE'], df.columns)
-            col_type = get_col_robust(['TIPO_DE_CREDITO', 'TIPO_CREDITO', 'MODALIDAD', 'SEGMENTO'], df.columns)
+            col_tea = get_col_robust(['TEA', 'TASA', 'TREA', 'INT'], df.columns)
+            col_term = get_col_robust(['NCPR', 'PLAZO', 'MESES', 'DIAS', 'TERM'], df.columns)
+            col_past_due = get_col_robust(['DAK', 'ATRASO', 'DIAS_ATRASO', 'MORA', 'MOROSIDAD', 'DIAS_MORA'], df.columns)
+            col_maturity = get_col_robust(['FVGA', 'FVGO', 'VENCIMIENTO', 'FECHA_VENC', 'MATURITY', 'VENCE'], df.columns)
+            col_type = get_col_robust(['TCR', 'TIPO_DE_CREDITO', 'TIPO_CREDITO', 'MODALIDAD', 'SEGMENTO'], df.columns)
             col_advisor = get_col_robust(['ASESOR', 'ANALISTA', 'EJECUTIVO', 'FUNCIONARIO'], df.columns)
-            col_product = get_col_robust(['PRODUCTO', 'LINEA', 'DESC_PRODUCTO', 'PRODUCT'], df.columns)
-            col_orig_monto = get_col_robust(['MONTO_PRESTAMO', 'PRESTAMO', 'MONTO_DESEMBOLSADO', 'ORIGINAL', 'DESEMBOLSO', 'MONTO_APR'], df.columns)
+            col_product = get_col_robust(['TPR', 'PRODUCTO', 'LINEA', 'DESC_PRODUCTO', 'PRODUCT'], df.columns)
+            col_orig_monto = get_col_robust(['MORG', 'MONTO_PRESTAMO', 'PRESTAMO', 'MONTO_DESEMBOLSADO', 'ORIGINAL', 'DESEMBOLSO', 'MONTO_APR'], df.columns)
+            col_disb_date = get_col_robust(['FOT', 'FECHA_DESEMBOLSO', 'DESEMBOLSO'], df.columns)
             
-            # Additional financial fields
-            col_prov_req = get_col_robust(['PROV_REQUERIDA', 'PROVISION_REQUERIDA', 'REQUERIDA'], df.columns)
-            col_prov_const = get_col_robust(['PROV_CONSTITUIDA', 'PROVISION_CONSTITUIDA', 'CONSTITUIDA'], df.columns)
-            col_int_cobrar = get_col_robust(['INTERES_POR_COBRAR', 'INT_COBRAR', 'DEVENGADO'], df.columns)
-            col_int_susp = get_col_robust(['INTERES_SUSPENSO', 'INT_SUSPENSO'], df.columns)
-            col_cart_vig = get_col_robust(['CARTERA_VIGENTE', 'VIGENTE'], df.columns)
-            col_cart_venc = get_col_robust(['CARTERA_VENCIDA', 'VENCIDA'], df.columns)
-            col_cart_jud = get_col_robust(['CARTERA_JUDICIAL', 'JUDICIAL'], df.columns)
-            col_ref_vig = get_col_robust(['REFINANCIADO_VIGENTE', 'REF_VIGENTE'], df.columns)
-            col_ref_venc = get_col_robust(['REFINANCIADO_VENCIDA', 'REF_VENCIDA'], df.columns)
+            # Additional financial fields (Anexo 6 SBS + Legacy)
+            col_prov_req = get_col_robust(['PVR', 'PROV_REQUERIDA', 'PROVISION_REQUERIDA', 'REQUERIDA'], df.columns)
+            col_prov_const = get_col_robust(['PCI', 'PROV_CONSTITUIDA', 'PROVISION_CONSTITUIDA', 'CONSTITUIDA'], df.columns)
+            col_int_cobrar = get_col_robust(['SN', 'INTERES_POR_COBRAR', 'INT_COBRAR', 'DEVENGADO'], df.columns)
+            col_int_susp = get_col_robust(['SIS', 'INTERES_SUSPENSO', 'INT_SUSPENSO'], df.columns)
+            col_cart_vig = get_col_robust(['KVI', 'CARTERA_VIGENTE', 'VIGENTE'], df.columns)
+            col_cart_venc = get_col_robust(['KVE', 'CARTERA_VENCIDA', 'VENCIDA'], df.columns)
+            col_cart_jud = get_col_robust(['KJU', 'CARTERA_JUDICIAL', 'JUDICIAL'], df.columns)
+            col_ref_vig = get_col_robust(['KRF', 'REFINANCIADO_VIGENTE', 'REF_VIGENTE'], df.columns)
+            col_ref_venc = get_col_robust(['KRE', 'REFINANCIADO_VENCIDA', 'REF_VENCIDA'], df.columns)
+            # Anexo 6 additional fields
+            col_gender = get_col_robust(['GEN', 'SEXO', 'GENERO'], df.columns)
+            col_birth_date = get_col_robust(['FNAC', 'FECHA_DE_NACIMIENTO', 'NACIMIENTO'], df.columns)
+            col_doc_type = get_col_robust(['TID', 'TIPO_DOCUMENTO', 'TIPO_DOC'], df.columns)
+            col_currency = get_col_robust(['MON', 'MONEDA', 'DIVISA'], df.columns)
+            col_guarantee_pref = get_col_robust(['SGP', 'GARANTIA_PREFERIDA', 'GAR_PREF'], df.columns)
+            col_guarantee_auto = get_col_robust(['SCA', 'GARANTIA_AUTOLIQ', 'GAR_AUTO'], df.columns)
+            col_reprog_vig = get_col_robust(['SCR', 'REPROGRAMACION_VIGENTE', 'REPROG_VIGENTE'], df.columns)
 
             with open('debug_load.log', 'a', encoding='utf-8') as f:
                 f.write(f"--- NUEVA CARGA: {file.name} ---\n")
@@ -402,9 +510,12 @@ def bulk_load_credit(request):
                     for row in rows:
                         doc_id = str(row.get(col_id, '')).strip()
                         if doc_id and doc_id.upper() not in ['NAN', 'NONE', '', '<NA>'] and doc_id not in customers_cache:
+                            # Anexo 6 usa NCL para nombres
+                            cust_name = str(row.get(col_name, 'DESCONOCIDO') if col_name else 'DESCONOCIDO').strip().upper()[:255]
+                            if cust_name.upper() in ['NAN', 'NONE', '', '<NA>']: cust_name = 'DESCONOCIDO'
                             c = Customer(
                                 document_id=doc_id, 
-                                name=str(row.get('NOMBRE', row.get('CLIENTE', row.get('SOCIO', 'DESCONOCIDO')))).strip().upper()[:255]
+                                name=cust_name
                             )
                             new_customers.append(c)
                             customers_cache[doc_id] = c # Placeholder
@@ -471,7 +582,7 @@ def bulk_load_credit(request):
                                 if cat_order.get(sbs_cat, 0) > cat_order.get(op.sbs_classification, 0):
                                     op.sbs_classification = sbs_cat
                             else:
-                                disb_date = parse_date(row.get('FECHA_DESEMBOLSO', row.get('DESEMBOLSO', d)))
+                                disb_date = parse_date(row.get(col_disb_date, d)) if col_disb_date else parse_date(row.get('FECHA_DESEMBOLSO', row.get('DESEMBOLSO', d)))
                                 term_val = int(clean_decimal_latam(row.get(col_term, 0)))
                                 mat_date = parse_date(row.get(col_maturity))
                                 if not mat_date and disb_date and term_val > 0:
@@ -557,7 +668,7 @@ def bulk_load_credit(request):
 
     history = BulkLoadLog.objects.filter(load_type='CREDIT').order_by('-load_date')
     return render(request, 'utilities/credit_bulk_load.html', {
-        'page_title': 'Carga Masiva - Cartera de Créditos',
+        'page_title': 'Anexo 6: Reporte de Deudores - SBS',
         'history': history,
         'today': timezone.now().date()
     })

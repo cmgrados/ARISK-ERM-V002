@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reporte Nº 13{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">Reporte Nº 13</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'utilities:dashboard' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'regulatory_reports:portal_anexos' %}">Portal Anexos</a></li>
+                    <li class="breadcrumb-item active">Reporte Nº 13</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-info">
+            <div class="card-header text-center">
+                <h4 class="font-weight-bold mb-1">CONTROL DE LÍMITES GLOBALES E INDIVIDUALES APLICABLES A COOPERATIVAS DE AHORRO Y CRÉDITO NO AUTORIZADAS A CAPTAR RECURSOS DEL PÚBLICO DE NIVEL 2</h4>
+                <p class="mb-0 text-muted">(Contenidos en la Ley Nº 26702 y normas reglamentarias emitidas por la SBS)</p>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <strong>COOPAC:</strong> <span class="border-bottom pb-1 px-3 d-inline-block" style="min-width: 250px;">{{ request.user.company.name|default:"____________________" }}</span>
+                    </div>
+                    <div class="col-md-6 text-md-right">
+                        <strong>FECHA:</strong> <span class="border-bottom pb-1 px-3 d-inline-block" style="min-width: 150px;">___ / ______</span>
+                    </div>
+                </div>
+
+                <h5 class="font-weight-bold text-primary mt-4">I. Límites Globales (1)</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped table-hover mt-3">
+                        <thead class="bg-primary text-white text-center">
+                            <tr>
+                                <th>Aspecto</th>
+                                <th>Base legal</th>
+                                <th>Límites legales</th>
+                                <th>Cómputo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1. Ratio de Capital Global</td>
+                                <td>Art. 199° Ley General y Res. SBS Nº 8425-2011</td>
+                                <td class="text-center">>= 10%</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm text-right" placeholder="0.00%">
+                                </td>
+                            </tr>
+                            <!-- You can add more rows here later -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 text-right">
+                    <button class="btn btn-secondary"><i class="fas fa-print"></i> Imprimir</button>
+                    <button class="btn btn-success"><i class="fas fa-save"></i> Guardar Reporte</button>
+                    <button class="btn btn-primary"><i class="fas fa-file-export"></i> Exportar a Excel</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

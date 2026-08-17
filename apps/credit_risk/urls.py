@@ -14,6 +14,7 @@ urlpatterns = [
     path('transiciones/', views.transition_matrix, name='transition_matrix'),
     path('cosechas/', views.vintage_analysis, name='vintage_analysis'),
     path('perdida-esperada/', views.expected_loss_analysis, name='expected_loss_analysis'),
+    path('perdida-esperada/export/word/', views.export_expected_loss_word, name='export_expected_loss_word'),
     path('reportes/', views.reports, name='reports'),
     path('reportes/sbs-pdf/', views.export_sbs_annex_pdf, name='export_sbs_annex_pdf'),
     path('reportes/sbs-excel/', views.export_sbs_annex_excel, name='export_sbs_annex_excel'),

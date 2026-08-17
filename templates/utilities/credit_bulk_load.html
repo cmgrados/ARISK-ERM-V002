@@ -8,8 +8,9 @@
         <div class="card shadow-sm border-0 mb-5">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <h3 class="card-title font-weight-bold mb-0">
-                    <i class="fas fa-file-upload mr-2 text-warning"></i>Carga Masiva - Cartera de Créditos
+                    <i class="fas fa-file-upload mr-2 text-warning"></i>Anexo 6: Reporte de Deudores - SBS
                 </h3>
+                <span class="badge badge-warning text-dark">Formato Normativo SBS</span>
             </div>
             <div class="card-body">
                 <form method="POST" enctype="multipart/form-data" class="p-3">
@@ -21,39 +22,60 @@
                             <small class="text-muted">Si el archivo contiene una columna "FECHA DE CORTE", se usará esa prioridad.</small>
                         </div>
                         <div class="col-md-6 mb-4">
-                            <label class="font-weight-bold text-muted small text-uppercase">Archivo Excel o CSV:</label>
+                            <label class="font-weight-bold text-muted small text-uppercase">Archivo Excel o CSV (Formato Anexo 6 SBS):</label>
                             <div class="custom-file">
                                 <input type="file" name="file" class="custom-file-input" id="customFile" accept=".xlsx, .xls, .csv" required>
                                 <label class="custom-file-label" for="customFile">Seleccionar archivo...</label>
                             </div>
-                            <small class="text-muted">Formatos admitidos: .xlsx, .csv</small>
+                            <small class="text-muted">Formatos admitidos: .xlsx, .csv — Nemónicos SBS oficiales</small>
                         </div>
                     </div>
 
                     <div class="alert alert-info border-0 shadow-xs mb-4">
                         <h6 class="font-weight-bold d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-info-circle mr-1"></i> Requerimientos del Formato:</span>
+                            <span><i class="fas fa-landmark mr-1"></i> Formato Anexo 6 - Reporte de Deudores (SBS)</span>
                             <a href="{% url 'utilities:download_credit_template' %}" class="btn btn-sm btn-info shadow-xs">
-                                <i class="fas fa-download mr-1"></i> Descargar Plantilla Modelo
+                                <i class="fas fa-download mr-1"></i> Descargar Plantilla Anexo 6
                             </a>
                         </h6>
-                        <p class="mb-2 small">Para una carga exitosa, asegúrese de que su archivo contenga los encabezados exactos:</p>
-                        <div class="table-responsive">
+                        <p class="mb-2 small">El archivo debe contener los nemónicos oficiales del Anexo 6 establecido por la SBS. Campos principales:</p>
+                        <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
                             <table class="table table-sm table-bordered bg-white mb-0 text-center small">
-                                <thead class="bg-dark text-white">
+                                <thead class="bg-dark text-white" style="position: sticky; top: 0;">
                                     <tr>
-                                        <th>documento</th><th>socio</th><th>nombre</th><th>edad</th><th>genero</th><th>segmento</th><th>op_ref</th><th>saldo</th><th>tasa</th><th>fecha_desembolso</th>
+                                        <th>N</th><th>NCL</th><th>FNAC</th><th>GEN</th><th>TID</th><th>NID</th>
+                                        <th>CSOC</th><th>CAGE</th><th>CCR</th><th>TCR</th><th>FOT</th><th>MORG</th>
+                                        <th>TEA</th><th>SKCR</th><th>KVI</th><th>KVE</th><th>KJU</th><th>KRF</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    <tr class="small">
+                                        <td>Registro</td><td>Nombre</td><td>F.Nac</td><td>Género</td><td>Tipo Doc</td><td>N° Doc</td>
+                                        <td>Cód Socio</td><td>Agencia</td><td>N° Crédito</td><td>Tipo Cred</td><td>F.Desemb</td><td>Monto</td>
+                                        <td>Tasa</td><td>Saldo</td><td>Vigente</td><td>Vencido</td><td>Judicial</td><td>Refinanc</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-responsive mt-1" style="max-height: 130px; overflow-y: auto;">
+                            <table class="table table-sm table-bordered bg-white mb-0 text-center small">
+                                <thead class="bg-secondary text-white" style="position: sticky; top: 0;">
                                     <tr>
-                                        <td>(DNI/RUC)</td><td>(Código)</td><td>(Nombres)</td><td>(Años)</td><td>(M/F)</td><td>(Riesgo)</td><td>(Unique)</td><td>(Monto)</td><td>(%)</td><td>(YYYY-MM-DD)</td>
+                                        <th>CAL</th><th>DAK</th><th>PVR</th><th>PCI</th><th>SN</th><th>SIS</th>
+                                        <th>SGP</th><th>SCA</th><th>TPR</th><th>NCPR</th><th>FVGA</th><th>MON</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="small">
+                                        <td>Clasif.</td><td>Días Mora</td><td>Prov Req</td><td>Prov Const</td><td>Devengado</td><td>Int Susp</td>
+                                        <td>Gar Pref</td><td>Gar Auto</td><td>Producto</td><td>N° Cuotas</td><td>F.Venc</td><td>Moneda</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                         <p class="mt-2 mb-0 small text-dark font-italic">
-                            <i class="fas fa-check-circle text-success mr-1"></i> Se ha actualizado la plantilla a la <b>Versión 2.0</b> incluyendo soporte para identificación automática de fechas de corte.
+                            <i class="fas fa-check-circle text-success mr-1"></i> La plantilla incluye los <b>56 nemónicos</b> del Anexo 6 SBS con hoja de referencia detallada.
+                            <br><i class="fas fa-info-circle text-info mr-1"></i> Compatible con formatos legacy (columnas descriptivas).
                         </p>
                     </div>
 

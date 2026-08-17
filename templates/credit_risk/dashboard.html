@@ -127,23 +127,45 @@
     </div>
 </div>
 
-<!-- Evolución de Cartera (Full Width) -->
+<!-- Fila 1 de Gráficos: Evolución de Cartera -->
 <div class="row">
-    <div class="col-md-12">
+    <!-- 0a. Evolución de Cartera Total -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #000000;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-line mr-2" style="color: #000000;"></i>Evolución de la Cartera Total</h3>
+            </div>
+            <div class="card-body">
+                <div id="totalEvolutionChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_1"><strong>Análisis:</strong> {{ analysis_1|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_1')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 0b. Evolución de Cartera por Situación -->
+    <div class="col-md-6">
         <div class="card card-outline shadow-sm" style="border-top-color: #3498db;">
             <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-area mr-2 text-primary"></i>Evolución del Saldo de Cartera</h3>
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-area mr-2 text-primary"></i>Evolución del Saldo por Situación</h3>
             </div>
             <div class="card-body">
                 <div id="evolutionChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_2"><strong>Análisis:</strong> {{ analysis_2|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_2')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Gráficos Principales (2 Arriba, 2 Abajo) -->
+<!-- Fila 2 de Gráficos -->
 <div class="row">
-    <!-- 1. Saldo de Cartera por Producto (Top Left) -->
+    <!-- 1. Saldo de Cartera por Producto -->
     <div class="col-md-6">
         <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
             <div class="card-header">
@@ -151,42 +173,99 @@
             </div>
             <div class="card-body">
                 <div id="productBalanceChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_3"><strong>Análisis:</strong> {{ analysis_3|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_3')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
             </div>
         </div>
     </div>
-    <!-- 2. Estado de Cartera Vigente y Vencido (Top Right) -->
+    <!-- 2. Tipo de Crédito al Corte -->
     <div class="col-md-6">
         <div class="card card-outline shadow-sm" style="border-top-color: #ffcc00;">
             <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-check-circle mr-2 text-success"></i>Estado de Cartera</h3>
+                <h3 class="card-title font-weight-bold"><i class="fas fa-list-alt mr-2 text-warning"></i>Tipo de Crédito al Corte</h3>
             </div>
             <div class="card-body">
-                <div id="statusChart" style="height: 350px;"></div>
+                <div id="creditTypeChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_4"><strong>Análisis:</strong> {{ analysis_4|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_4')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Fila 3 de Gráficos -->
 <div class="row">
-    <!-- 3. Evolución del Saldo en Mora (Bottom Left) -->
+    <!-- 3. Estado de Cartera -->
     <div class="col-md-6">
-        <div class="card card-outline shadow-sm" style="border-top-color: #E84A5F;">
+        <div class="card card-outline shadow-sm" style="border-top-color: #161065;">
             <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-line mr-2 text-danger"></i>Evolución Saldo en Mora</h3>
+                <h3 class="card-title font-weight-bold"><i class="fas fa-check-circle mr-2 text-success"></i>Estado de Cartera</h3>
             </div>
             <div class="card-body">
-                <div id="moraEvolutionChart" style="height: 350px;"></div>
+                <div id="statusChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_5"><strong>Análisis:</strong> {{ analysis_5|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_5')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
             </div>
         </div>
     </div>
-    <!-- 4. Evolución del Ratio de Mora (Bottom Right) -->
+    <!-- 4. Evolución de Morosidad por Tipo de Crédito -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #E84A5F;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-chart-line mr-2 text-danger"></i>Evolución de Morosidad por Tipo</h3>
+            </div>
+            <div class="card-body">
+                <div id="moraTipoCreditoChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_6"><strong>Análisis:</strong> {{ analysis_6|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_6')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fila 4 de Gráficos -->
+<div class="row">
+    <!-- 5. Evolución de Morosidad por Días -->
+    <div class="col-md-6">
+        <div class="card card-outline shadow-sm" style="border-top-color: #E84A5F;">
+            <div class="card-header">
+                <h3 class="card-title font-weight-bold"><i class="fas fa-exclamation-triangle mr-2 text-danger"></i>Evolución de Morosidad por Días</h3>
+            </div>
+            <div class="card-body">
+                <div id="moraDiasEvolutionChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_7"><strong>Análisis:</strong> {{ analysis_7|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_7')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 6. Evolución del Ratio de Mora y Cobertura -->
     <div class="col-md-6">
         <div class="card card-outline shadow-sm" style="border-top-color: #2E9CCA;">
             <div class="card-header">
-                <h3 class="card-title font-weight-bold"><i class="fas fa-percentage mr-2 text-info"></i>Evolución Ratio de Mora %</h3>
+                <h3 class="card-title font-weight-bold"><i class="fas fa-percentage mr-2 text-info"></i>Ratio de Mora y Cobertura %</h3>
             </div>
             <div class="card-body">
-                <div id="ratioEvolutionChart" style="height: 350px;"></div>
+                <div id="ratioCoberturaEvolutionChart" style="height: 350px;"></div>
+                <hr>
+                <div class="d-flex justify-content-between align-items-start mt-2">
+                    <p class="text-muted mb-0 small" id="analysis_8"><strong>Análisis:</strong> {{ analysis_8|safe }}</p>
+                    <button class="btn btn-sm btn-outline-secondary ml-2 border-0" onclick="copyAnalysis('analysis_8')" title="Copiar análisis"><i class="fas fa-copy"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -194,48 +273,212 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const formatValue = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+    window.copyAnalysis = function(id) {
+        var el = document.getElementById(id);
+        if(!el) return;
+        var text = el.innerText.replace(/^Análisis:\s*/, '');
+        navigator.clipboard.writeText(text).then(function() {
+            alert('Análisis copiado al portapapeles.');
+        });
+    };
 
-    // 0. Evolución del Saldo de Cartera (Area Chart)
-    var chartEvolution = echarts.init(document.getElementById('evolutionChart'));
-    var rawEvolutionData = {{ evolucion_data|safe }};
-    var optionEvolution = {
+    const formatValue = (val) => new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
+    const formatLabel = (val) => {
+        if (val >= 1000000) return 'S/ ' + (val / 1000000).toFixed(1) + 'M';
+        if (val >= 1000) return 'S/ ' + (val / 1000).toFixed(1) + 'k';
+        return 'S/ ' + val;
+    };
+
+    var rawSituacionEvolData = {{ situacion_evolucion_data|safe }};
+
+    // 0a. Evolución de Cartera Total (Line Chart)
+    var chartTotalEvolution = echarts.init(document.getElementById('totalEvolutionChart'));
+    var optionTotalEvolution = {
+        title: { text: 'EVOLUCIÓN DE SALDO DE CARTERA', left: 'center', textStyle: { color: '#333', fontSize: 14, fontWeight: 'bold' } },
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
         tooltip: { 
             trigger: 'axis', 
-            formatter: (p) => `<b>${p[0].name}</b><br/>Saldo: S/ ${formatValue(p[0].value)}` 
+            formatter: function(params) {
+                let res = `<b>${params[0].name}</b><br/>`;
+                res += `${params[0].marker} Total: S/ ${formatValue(params[0].value)}`;
+                return res;
+            }
         },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        legend: { show: false },
+        grid: { left: '5%', right: '5%', bottom: '15%', top: '15%', containLabel: true },
+        dataZoom: [
+            { type: 'slider', show: true, xAxisIndex: [0], bottom: '2%' }
+        ],
         xAxis: { 
             type: 'category', 
-            data: rawEvolutionData.map(item => item.date),
+            boundaryGap: false,
+            name: 'CORTE',
+            nameLocation: 'middle',
+            nameGap: 30,
+            nameTextStyle: { color: '#333', fontWeight: 'bold' },
+            splitLine: { show: true, lineStyle: { type: 'dotted', color: '#ccc' } },
+            data: rawSituacionEvolData.map(item => item.date),
             axisLabel: {
+                showMaxLabel: true,
                 formatter: (value) => {
                     const date = new Date(value);
-                    return date.toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
-                }
+                    return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+                },
+                color: '#666'
             }
         },
         yAxis: { 
             type: 'value', 
-            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' } 
+            splitLine: { show: true, lineStyle: { type: 'dotted', color: '#ccc' } },
+            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + ' mill.', color: '#666' },
+            min: function(value) { return Math.floor(value.min * 0.95); }
         },
-        series: [{ 
-            name: 'Saldo Total', 
-            type: 'line', 
-            smooth: true, 
-            symbol: 'circle',
-            symbolSize: 8,
-            areaStyle: { 
-                opacity: 0.3,
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#3498db' },
-                    { offset: 1, color: '#fff' }
-                ])
+        series: [
+            { 
+                name: 'Total', 
+                type: 'line', 
+                smooth: true, 
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(0,128,0,0.5)'}, {offset: 1, color: 'rgba(0,128,0,0.1)'}]) },
+                itemStyle: { color: '#008000' },
+                lineStyle: { color: '#008000', width: 3 },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawSituacionEvolData.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\n' + formatLabel(p.value);
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return formatLabel(p.value);
+                        }
+                        return '';
+                    }, 
+                    color: '#000066', 
+                    fontWeight: 'bold', 
+                    fontSize: 11 
+                },
+                data: rawSituacionEvolData.map(item => item.vigente + item.vencida) 
+            }
+        ]
+    };
+    chartTotalEvolution.setOption(optionTotalEvolution);
+
+    // 0b. Evolución del Saldo de Cartera por Situación (Stacked Area Chart)
+    var chartEvolution = echarts.init(document.getElementById('evolutionChart'));
+    var optionEvolution = {
+        title: { text: 'EVOLUCIÓN DE SITUACIÓN DE CARTERA', left: 'center', textStyle: { color: '#333', fontSize: 14, fontWeight: 'bold' } },
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
+        tooltip: { 
+            trigger: 'axis', 
+            formatter: function(params) {
+                let res = `<b>${params[0].name}</b><br/>`;
+                let total = 0;
+                params.forEach(p => {
+                    res += `${p.marker} ${p.seriesName}: S/ ${formatValue(p.value)}<br/>`;
+                    total += p.value;
+                });
+                res += `<b>Total: S/ ${formatValue(total)}</b>`;
+                return res;
+            }
+        },
+        legend: { data: ['CARTERA VIGENTE', 'CARTERA VENCIDA'], top: '10%', left: 'left', icon: 'circle' },
+        grid: { left: '5%', right: '5%', bottom: '15%', top: '25%', containLabel: true },
+        dataZoom: [
+            { type: 'slider', show: true, xAxisIndex: [0], bottom: '2%' }
+        ],
+        xAxis: { 
+            type: 'category', 
+            boundaryGap: false,
+            name: 'CORTE',
+            nameLocation: 'middle',
+            nameGap: 30,
+            nameTextStyle: { color: '#333', fontWeight: 'bold' },
+            splitLine: { show: true, lineStyle: { type: 'dotted', color: '#ccc' } },
+            data: rawSituacionEvolData.map(item => item.date),
+            axisLabel: {
+                showMaxLabel: true,
+                formatter: (value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
+                },
+                color: '#666'
+            }
+        },
+        yAxis: { 
+            type: 'value', 
+            splitLine: { show: true, lineStyle: { type: 'dotted', color: '#ccc' } },
+            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + ' mill.', color: '#666' }
+        },
+        series: [
+            { 
+                name: 'CARTERA VIGENTE', 
+                type: 'line', 
+                smooth: true, 
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(30,144,255,0.4)'}, {offset: 1, color: 'rgba(30,144,255,0.05)'}]) },
+                itemStyle: { color: '#1e90ff' },
+                lineStyle: { color: '#1e90ff', width: 3 },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawSituacionEvolData.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\n' + formatLabel(p.value);
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return formatLabel(p.value);
+                        }
+                        return '';
+                    }, 
+                    color: '#333', 
+                    fontWeight: 'bold', 
+                    fontSize: 10 
+                },
+                data: rawSituacionEvolData.map(item => item.vigente) 
             },
-            itemStyle: { color: '#2980b9' },
-            lineStyle: { width: 3 },
-            data: rawEvolutionData.map(item => item.balance) 
-        }]
+            { 
+                name: 'CARTERA VENCIDA', 
+                type: 'line', 
+                smooth: true, 
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(220,20,60,0.4)'}, {offset: 1, color: 'rgba(220,20,60,0.05)'}]) },
+                itemStyle: { color: '#dc143c' },
+                lineStyle: { color: '#dc143c', width: 3 },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'bottom', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawSituacionEvolData.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\n' + formatLabel(p.value);
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return formatLabel(p.value);
+                        }
+                        return '';
+                    }, 
+                    color: '#333', 
+                    fontWeight: 'bold', 
+                    fontSize: 10 
+                },
+                data: rawSituacionEvolData.map(item => item.vencida) 
+            }
+        ]
     };
     chartEvolution.setOption(optionEvolution);
 
@@ -244,81 +487,289 @@ document.addEventListener('DOMContentLoaded', function() {
     var rawProdBalData = {{ concentracion_producto|safe }};
     rawProdBalData.sort((a, b) => parseFloat(a.total_balance) - parseFloat(b.total_balance));
     var optionProdBal = {
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
         tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Saldo: S/ ${formatValue(p[0].value)}` },
         grid: { left: '3%', right: '10%', bottom: '3%', containLabel: true },
         xAxis: { type: 'value', axisLabel: { formatter: (v) => v.toLocaleString('en-US') } },
         yAxis: { type: 'category', data: rawProdBalData.map(item => item.product_name || 'G') },
-        series: [{ name: 'Saldo', type: 'bar', itemStyle: { color: '#161065' }, data: rawProdBalData.map(item => parseFloat(item.total_balance) || 0) }]
+        series: [{ name: 'Saldo', type: 'bar', itemStyle: { color: '#161065' }, label: { show: true, position: 'right', formatter: (p) => formatLabel(p.value) }, data: rawProdBalData.map(item => parseFloat(item.total_balance) || 0) }]
     };
     chartProdBal.setOption(optionProdBal);
 
     // 2. Estado de Cartera (Pie)
     var chartStatus = echarts.init(document.getElementById('statusChart'));
     var optionStatus = {
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
         tooltip: { trigger: 'item', formatter: (p) => `<b>${p.name}</b><br/>S/ ${formatValue(p.value)} (${p.percent}%)` },
         legend: { bottom: '0%', left: 'center' },
         color: ['#161065', '#E84A5F'],
         series: [{
             name: 'Estado', type: 'pie', radius: ['40%', '70%'],
             itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: true, formatter: (p) => p.name + '\n' + formatLabel(p.value) },
             data: {{ cartera_status|safe }}
         }]
     };
     chartStatus.setOption(optionStatus);
 
-    // 3. Evolución del Saldo en Mora (Line Chart)
-    var chartMoraEvo = echarts.init(document.getElementById('moraEvolutionChart'));
-    var rawMoraEvoData = {{ mora_evolucion_data|safe }};
-    var optionMoraEvo = {
-        tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Mora: S/ ${formatValue(p[0].value)}` },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { 
-            type: 'category', 
-            data: rawMoraEvoData.map(item => item.date),
-            axisLabel: { formatter: (v) => v.split('-').slice(0,2).join('/') }
-        },
-        yAxis: { type: 'value', axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' } },
-        series: [{ 
-            name: 'Saldo Mora', 
-            type: 'line', 
-            smooth: true, 
-            symbol: 'diamond',
-            symbolSize: 8,
-            itemStyle: { color: '#E84A5F' },
-            lineStyle: { width: 3 },
-            data: rawMoraEvoData.map(item => item.mora) 
+    // 3. Tipo de Crédito al Corte (Pie Chart)
+    var chartCreditType = echarts.init(document.getElementById('creditTypeChart'));
+    var optionCreditType = {
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
+        tooltip: { trigger: 'item', formatter: (p) => `<b>${p.name}</b><br/>S/ ${formatValue(p.value)} (${p.percent}%)` },
+        legend: { bottom: '0%', left: 'center', type: 'scroll' },
+        series: [{
+            name: 'Tipo de Crédito', type: 'pie', radius: ['40%', '70%'],
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+            label: { show: true, formatter: (p) => p.name + '\n' + formatLabel(p.value) },
+            data: {{ tipo_credito_data|safe }}
         }]
     };
-    chartMoraEvo.setOption(optionMoraEvo);
+    chartCreditType.setOption(optionCreditType);
 
-    // 4. Evolución del Ratio de Mora (Line Chart)
-    var chartRatioEvo = echarts.init(document.getElementById('ratioEvolutionChart'));
-    var optionRatioEvo = {
-        tooltip: { trigger: 'axis', formatter: (p) => `<b>${p[0].name}</b><br/>Ratio: ${p[0].value.toFixed(2)}%` },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+    // 4. Evolución de Morosidad por Tipo de Crédito (Multi-line)
+    var chartMoraTipoCredito = echarts.init(document.getElementById('moraTipoCreditoChart'));
+    var rawMoraTipoData = {{ mora_tipo_credito_chart_data|safe }};
+    rawMoraTipoData.series.forEach(s => {
+        s.label = { show: true, position: 'top', formatter: (p) => formatLabel(p.value) };
+    });
+    var optionMoraTipo = {
+        title: { text: 'EVOLUCIÓN DE MOROSIDAD POR TIPO DE CRÉDITO', left: 'center', textStyle: { color: '#333', fontSize: 14, fontWeight: 'bold' } },
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
+        tooltip: { 
+            trigger: 'axis',
+            formatter: function(params) {
+                let res = `<b>${params[0].name}</b><br/>`;
+                params.forEach(p => {
+                    res += `${p.marker} ${p.seriesName}: S/ ${formatValue(p.value)}<br/>`;
+                });
+                return res;
+            }
+        },
+        legend: { data: rawMoraTipoData.types, type: 'scroll', bottom: '0%', left: 'center' },
+        grid: { left: '3%', right: '4%', bottom: '25%', containLabel: true },
+        dataZoom: [
+            { type: 'slider', show: true, xAxisIndex: [0], bottom: '10%' }
+        ],
         xAxis: { 
             type: 'category', 
-            data: rawMoraEvoData.map(item => item.date),
-            axisLabel: { formatter: (v) => v.split('-').slice(0,2).join('/') }
+            data: rawMoraTipoData.dates,
+            axisLabel: { 
+                showMaxLabel: true,
+                formatter: function(value) {
+                    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                    const parts = value.split('-');
+                    if (parts.length === 2) {
+                        return `${months[parseInt(parts[1])-1]} ${parts[0]}`;
+                    }
+                    return value;
+                }
+            },
+            splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } }
         },
-        yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
-        series: [{ 
-            name: 'Ratio Mora', 
-            type: 'line', 
-            smooth: true, 
-            itemStyle: { color: '#2E9CCA' },
-            lineStyle: { width: 3, type: 'dashed' },
-            data: rawMoraEvoData.map(item => item.ratio) 
-        }]
+        yAxis: { 
+            type: 'value', 
+            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' },
+            splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } }
+        },
+        series: rawMoraTipoData.series.map((s, index) => {
+            const colors = ['#dc143c', '#1e90ff', '#f39c12', '#2ecc71', '#9b59b6'];
+            return {
+                ...s,
+                type: 'line',
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 8,
+                itemStyle: { color: colors[index % colors.length] },
+                lineStyle: { width: 3 },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawMoraTipoData.dates.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\nS/ ' + formatLabel(p.value);
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return 'S/ ' + formatLabel(p.value);
+                        }
+                        return '';
+                    },
+                    color: colors[index % colors.length],
+                    fontWeight: 'bold'
+                }
+            };
+        })
     };
-    chartRatioEvo.setOption(optionRatioEvo);
+    chartMoraTipoCredito.setOption(optionMoraTipo);
+
+    // 5. Evolución de Morosidad >3, >8, >30 días
+    var chartMoraDias = echarts.init(document.getElementById('moraDiasEvolutionChart'));
+    var rawMoraDiasData = {{ mora_dias_evolucion_data|safe }};
+    var optionMoraDias = {
+        title: { text: 'EVOLUCIÓN DE MOROSIDAD (>3, >8, >30 DÍAS)', left: 'center', textStyle: { color: '#333', fontSize: 14, fontWeight: 'bold' } },
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
+        tooltip: { 
+            trigger: 'axis',
+            formatter: function(params) {
+                let res = `<b>${params[0].name}</b><br/>`;
+                params.forEach(p => {
+                    res += `${p.marker} ${p.seriesName}: S/ ${formatValue(p.value)}<br/>`;
+                });
+                return res;
+            }
+        },
+        legend: { data: ['> 3 días', '> 8 días', '> 30 días'], bottom: '0%', left: 'center' },
+        grid: { left: '3%', right: '4%', bottom: '25%', containLabel: true },
+        dataZoom: [
+            { type: 'slider', show: true, xAxisIndex: [0], bottom: '10%' }
+        ],
+        xAxis: { 
+            type: 'category', 
+            data: rawMoraDiasData.map(item => item.date),
+            axisLabel: { 
+                showMaxLabel: true,
+                formatter: function(value) {
+                    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                    const parts = value.split('-');
+                    if (parts.length === 2) {
+                        return `${months[parseInt(parts[1])-1]} ${parts[0]}`;
+                    }
+                    return value;
+                }
+            },
+            splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } }
+        },
+        yAxis: { 
+            type: 'value', 
+            axisLabel: { formatter: (v) => 'S/ ' + (v/1000000).toFixed(1) + 'M' },
+            splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } }
+        },
+        series: [
+            { name: '> 3 días', type: 'line', smooth: true, symbol: 'circle', symbolSize: 6, itemStyle: {color: '#f39c12'}, lineStyle: { width: 3 }, labelLayout: { hideOverlap: true }, label: { show: true, position: 'top', formatter: (p) => { const parts = p.name.split('-'); const isLast = p.dataIndex === rawMoraDiasData.length - 1; if (isLast) { const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']; let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name; return dateStr + '\n' + formatLabel(p.value); } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) { return formatLabel(p.value); } return ''; }, color: '#f39c12', fontWeight: 'bold' }, data: rawMoraDiasData.map(i => i.mora_3) },
+            { name: '> 8 días', type: 'line', smooth: true, symbol: 'circle', symbolSize: 6, itemStyle: {color: '#d35400'}, lineStyle: { width: 3 }, labelLayout: { hideOverlap: true }, label: { show: true, position: 'top', formatter: (p) => { const parts = p.name.split('-'); const isLast = p.dataIndex === rawMoraDiasData.length - 1; if (isLast) { const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']; let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name; return dateStr + '\n' + formatLabel(p.value); } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) { return formatLabel(p.value); } return ''; }, color: '#d35400', fontWeight: 'bold' }, data: rawMoraDiasData.map(i => i.mora_8) },
+            { name: '> 30 días', type: 'line', smooth: true, symbol: 'circle', symbolSize: 6, itemStyle: {color: '#c0392b'}, lineStyle: { width: 3 }, labelLayout: { hideOverlap: true }, label: { show: true, position: 'top', formatter: (p) => { const parts = p.name.split('-'); const isLast = p.dataIndex === rawMoraDiasData.length - 1; if (isLast) { const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']; let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name; return dateStr + '\n' + formatLabel(p.value); } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) { return formatLabel(p.value); } return ''; }, color: '#c0392b', fontWeight: 'bold' }, data: rawMoraDiasData.map(i => i.mora_30) }
+        ]
+    };
+    chartMoraDias.setOption(optionMoraDias);
+
+    // 6. Evolución del Ratio de Mora y Cobertura
+    var chartRatioCobertura = echarts.init(document.getElementById('ratioCoberturaEvolutionChart'));
+    var rawRatioCoberturaData = {{ ratio_cobertura_evolucion_data|safe }};
+    var optionRatioCobertura = {
+        title: { text: 'EVOLUCIÓN DE RATIO DE MORA Y COBERTURA', left: 'center', textStyle: { color: '#333', fontSize: 14, fontWeight: 'bold' } },
+        toolbox: { feature: { saveAsImage: { type: 'jpeg', title: 'Descargar JPG' } } },
+        tooltip: { 
+            trigger: 'axis',
+            formatter: function(params) {
+                let res = `<b>${params[0].name}</b><br/>`;
+                params.forEach(p => {
+                    res += `${p.marker} ${p.seriesName}: ${p.value.toFixed(2)}%<br/>`;
+                });
+                return res;
+            }
+        },
+        legend: { data: ['Ratio Mora (>30d)', 'Ratio Cobertura'], bottom: '0%', left: 'center' },
+        grid: { left: '3%', right: '4%', bottom: '25%', containLabel: true },
+        dataZoom: [
+            { type: 'slider', show: true, xAxisIndex: [0], bottom: '10%' }
+        ],
+        xAxis: { 
+            type: 'category', 
+            data: rawRatioCoberturaData.map(item => item.date),
+            axisLabel: { 
+                showMaxLabel: true,
+                formatter: function(value) {
+                    const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                    const parts = value.split('-');
+                    if (parts.length === 2) {
+                        return `${months[parseInt(parts[1])-1]} ${parts[0]}`;
+                    }
+                    return value;
+                }
+            },
+            splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } }
+        },
+        yAxis: [
+            { type: 'value', name: 'Mora', axisLabel: { formatter: '{value}%' }, splitLine: { show: true, lineStyle: { type: 'dashed', color: '#ccc' } } },
+            { type: 'value', name: 'Cobertura', axisLabel: { formatter: '{value}%' }, splitLine: {show: false} }
+        ],
+        series: [
+            { 
+                name: 'Ratio Mora (>30d)', 
+                type: 'line', 
+                smooth: true,
+                yAxisIndex: 0,
+                symbol: 'circle',
+                symbolSize: 8,
+                lineStyle: { width: 3 },
+                itemStyle: { color: '#dc143c' },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawRatioCoberturaData.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\n' + p.value.toFixed(2) + '%';
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return p.value.toFixed(2) + '%';
+                        }
+                        return '';
+                    }, 
+                    color: '#dc143c', 
+                    fontWeight: 'bold' 
+                },
+                data: rawRatioCoberturaData.map(i => i.ratio_mora) 
+            },
+            { 
+                name: 'Ratio Cobertura', 
+                type: 'line', 
+                smooth: true,
+                yAxisIndex: 1,
+                symbol: 'circle',
+                symbolSize: 8,
+                lineStyle: { width: 3 },
+                itemStyle: { color: '#1b5e20' },
+                labelLayout: { hideOverlap: true },
+                label: { 
+                    show: true, 
+                    position: 'top', 
+                    formatter: (p) => {
+                        const parts = p.name.split('-');
+                        const isLast = p.dataIndex === rawRatioCoberturaData.length - 1;
+                        if (isLast) {
+                            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+                            let dateStr = parts.length >= 2 ? `${months[parseInt(parts[1], 10) - 1]} ${parts[0]}` : p.name;
+                            return dateStr + '\n' + p.value.toFixed(2) + '%';
+                        } else if (parts.length >= 2 && (parseInt(parts[1], 10) % 3 === 0 || parseInt(parts[1], 10) === 12)) {
+                            return p.value.toFixed(2) + '%';
+                        }
+                        return '';
+                    }, 
+                    color: '#1b5e20', 
+                    fontWeight: 'bold' 
+                },
+                data: rawRatioCoberturaData.map(i => i.ratio_cobertura) 
+            }
+        ]
+    };
+    chartRatioCobertura.setOption(optionRatioCobertura);
 
     window.addEventListener('resize', () => {
         chartEvolution.resize();
         chartProdBal.resize();
         chartStatus.resize();
-        chartMoraEvo.resize();
-        chartRatioEvo.resize();
+        chartCreditType.resize();
+        chartMoraTipoCredito.resize();
+        chartMoraDias.resize();
+        chartRatioCobertura.resize();
     });
 });
 </script>

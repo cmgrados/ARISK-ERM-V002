@@ -29,13 +29,13 @@ from strategic_risk import views as strategic_views
 router = DefaultRouter()
 
 # Register User ViewSets
-from apps.users.api_views import UserViewSet, OrganizationViewSet, RoleViewSet
+from users.api_views import UserViewSet, OrganizationViewSet, RoleViewSet
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'organizations', OrganizationViewSet, basename='organization')
 router.register(r'roles', RoleViewSet, basename='role')
 
 # Register Risk ViewSets
-from apps.risks.api_views import (
+from risks.api_views import (
     RiskViewSet, RiskCauseViewSet, RiskConsequenceViewSet,
     RiskAssessmentViewSet, ProbabilityScaleViewSet, ImpactScaleViewSet,
     RiskMatrixConfigurationViewSet
@@ -49,7 +49,7 @@ router.register(r'impact-scales', ImpactScaleViewSet, basename='impact-scale')
 router.register(r'risk-matrix-configs', RiskMatrixConfigurationViewSet, basename='risk-matrix-config')
 
 # Register Credit Risk ViewSets
-from apps.credit_risk.api_views import (
+from credit_risk.api_views import (
     CustomerViewSet, CreditOperationViewSet, CreditRiskMetricsViewSet,
     CreditRiskPeriodParameterViewSet
 )
@@ -87,6 +87,7 @@ urlpatterns = [
     path('estrategico/', include('strategic_risk.urls')),
     path('reputacional/', include('reputational_risk.urls')),
     path('reportes/', include('reports.urls')),
+    path('reportes-regulatorios/', include('apps.regulatory_reports.urls')),
     path('agente-ia/', include('ai_assistant.urls')),
     path('utilitarios/', include('utilities.urls')),
     path('apetito/', include('risk_appetite.urls')),

@@ -5,22 +5,25 @@
 {% block content %}
 <div class="content-header">
     <div class="container-fluid">
-        <div class="row mb-2">
+        <div class="row mb-2 align-items-center">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark">{{ page_title }}</h1>
+                <h1 class="m-0 text-dark font-weight-bold">
+                    <i class="fas fa-chart-line text-indigo mr-2"></i>{{ page_title }}
+                </h1>
+                <p class="text-muted small mb-0 mt-1">Comparativa de Pérdida Esperada (PE = EAD × PD × LGD) y perfil de riesgo crediticio</p>
             </div>
             <div class="col-sm-6 text-right">
-                <form method="get" class="form-inline justify-content-end">
-                    <label class="mr-2">Comparar:</label>
-                    <select name="date_t0" class="form-control form-control-sm mr-2" onchange="this.form.submit()">
+                <form method="get" class="form-inline justify-content-end bg-white p-2 rounded shadow-sm d-inline-flex border">
+                    <label class="mr-2 small font-weight-bold text-muted mb-0"><i class="far fa-calendar-alt mr-1"></i>Comparar:</label>
+                    <select name="date_t0" class="form-control form-control-sm mr-2 font-weight-bold" onchange="this.form.submit()">
                         {% for d in dates %}
-                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t0 %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t0 %}selected{% endif %}>{{ d|date:'d/m/Y' }} (t0)</option>
                         {% endfor %}
                     </select>
-                    <label class="mr-2">vs</label>
-                    <select name="date_t1" class="form-control form-control-sm" onchange="this.form.submit()">
+                    <span class="mr-2 text-muted font-weight-bold">vs</span>
+                    <select name="date_t1" class="form-control form-control-sm font-weight-bold" onchange="this.form.submit()">
                         {% for d in dates %}
-                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t1 %}selected{% endif %}>{{ d|date:'d/m/Y' }}</option>
+                            <option value="{{ d|date:'Y-m-d' }}" {% if d|date:'Y-m-d' == date_t1 %}selected{% endif %}>{{ d|date:'d/m/Y' }} (t1)</option>
                         {% endfor %}
                     </select>
                 </form>
@@ -31,81 +34,210 @@
 
 <section class="content">
     <div class="container-fluid">
-        <!-- Summary Cards -->
+        <!-- Action Toolbar for Report Export & Copy -->
+        <div class="d-flex align-items-center justify-content-between mb-3 bg-white p-2 px-3 rounded shadow-sm border">
+            <div class="small font-weight-bold text-muted">
+                <i class="fas fa-tools text-indigo mr-1"></i> Herramientas de Exportación e Informes:
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'credit_risk:export_expected_loss_word' %}?date_t0={{ date_t0 }}&date_t1={{ date_t1 }}" class="btn btn-sm btn-primary shadow-xs mr-2 font-weight-bold rounded">
+                    <i class="fas fa-file-word mr-1"></i> Descargar Informe Word (.docx)
+                </a>
+                <button type="button" onclick="copyExecutiveReport()" class="btn btn-sm btn-indigo shadow-xs mr-2 font-weight-bold rounded">
+                    <i class="fas fa-copy mr-1"></i> Copiar Informe al Portapapeles
+                </button>
+                <button type="button" onclick="exportTableToCSV()" class="btn btn-sm btn-success shadow-xs mr-2 font-weight-bold rounded">
+                    <i class="fas fa-file-excel mr-1"></i> Descargar Excel / CSV
+                </button>
+                <button type="button" onclick="window.print()" class="btn btn-sm btn-outline-danger shadow-xs font-weight-bold rounded">
+                    <i class="fas fa-file-pdf mr-1"></i> Exportar / Imprimir PDF
+                </button>
+            </div>
+        </div>
+        <!-- Summary KPI Cards -->
         <div class="row">
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 bg-info">
-                    <div class="card-body text-white">
-                        <h6 class="text-uppercase small mb-1">PE Total (t1)</h6>
-                        <h3 class="mb-0 font-weight-bold">S/ {{ summary.t1_pe|format_num:0 }}</h3>
-                        <p class="small mb-0 mt-1">vs S/ {{ summary.t0_pe|format_num:0 }} (t0)</p>
+            <!-- Card 1: PE Total (t1) -->
+            <div class="col-xl col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card h-100 p-3 bg-white rounded-lg shadow-sm border-0 d-flex flex-column justify-content-between" style="border-left: 5px solid #4f46e5 !important;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-uppercase small font-weight-bold text-muted">PE Total (t1)</span>
+                                <h3 class="mb-0 font-weight-bold text-dark mt-1">S/ {{ summary.t1_pe|format_num:0 }}</h3>
+                            </div>
+                            <div class="kpi-icon-box rounded-circle p-2" style="background: rgba(79, 70, 229, 0.1); color: #4f46e5;">
+                                <i class="fas fa-hand-holding-usd fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">vs t0: S/ {{ summary.t0_pe|format_num:0 }}</span>
+                            <span class="badge badge-light border text-indigo font-weight-bold">
+                                Var: S/ {{ summary.variation_abs|format_num:0 }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="kpi-analysis-box rounded p-2 mt-2" style="font-size: 0.78rem; line-height: 1.35; color: #334155; background-color: #f1f5f9; border-left: 3px solid #4f46e5;">
+                        <i class="fas fa-info-circle text-indigo mr-1"></i>
+                        <span>{{ card_analyses.card_1 }}</span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 {% if summary.variation_abs > 0 %}bg-danger{% else %}bg-success{% endif %}">
-                    <div class="card-body text-white">
-                        <h6 class="text-uppercase small mb-1">Variación PE</h6>
-                        <h3 class="mb-0 font-weight-bold">{{ summary.variation_pct|format_num:1 }}%</h3>
-                        <p class="small mb-0 mt-1">S/ {{ summary.variation_abs|format_num:0 }} (Absoluto)</p>
+
+            <!-- Card 2: Variación PE (%) -->
+            <div class="col-xl col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card h-100 p-3 bg-white rounded-lg shadow-sm border-0 d-flex flex-column justify-content-between" style="border-left: 5px solid {% if summary.variation_abs > 0 %}#dc2626{% else %}#16a34a{% endif %} !important;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-uppercase small font-weight-bold text-muted">Variación PE %</span>
+                                <h3 class="mb-0 font-weight-bold {% if summary.variation_abs > 0 %}text-danger{% else %}text-success{% endif %} mt-1">
+                                    {% if summary.variation_abs > 0 %}+{% endif %}{{ summary.variation_pct|format_num:2 }}%
+                                </h3>
+                            </div>
+                            <div class="kpi-icon-box rounded-circle p-2" style="background: {% if summary.variation_abs > 0 %}rgba(220,38,38,0.1){% else %}rgba(22,163,74,0.1){% endif %}; color: {% if summary.variation_abs > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                                <i class="fas {% if summary.variation_abs > 0 %}fa-arrow-trend-up{% else %}fa-arrow-trend-down{% endif %} fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">Absoluto</span>
+                            <span class="badge {% if summary.variation_abs > 0 %}badge-soft-danger{% else %}badge-soft-success{% endif %} font-weight-bold">
+                                {% if summary.variation_abs > 0 %}▲ Deterioro{% else %}▼ Optimización{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="kpi-analysis-box rounded p-2 mt-2" style="font-size: 0.78rem; line-height: 1.35; color: #334155; background-color: #f1f5f9; border-left: 3px solid {% if summary.variation_abs > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+                        <i class="fas {% if summary.variation_abs > 0 %}fa-exclamation-triangle text-danger{% else %}fa-check-circle text-success{% endif %} mr-1"></i>
+                        <span>{{ card_analyses.card_2 }}</span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 bg-primary">
-                    <div class="card-body text-white">
-                        <h6 class="text-uppercase small mb-1">EAD Total (t1)</h6>
-                        <h3 class="mb-0 font-weight-bold">S/ {{ summary.t1_ead|format_num:0 }}</h3>
-                        <p class="small mb-0 mt-1">Exposición a incumplimiento</p>
+
+            <!-- Card 3: Densidad de PE (PE / EAD %) -->
+            <div class="col-xl col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card h-100 p-3 bg-white rounded-lg shadow-sm border-0 d-flex flex-column justify-content-between" style="border-left: 5px solid #0284c7 !important;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-uppercase small font-weight-bold text-muted">Tasa PE / EAD (t1)</span>
+                                <h3 class="mb-0 font-weight-bold text-info mt-1">{{ summary.t1_pe_ratio|format_num:2 }}%</h3>
+                            </div>
+                            <div class="kpi-icon-box rounded-circle p-2" style="background: rgba(2, 132, 199, 0.1); color: #0284c7;">
+                                <i class="fas fa-shield-alt fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">t0: {{ summary.t0_pe_ratio|format_num:2 }}%</span>
+                            <span class="badge badge-light border text-info font-weight-bold">
+                                {% if summary.pe_ratio_var > 0 %}+{% endif %}{{ summary.pe_ratio_var|format_num:2 }} p.p.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="kpi-analysis-box rounded p-2 mt-2" style="font-size: 0.78rem; line-height: 1.35; color: #334155; background-color: #f1f5f9; border-left: 3px solid #0284c7;">
+                        <i class="fas fa-chart-line text-info mr-1"></i>
+                        <span>{{ card_analyses.card_3 }}</span>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0 bg-secondary">
-                    <div class="card-body text-white">
-                        <h6 class="text-uppercase small mb-1">PD Promedio (t1)</h6>
-                        <h3 class="mb-0 font-weight-bold">{{ summary.t1_pd_avg|format_num:2 }}%</h3>
-                        <p class="small mb-0 mt-1">Probabilidad de Incumplimiento</p>
+
+            <!-- Card 4: EAD Total (t1) -->
+            <div class="col-xl col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card h-100 p-3 bg-white rounded-lg shadow-sm border-0 d-flex flex-column justify-content-between" style="border-left: 5px solid #059669 !important;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-uppercase small font-weight-bold text-muted">EAD Total (t1)</span>
+                                <h3 class="mb-0 font-weight-bold text-dark mt-1">S/ {{ summary.t1_ead|format_num:0 }}</h3>
+                            </div>
+                            <div class="kpi-icon-box rounded-circle p-2" style="background: rgba(5, 150, 105, 0.1); color: #059669;">
+                                <i class="fas fa-wallet fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">vs t0: S/ {{ summary.t0_ead|format_num:0 }}</span>
+                            <span class="badge badge-light border text-success font-weight-bold">
+                                {% if summary.ead_var_pct > 0 %}+{% endif %}{{ summary.ead_var_pct|format_num:1 }}% EAD
+                            </span>
+                        </div>
+                    </div>
+                    <div class="kpi-analysis-box rounded p-2 mt-2" style="font-size: 0.78rem; line-height: 1.35; color: #334155; background-color: #f1f5f9; border-left: 3px solid #059669;">
+                        <i class="fas fa-coins text-success mr-1"></i>
+                        <span>{{ card_analyses.card_4 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: PD & LGD Ponderadas -->
+            <div class="col-xl col-md-4 col-sm-6 mb-3">
+                <div class="kpi-card h-100 p-3 bg-white rounded-lg shadow-sm border-0 d-flex flex-column justify-content-between" style="border-left: 5px solid #d97706 !important;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="text-uppercase small font-weight-bold text-muted">PD Ponderada (t1)</span>
+                                <h3 class="mb-0 font-weight-bold text-warning mt-1">{{ summary.t1_pd_avg|format_num:2 }}%</h3>
+                            </div>
+                            <div class="kpi-icon-box rounded-circle p-2" style="background: rgba(217, 119, 6, 0.1); color: #d97706;">
+                                <i class="fas fa-balance-scale fa-lg"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2 pt-2 border-top d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">LGD Prom: {{ summary.t1_lgd_avg|format_num:2 }}%</span>
+                            <span class="badge badge-light border text-warning font-weight-bold">
+                                PD t0: {{ summary.t0_pd_avg|format_num:2 }}%
+                            </span>
+                        </div>
+                    </div>
+                    <div class="kpi-analysis-box rounded p-2 mt-2" style="font-size: 0.78rem; line-height: 1.35; color: #334155; background-color: #f1f5f9; border-left: 3px solid #d97706;">
+                        <i class="fas fa-user-check text-warning mr-1"></i>
+                        <span>{{ card_analyses.card_5 }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row mt-4">
+        <div class="row mt-2">
             <!-- Comparison Table -->
-            <div class="col-lg-8">
+            <div class="col-lg-8 mb-4">
                 <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white border-bottom">
-                        <h3 class="card-title font-weight-bold">
-                            <i class="fas fa-table mr-2 text-primary"></i> Análisis por Periodo y Segmento
-                        </h3>
+                    <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                        <h5 class="card-title font-weight-bold mb-0 text-dark">
+                            <i class="fas fa-table mr-2 text-indigo"></i> Análisis por Periodo y Segmento
+                        </h5>
+                        <span class="badge badge-soft-warning px-3 py-2 font-weight-bold">
+                            <i class="fas fa-layer-group mr-1"></i> Desglose Segmentado
+                        </span>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-sm table-hover mb-0 text-center">
-                                <thead class="bg-dark text-white">
+                                <thead class="bg-light text-dark">
                                     <tr>
                                         <th>Periodo</th>
-                                        <th>Segmento</th>
-                                        <th>EAD Total</th>
+                                        <th class="text-left pl-3">Segmento</th>
+                                        <th>EAD Total (S/)</th>
                                         <th>PD Avg (%)</th>
                                         <th>LGD Avg (%)</th>
-                                        <th>PE Total</th>
+                                        <th>PE Total (S/)</th>
                                         <th>PE % de EAD</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for row in report_data %}
-                                    <tr>
-                                        <td class="font-weight-bold">{{ row.Periodo }}</td>
-                                        <td class="text-left pl-3">{{ row.Segmento }}</td>
-                                        <td>{{ row.EAD_total|format_num:2 }}</td>
+                                    <tr {% if row.Periodo == date_t1 %}class="table-primary-subtle"{% endif %}>
+                                        <td class="font-weight-bold small">{{ row.Periodo }}</td>
+                                        <td class="text-left pl-3 font-weight-semibold">{{ row.Segmento }}</td>
+                                        <td class="font-weight-bold">S/ {{ row.EAD_total|format_num:2 }}</td>
                                         <td>{{ row.PD_avg|format_num:2 }}%</td>
                                         <td>{{ row.LGD_avg|format_num:2 }}%</td>
-                                        <td class="font-weight-bold text-primary">{{ row.PE_total|format_num:2 }}</td>
-                                        <td class="badge-pill {% if row.PE_pct > 2 %}text-danger{% else %}text-success{% endif %}">
-                                            {{ row.PE_pct|format_num:2 }}%
+                                        <td class="font-weight-bold text-indigo">S/ {{ row.PE_total|format_num:2 }}</td>
+                                        <td>
+                                            <span class="badge px-2 py-1 {% if row.PE_pct > 8 %}badge-soft-danger{% elif row.PE_pct > 5 %}badge-soft-warning{% else %}badge-soft-success{% endif %} font-weight-bold">
+                                                {{ row.PE_pct|format_num:2 }}%
+                                            </span>
                                         </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-muted py-4">No hay datos disponibles para los periodos seleccionados.</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -116,12 +248,12 @@
             </div>
 
             <!-- Charts & Insights -->
-            <div class="col-lg-4">
+            <div class="col-lg-4 mb-4">
                 <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white border-bottom d-flex align-items-center">
-                        <h3 class="card-title font-weight-bold mb-0">
-                            <i class="fas fa-chart-pie mr-2 text-warning"></i> Distribución de PE
-                        </h3>
+                    <div class="card-header bg-white border-bottom d-flex align-items-center py-3">
+                        <h5 class="card-title font-weight-bold mb-0 text-dark">
+                            <i class="fas fa-chart-pie mr-2 text-warning"></i> Distribución de PE por Segmento
+                        </h5>
                     </div>
                     <div class="card-body">
                         <div style="height: 220px;">
@@ -129,38 +261,186 @@
                         </div>
                         <hr class="my-3">
                         <div class="mb-3">
-                            <h6 class="font-weight-bold text-uppercase small text-muted mb-2">
-                                <i class="fas fa-robot mr-2"></i> Análisis Inteligente de Riesgo
-                            </h6>
-                            <div class="alert {% if summary.variation_abs > 0 %}alert-light-danger{% else %}alert-light-success{% endif %} border-0 p-3">
-                                <p class="text-justify small mb-0 leading-relaxed text-dark">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="font-weight-bold text-uppercase small text-muted mb-0">
+                                    <i class="fas fa-robot mr-2 text-indigo"></i> Análisis Inteligente de Riesgo
+                                </h6>
+                                <button type="button" onclick="copyAnalysisText()" class="btn btn-xs btn-outline-indigo font-weight-bold">
+                                    <i class="fas fa-copy mr-1"></i> Copiar Texto
+                                </button>
+                            </div>
+                            <div class="alert {% if summary.variation_abs > 0 %}alert-light-danger{% else %}alert-light-success{% endif %} border-0 p-3 rounded">
+                                <div id="analysisTextContainer" class="text-justify small mb-0 leading-relaxed text-dark">
                                     {{ analysis_text|safe }}
-                                </p>
+                                </div>
                             </div>
                         </div>
 
                         <div class="mb-0">
                             <h6 class="font-weight-bold text-uppercase small text-muted mb-2">
-                                <i class="fas fa-tachometer-alt mr-2"></i> Drivers de Variación
+                                <i class="fas fa-tachometer-alt mr-2 text-warning"></i> Drivers Principales del Portafolio
                             </h6>
-                            <div class="row text-center">
-                                <div class="col-6">
+                            <div class="row text-center g-2">
+                                <div class="col-6 mb-2">
                                     <div class="p-2 border rounded bg-light">
-                                        <div class="small text-muted">EAD (t1)</div>
+                                        <div class="small text-muted font-weight-bold">Exposición (EAD)</div>
                                         <div class="font-weight-bold text-primary">S/ {{ summary.t1_ead|format_num:0 }}</div>
+                                        <div class="small text-muted font-italic">t0: S/ {{ summary.t0_ead|format_num:0 }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-2">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="small text-muted font-weight-bold">PD Ponderada</div>
+                                        <div class="font-weight-bold text-warning">{{ summary.t1_pd_avg|format_num:2 }}%</div>
+                                        <div class="small text-muted font-italic">t0: {{ summary.t0_pd_avg|format_num:2 }}%</div>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="p-2 border rounded bg-light">
-                                        <div class="small text-muted">PD Promedio</div>
-                                        <div class="font-weight-bold text-warning">{{ summary.t1_pd_avg|format_num:2 }}%</div>
+                                        <div class="small text-muted font-weight-bold">LGD Ponderada</div>
+                                        <div class="font-weight-bold text-secondary">{{ summary.t1_lgd_avg|format_num:2 }}%</div>
+                                        <div class="small text-muted font-italic">t0: {{ summary.t0_lgd_avg|format_num:2 }}%</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="p-2 border rounded bg-light">
+                                        <div class="small text-muted font-weight-bold">Tasa PE / EAD</div>
+                                        <div class="font-weight-bold text-info">{{ summary.t1_pe_ratio|format_num:2 }}%</div>
+                                        <div class="small text-muted font-italic">t0: {{ summary.t0_pe_ratio|format_num:2 }}%</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-footer bg-white border-top small text-muted py-2">
-                        <i class="fas fa-shield-alt mr-1"></i> Modelo de Riesgo Basilea II / IFRS 9 (Simplificado)
+                        <i class="fas fa-shield-alt mr-1"></i> Modelo de Riesgo Crediticio Basilea II / IFRS 9
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Methodology & Formula Explanation Section -->
+        <div class="row mt-3 mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 rounded-lg">
+                    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3">
+                        <h5 class="card-title font-weight-bold mb-0 text-dark">
+                            <i class="fas fa-graduation-cap text-indigo mr-2"></i> Marco Metodológico y Formulación de Pérdida Esperada (NIIF 9 / Basilea)
+                        </h5>
+                        <button class="btn btn-sm btn-outline-indigo font-weight-bold" type="button" data-toggle="collapse" data-target="#methodologyCollapse" aria-expanded="true">
+                            <i class="fas fa-chevron-down mr-1"></i> Ver / Ocultar Explicación Detallada
+                        </button>
+                    </div>
+                    <div class="collapse show" id="methodologyCollapse">
+                        <div class="card-body bg-light-subtle">
+                            <div class="row align-items-center mb-4">
+                                <div class="col-lg-4 text-center mb-3 mb-lg-0">
+                                    <div class="p-3 rounded-lg bg-white shadow-xs border text-center">
+                                        <span class="text-uppercase small font-weight-bold text-muted d-block mb-1">Ecuación Fundamental del Riesgo</span>
+                                        <div class="h3 font-weight-bold text-indigo mb-0 py-2">
+                                            PE = EAD &times; PD &times; LGD
+                                        </div>
+                                        <span class="badge badge-soft-indigo px-3 py-1 font-weight-bold">Modelo Estándar NIIF 9 / Basilea II-III</span>
+                                    </div>
+                                </div>
+                                <div class="col-lg-8">
+                                    <p class="text-secondary small mb-0 leading-relaxed">
+                                        La <strong>Pérdida Esperada (PE)</strong> cuantifica el valor económico estimado de las pérdidas por riesgo crediticio que se prevé que ocurran en el portafolio en un horizonte determinado (12 meses). Representa el costo estadístico normal de hacer negocios en crédito y constituye la base para la <strong>constitución obligatoria de provisiones contables y reservas técnicas</strong>.
+                                    </p>
+                                </div>
+                            </div>
+
+                                <div class="row g-3">
+                                    <!-- Componente EAD -->
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100 border-0 shadow-xs p-3 bg-white" style="border-top: 4px solid #059669 !important;">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rounded-circle p-2 mr-2" style="background: rgba(5, 150, 105, 0.1); color: #059669;">
+                                                    <i class="fas fa-wallet fa-fw"></i>
+                                                </div>
+                                                <h6 class="font-weight-bold text-dark mb-0">1. EAD (Exposición al Incumplimiento)</h6>
+                                            </div>
+                                            <p class="small text-muted mb-2">
+                                                <strong>¿Qué significa?</strong> Es el saldo total de dinero adeudado expuesto al riesgo si el cliente incumple en la fecha de análisis.
+                                            </p>
+                                            <div class="bg-light p-2 rounded small text-dark border">
+                                                <strong><i class="fas fa-calculator text-success mr-1"></i> ¿Cómo se obtiene el cálculo?</strong><br>
+                                                Se suma el saldo de capital principal más la línea disponible multiplicada por el Factor de Conversión (CCF):<br>
+                                                <code class="text-dark font-weight-bold">EAD = Saldo Capital + (Línea Disponible × CCF)</code>
+                                                <hr class="my-1">
+                                                <strong><i class="fas fa-lightbulb text-warning mr-1"></i> Ejemplo Numérico:</strong><br>
+                                                Deuda S/ 15,000 + (Línea S/ 2,000 × 20%) = <strong>S/ 15,400</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Componente PD -->
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100 border-0 shadow-xs p-3 bg-white" style="border-top: 4px solid #d97706 !important;">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rounded-circle p-2 mr-2" style="background: rgba(217, 119, 6, 0.1); color: #d97706;">
+                                                    <i class="fas fa-percentage fa-fw"></i>
+                                                </div>
+                                                <h6 class="font-weight-bold text-dark mb-0">2. PD (Probabilidad de Incumplimiento)</h6>
+                                            </div>
+                                            <p class="small text-muted mb-2">
+                                                <strong>¿Qué significa?</strong> Porcentaje estimado de clientes de la misma categoría que caerán en mora &gt;90 días en 12 meses.
+                                            </p>
+                                            <div class="bg-light p-2 rounded small text-dark border">
+                                                <strong><i class="fas fa-calculator text-warning mr-1"></i> ¿Cómo se obtiene el cálculo?</strong><br>
+                                                Se dividen los deudores observados que migraron a default entre el número total inicial de deudores de esa categoría:<br>
+                                                <code class="text-dark font-weight-bold">PD = Deudores en Default / Total Deudores Iniciales</code>
+                                                <hr class="my-1">
+                                                <strong><i class="fas fa-lightbulb text-warning mr-1"></i> Ejemplo Numérico:</strong><br>
+                                                140 cayeron en default de 1,000 observados = <strong>14.00%</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Componente LGD -->
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100 border-0 shadow-xs p-3 bg-white" style="border-top: 4px solid #0284c7 !important;">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="rounded-circle p-2 mr-2" style="background: rgba(2, 132, 199, 0.1); color: #0284c7;">
+                                                    <i class="fas fa-shield-alt fa-fw"></i>
+                                                </div>
+                                                <h6 class="font-weight-bold text-dark mb-0">3. LGD (Severidad de Pérdida)</h6>
+                                            </div>
+                                            <p class="small text-muted mb-2">
+                                                <strong>¿Qué significa?</strong> Porcentaje de la exposición que no se logrará recuperar tras cobros y remate de colaterales.
+                                            </p>
+                                            <div class="bg-light p-2 rounded small text-dark border">
+                                                <strong><i class="fas fa-calculator text-info mr-1"></i> ¿Cómo se obtiene el cálculo?</strong><br>
+                                                Se resta a 1 la tasa de recuperación neta descontando gastos judiciales y de cobranza del colateral:<br>
+                                                <code class="text-dark font-weight-bold">LGD = 1 - (Cobro Neto / Deuda en Default)</code>
+                                                <hr class="my-1">
+                                                <strong><i class="fas fa-lightbulb text-warning mr-1"></i> Ejemplo Numérico:</strong><br>
+                                                Se recupera el 55% de la deuda sin garantía = LGD no recuperable es <strong>45.00%</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Box de Ejemplo Integrado Final -->
+                                <div class="p-3 bg-white border rounded mt-2">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge badge-soft-success px-3 py-1 font-weight-bold mr-2"><i class="fas fa-calculator mr-1"></i> CÁLCULO INTEGRADO DE PÉRDIDA ESPERADA</span>
+                                        <span class="small font-weight-bold text-dark">¿Cómo se obtiene el resultado final de Pérdida Esperada?</span>
+                                    </div>
+                                    <p class="small text-muted mb-2">
+                                        Se multiplican los tres resultados calculados individualmente arriba:
+                                    </p>
+                                    <div class="p-2 bg-indigo-subtle rounded border text-center font-weight-bold text-indigo" style="font-size: 0.95rem;">
+                                        Pérdida Esperada (PE) = EAD (S/ 15,400) &times; PD (14.00%) &times; LGD (45.00%) = <span class="text-danger font-weight-bold">S/ 970.20</span>
+                                    </div>
+                                    <span class="small text-muted mt-2 d-block text-center font-italic">
+                                        *Resultado: Por este crédito individual, la entidad debe reservar exactamente <strong>S/ 970.20</strong> como provisión en sus estados financieros.
+                                    </span>
+                                </div>
+                        </div>
+                        <div class="card-footer bg-white border-top small text-muted d-flex justify-content-between align-items-center py-2">
+                            <span><i class="fas fa-check-circle text-success mr-1"></i> Cumplimiento Normativo: Norma de Provisión Crediticia SBS N° 3718-2021 / NIIF 9 de Riesgos</span>
+                            <span class="badge badge-light border">A.RISK ERM Engine v2.0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -169,9 +449,19 @@
 </section>
 
 <style>
+    .kpi-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.08) !important;
+    }
     .alert-light-danger { background-color: #fff5f5; border-left: 4px solid #dc3545 !important; }
     .alert-light-success { background-color: #f0fff4; border-left: 4px solid #28a745 !important; }
-    .leading-relaxed { line-height: 1.7; }
+    .table-primary-subtle { background-color: rgba(79, 70, 229, 0.04); }
+    .font-weight-semibold { font-weight: 600; }
+    .leading-relaxed { line-height: 1.65; }
+    .table td, .table th { vertical-align: middle; }
 </style>
 
 <!-- Include Chart.js -->
@@ -204,15 +494,15 @@
                 {
                     label: `PE ${dateT0}`,
                     data: dataT0,
-                    backgroundColor: 'rgba(108, 117, 125, 0.5)',
-                    borderColor: 'rgb(108, 117, 125)',
+                    backgroundColor: 'rgba(148, 163, 184, 0.6)',
+                    borderColor: '#64748b',
                     borderWidth: 1
                 },
                 {
                     label: `PE ${dateT1}`,
                     data: dataT1,
-                    backgroundColor: 'rgba(0, 123, 255, 0.7)',
-                    borderColor: 'rgb(0, 123, 255)',
+                    backgroundColor: 'rgba(79, 70, 229, 0.8)',
+                    borderColor: '#4f46e5',
                     borderWidth: 1
                 }
             ]
@@ -229,10 +519,103 @@
             }
         }
     });
+
+    // --- REPORT EXPORT & COPY FUNCTIONS ---
+    function copyAnalysisText() {
+        const textElement = document.getElementById('analysisTextContainer');
+        const plainText = textElement ? textElement.innerText : '';
+        if (!plainText) return;
+        
+        navigator.clipboard.writeText(plainText).then(() => {
+            showNotification('¡Texto del análisis copiado al portapapeles!');
+        }).catch(err => {
+            alert('No se pudo copiar: ' + err);
+        });
+    }
+
+    function copyExecutiveReport() {
+        const t0 = "{{ date_t0 }}";
+        const t1 = "{{ date_t1 }}";
+        const peT1 = "S/ {{ summary.t1_pe|format_num:0 }}";
+        const peT0 = "S/ {{ summary.t0_pe|format_num:0 }}";
+        const varAbs = "S/ {{ summary.variation_abs|format_num:0 }}";
+        const varPct = "{{ summary.variation_pct|format_num:2 }}%";
+        const eadT1 = "S/ {{ summary.t1_ead|format_num:0 }}";
+        const pdT1 = "{{ summary.t1_pd_avg|format_num:2 }}%";
+        
+        let report = `========================================================================\n`;
+        report += `INFORME EJECUTIVO DE PÉRDIDA ESPERADA Y GESTIÓN DE RIESGO CREDITICIO\n`;
+        report += `Entidad: A.RISK ERM System | Fecha Generación: ${new Date().toLocaleDateString()}\n`;
+        report += `========================================================================\n\n`;
+        report += `1. COMPARATIVA DE PERIODOS: ${t0} (t0) vs ${t1} (t1)\n`;
+        report += `------------------------------------------------------------------------\n`;
+        report += `• PE Total (t1): ${peT1} (vs t0: ${peT0} | Var: ${varAbs} / ${varPct})\n`;
+        report += `• Saldo Expuesto (EAD Total): ${eadT1}\n`;
+        report += `• Probabilidad Incumplimiento (PD Ponderada): ${pdT1}\n\n`;
+        
+        const textElement = document.getElementById('analysisTextContainer');
+        if (textElement) {
+            report += `2. DIAGNÓSTICO INTEGRAL Y DRIVERS DE RIESGO:\n`;
+            report += `------------------------------------------------------------------------\n`;
+            report += textElement.innerText + `\n\n`;
+        }
+        
+        report += `3. DESGLOSE POR PERIODO Y SEGMENTO:\n`;
+        report += `------------------------------------------------------------------------\n`;
+        report += `Periodo\t\tSegmento\t\tEAD Total (S/)\t\tPD (%)\tLGD (%)\tPE Total (S/)\tPE/EAD (%)\n`;
+        
+        const reportData = {{ report_data|safe }};
+        reportData.forEach(r => {
+            report += `${r.Periodo}\t${r.Segmento}\t\tS/ ${r.EAD_total.toLocaleString('es-PE', {minimumFractionDigits:2})}\t${r.PD_avg.toFixed(2)}%\t${r.LGD_avg.toFixed(2)}%\tS/ ${r.PE_total.toLocaleString('es-PE', {minimumFractionDigits:2})}\t${r.PE_pct.toFixed(2)}%\n`;
+        });
+        
+        navigator.clipboard.writeText(report).then(() => {
+            showNotification('¡Informe ejecutivo completo copiado al portapapeles! Listo para pegar en Word/Email.');
+        });
+    }
+
+    function exportTableToCSV() {
+        const reportData = {{ report_data|safe }};
+        let csvContent = "\uFEFF"; // UTF-8 BOM for Excel compatibility
+        csvContent += "Periodo,Segmento,EAD Total (S/),PD Avg (%),LGD Avg (%),PE Total (S/),PE % de EAD\n";
+        
+        reportData.forEach(row => {
+            csvContent += `"${row.Periodo}","${row.Segmento}",${row.EAD_total},${row.PD_avg},${row.LGD_avg},${row.PE_total},${row.PE_pct}\n`;
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `informe_perdida_esperada_{{ date_t1 }}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function showNotification(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed p-3';
+        toast.style.cssText = 'bottom: 25px; right: 25px; z-index: 99999;';
+        toast.innerHTML = `<div class="toast show bg-success text-white p-3 rounded-lg shadow-lg font-weight-bold d-flex align-items-center"><i class="fas fa-check-circle fa-lg mr-2"></i> ${msg}</div>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
 </script>
 
 <style>
-    .leading-relaxed { line-height: 1.6; }
-    .table td, .table th { vertical-align: middle; }
+@media print {
+    .content-header, .btn, .btn-group, form, select, .kpi-analysis-box, #methodologyCollapse button {
+        display: none !important;
+    }
+    .collapse {
+        display: block !important;
+    }
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+    }
+}
 </style>
 {% endblock %}
+

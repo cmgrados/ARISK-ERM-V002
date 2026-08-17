@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">{{ titulo }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'utilities:dashboard' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'regulatory_reports:portal_anexos' %}">Portal Anexos</a></li>
+                    <li class="breadcrumb-item active">{{ titulo }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center mt-5">
+                <i class="fas fa-tools fa-5x text-muted mb-4"></i>
+                <h2 class="text-muted">Módulo en Construcción</h2>
+                <p class="lead text-muted">La estructura para el <strong>{{ titulo }}</strong> está preparada y será implementada en una próxima fase de desarrollo.</p>
+                <a href="{% url 'regulatory_reports:portal_anexos' %}" class="btn btn-primary mt-3"><i class="fas fa-arrow-left"></i> Volver al Portal de Anexos</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

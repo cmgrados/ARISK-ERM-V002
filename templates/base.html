@@ -157,7 +157,11 @@
           </li>
           {% endif %}
           {% if request.user.is_superuser or request.user.can_access_integral_risk %}
-          <li class="nav-header" style="color: #ffffff; opacity:0.6;">MÓDULOS DE RIESGO</li>
+          <li class="nav-header sidebar-section-toggle d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer" data-target="#group-modulos-riesgo" style="color: #ffffff; opacity:0.85; font-size: 0.75rem; letter-spacing: 0.8px; font-weight: 700; cursor: pointer; user-select: none;">
+            <span>MÓDULOS DE RIESGO</span>
+            <i class="fas fa-angle-down section-icon"></i>
+          </li>
+          <div id="group-modulos-riesgo" class="sidebar-section-group">
           
           {% if 'Riesgo Crédito' not in request.user.hidden_modules %}
           <li class="nav-item has-treeview {% if request.resolver_match.app_name == 'credit_risk' %}menu-open{% endif %}">
@@ -173,41 +177,30 @@
                 </a>
               </li>
               
-              <!-- Metodologías Group -->
-              <li class="nav-item has-treeview {% if request.resolver_match.url_name in 'methodologies transition_matrix vintage_analysis scoring_segment concentration deterioration_alerts' %}menu-open{% endif %}">
-                <a href="#" class="nav-link {% if request.resolver_match.url_name in 'methodologies transition_matrix vintage_analysis scoring_segment concentration deterioration_alerts' %}active{% endif %}" style="background-color: rgba(255,255,255,0.1);">
-                  <i class="nav-icon fas fa-vials text-info"></i>
-                  <p>
-                    Metodologías
-                    <i class="right fas fa-angle-left"></i>
-                  </p>
+              <!-- Metodologías y Análisis -->
+              <li class="nav-item">
+                <a href="{% url 'credit_risk:methodologies' %}" class="nav-link {% if request.resolver_match.url_name == 'methodologies' %}active{% endif %}">
+                  <i class="fas fa-calculator nav-icon"></i>
+                  <p>Metodologías (PD, EAD)</p>
                 </a>
-                <ul class="nav nav-treeview pl-3" style="display: {% if request.resolver_match.url_name in 'methodologies transition_matrix vintage_analysis scoring_segment concentration deterioration_alerts' %}block{% else %}none{% endif %};">
-                  <li class="nav-item">
-                    <a href="{% url 'credit_risk:methodologies' %}" class="nav-link {% if request.resolver_match.url_name == 'methodologies' %}active{% endif %}">
-                      <i class="fas fa-calculator nav-icon small"></i>
-                      <p>PD, EAD, LGD, EL</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="{% url 'credit_risk:transition_matrix' %}" class="nav-link {% if request.resolver_match.url_name == 'transition_matrix' %}active{% endif %}">
-                      <i class="fas fa-exchange-alt nav-icon small"></i>
-                      <p>Matrices de Transición</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="{% url 'credit_risk:vintage_analysis' %}" class="nav-link {% if request.resolver_match.url_name == 'vintage_analysis' %}active{% endif %}">
-                      <i class="fas fa-history nav-icon small"></i>
-                      <p>Análisis de Cosechas</p>
-                    </a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="{% url 'credit_risk:concentration' %}" class="nav-link {% if request.resolver_match.url_name == 'concentration' %}active{% endif %}">
-                      <i class="fas fa-chart-pie nav-icon small"></i>
-                      <p>Concentración</p>
-                    </a>
-                  </li>
-                </ul>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'credit_risk:transition_matrix' %}" class="nav-link {% if request.resolver_match.url_name == 'transition_matrix' %}active{% endif %}">
+                  <i class="fas fa-exchange-alt nav-icon"></i>
+                  <p>Matrices de Transición</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'credit_risk:vintage_analysis' %}" class="nav-link {% if request.resolver_match.url_name == 'vintage_analysis' %}active{% endif %}">
+                  <i class="fas fa-history nav-icon"></i>
+                  <p>Análisis de Cosechas</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'credit_risk:concentration' %}" class="nav-link {% if request.resolver_match.url_name == 'concentration' %}active{% endif %}">
+                  <i class="fas fa-chart-pie nav-icon"></i>
+                  <p>Concentración</p>
+                </a>
               </li>
               
               <li class="nav-item">
@@ -217,21 +210,15 @@
                 </a>
               </li>
               <li class="nav-item">
-                <a href="{% url 'credit_risk:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
-                  <i class="far fa-circle nav-icon"></i>
-                  <p>Reportes</p>
-                </a>
-              </li>
-              <li class="nav-item">
                 <a href="{% url 'credit_risk:controls' %}" class="nav-link {% if request.resolver_match.url_name == 'controls' %}active{% endif %}">
                   <i class="far fa-circle nav-icon text-danger"></i>
                   <p>Límites y Controles</p>
                 </a>
               </li>
               <li class="nav-item">
-                <a href="{% url 'credit_risk:data' %}" class="nav-link {% if request.resolver_match.url_name == 'data' %}active{% endif %}">
-                  <i class="fas fa-database nav-icon text-warning"></i>
-                  <p>Datos de Cartera</p>
+                <a href="{% url 'credit_risk:reports' %}" class="nav-link {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Reportes</p>
                 </a>
               </li>
             </ul>
@@ -608,13 +595,34 @@
             </ul>
           </li>
           {% endif %}
+          {% if 'Reportes Regulatorios' not in request.user.hidden_modules %}
+          <li class="nav-item has-treeview {% if request.resolver_match.app_name == 'regulatory_reports' %}menu-open{% endif %}">
+            <a href="#" class="nav-link {% if request.resolver_match.app_name == 'regulatory_reports' %}active{% endif %}">
+              <i class="nav-icon fas fa-file-invoice-dollar text-primary"></i>
+              <p>Reportes Regulatorios <i class="right fas fa-angle-left"></i></p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{% url 'regulatory_reports:portal_anexos' %}" class="nav-link {% if request.resolver_match.url_name == 'portal_anexos' %}active{% endif %}">
+                  <i class="fas fa-th-large nav-icon small"></i>
+                  <p>Portal de Anexos SBS</p>
+                </a>
+              </li>
+
+            </ul>
+          </li>
+          {% endif %}
+          </div>
           {% endif %}
           {% endif %} <!-- end of ERM block condition -->
 
           {% if request.session.show_all_modules or request.resolver_match.app_name == 'financial_planning' %}
           {% if request.user.is_superuser or request.user.can_access_financial_planning %}
-          <li class="nav-header" style="color: #ffffff; opacity:0.6; margin-top: 10px;">PLANEAMIENTO FINANCIERO</li>
-
+          <li class="nav-header sidebar-section-toggle d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer mt-2" data-target="#group-planeamiento-financiero" style="color: #ffffff; opacity:0.85; font-size: 0.75rem; letter-spacing: 0.8px; font-weight: 700; cursor: pointer; user-select: none;">
+            <span>PLANEAMIENTO FINANCIERO</span>
+            <i class="fas fa-angle-down section-icon"></i>
+          </li>
+          <div id="group-planeamiento-financiero" class="sidebar-section-group">
           {% if 'Planificación Financiera' not in request.user.hidden_modules %}
           <li class="nav-item has-treeview {% if request.resolver_match.app_name == 'financial_planning' %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if request.resolver_match.app_name == 'financial_planning' %}active{% endif %}">
@@ -632,13 +640,17 @@
             </ul>
           </li>
           {% endif %}
+          </div>
           {% endif %}
           {% endif %} <!-- end of financial_planning block -->
 
           {% if request.session.show_all_modules or request.resolver_match.app_name == 'strategic_risk' %}
           {% if request.user.is_superuser or request.user.can_access_strategic_planning %}
-          <li class="nav-header" style="color: #ffffff; opacity:0.6; margin-top: 10px;">PLANEAMIENTO ESTRATÉGICO</li>
-          
+          <li class="nav-header sidebar-section-toggle d-flex align-items-center justify-content-between px-3 py-2 cursor-pointer mt-2" data-target="#group-planeamiento-estrategico" style="color: #ffffff; opacity:0.85; font-size: 0.75rem; letter-spacing: 0.8px; font-weight: 700; cursor: pointer; user-select: none;">
+            <span>PLANEAMIENTO ESTRATÉGICO</span>
+            <i class="fas fa-angle-down section-icon"></i>
+          </li>
+          <div id="group-planeamiento-estrategico" class="sidebar-section-group">
           {% if 'Estrategia y Objetivos' not in request.user.hidden_modules %}
           <li class="nav-item has-treeview {% if request.resolver_match.app_name == 'strategic_risk' %}menu-open{% endif %}">
             <a href="#" class="nav-link {% if request.resolver_match.app_name == 'strategic_risk' %}active{% endif %}">
@@ -761,9 +773,14 @@
             </ul>
           </li>
           {% endif %}
+          </div>
           {% endif %}
           {% endif %} <!-- end of strategic_risk block -->
-        <li class="nav-header text-uppercase text-muted mt-3 mb-1" style="font-size: 0.85rem; letter-spacing: 0.5px;">Sistema y Administración</li>
+        <li class="nav-header sidebar-section-toggle d-flex align-items-center justify-content-between text-uppercase mt-3 mb-1 px-3 py-2 cursor-pointer" data-target="#group-sistema-administracion" style="color: #ffffff; opacity:0.85; font-size: 0.75rem; letter-spacing: 0.8px; font-weight: 700; cursor: pointer; user-select: none;">
+          <span>SISTEMA Y ADMINISTRACIÓN</span>
+          <i class="fas fa-angle-down section-icon"></i>
+        </li>
+        <div id="group-sistema-administracion" class="sidebar-section-group">
         
         {% if 'Usuarios' not in request.user.hidden_modules %}
         <li class="nav-item">
@@ -828,8 +845,8 @@
               </li>
               <li class="nav-item">
                 <a href="{% url 'utilities:bulk_load_credit' %}" class="nav-link {% if request.resolver_match.url_name == 'bulk_load_credit' %}active{% endif %}">
-                  <i class="fas fa-hand-holding-usd nav-icon small"></i>
-                  <p>Carga de Cartera</p>
+                  <i class="fas fa-landmark nav-icon small"></i>
+                  <p>Anexo 6 - Deudores SBS</p>
                 </a>
               </li>
               <li class="nav-item">
@@ -861,6 +878,7 @@
             </a>
           </li>
           {% endif %}
+          </div>
         </ul>
       </nav>
     </div>
@@ -899,6 +917,64 @@
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+.sidebar-section-toggle {
+    cursor: pointer !important;
+    user-select: none;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+    border-radius: 4px;
+}
+.sidebar-section-toggle:hover {
+    opacity: 1 !important;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.sidebar-section-toggle .section-icon {
+    transition: transform 0.2s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Collapsible Sidebar Major Sections
+    $('.sidebar-section-toggle').on('click', function(e) {
+        e.preventDefault();
+        const targetSelector = $(this).attr('data-target');
+        const $target = $(targetSelector);
+        const $icon = $(this).find('.section-icon');
+        
+        if ($target.is(':visible')) {
+            $target.slideUp(200);
+            $icon.removeClass('fa-angle-down').addClass('fa-angle-right');
+            localStorage.setItem('sidebar_section_' + targetSelector, 'collapsed');
+        } else {
+            $target.slideDown(200);
+            $icon.removeClass('fa-angle-right').addClass('fa-angle-down');
+            localStorage.setItem('sidebar_section_' + targetSelector, 'expanded');
+        }
+    });
+
+    // Restore saved collapse states
+    $('.sidebar-section-toggle').each(function() {
+        const targetSelector = $(this).attr('data-target');
+        const $target = $(targetSelector);
+        const $icon = $(this).find('.section-icon');
+        const savedState = localStorage.getItem('sidebar_section_' + targetSelector);
+
+        // If current page contains an active link in this section, force open
+        const hasActiveLink = $target.find('.nav-link.active').length > 0;
+        
+        if (savedState === 'collapsed' && !hasActiveLink) {
+            $target.hide();
+            $icon.removeClass('fa-angle-down').addClass('fa-angle-right');
+        } else {
+            $target.show();
+            $icon.removeClass('fa-angle-right').addClass('fa-angle-down');
+        }
+    });
+});
+</script>
+
 {% if messages %}
 <script>
     document.addEventListener("DOMContentLoaded", function() {

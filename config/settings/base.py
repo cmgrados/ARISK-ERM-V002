@@ -131,6 +131,7 @@ class Settings(BaseSettings):
             'risk_appetite',
             'ai_assistant',
             'financial_planning',
+            'apps.regulatory_reports',
         ]
     )
 

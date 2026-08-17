@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Portal de Anexos SBS{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">Portal de Anexos SBS</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="{% url 'utilities:dashboard' %}">Inicio</a></li>
+                    <li class="breadcrumb-item active">Reportes Regulatorios</li>
+                    <li class="breadcrumb-item active">Portal</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title font-weight-bold">Catálogo de Reportes Regulatorios (Niveles 1, 2 y 3)</h3>
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-4">Seleccione el anexo o reporte regulatorio al que desea acceder para generar, consultar o editar la información requerida por la SBS.</p>
+                        
+                        <div class="row">
+                            <!-- Reporte 13 -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-info"><i class="fas fa-chart-bar"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Reporte Nº 13</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Control de Límites Globales e Individuales</span>
+                                        <a href="{% url 'regulatory_reports:reporte_13' %}" class="btn btn-sm btn-outline-info mt-2">Ir al Reporte <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Anexo 2A -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-secondary"><i class="fas fa-file-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 2A</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte Regulatorio</span>
+                                        <a href="{% url 'regulatory_reports:anexo_2a' %}" class="btn btn-sm btn-outline-secondary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 2D -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-secondary"><i class="fas fa-file-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 2D</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte Regulatorio</span>
+                                        <a href="{% url 'regulatory_reports:anexo_2d' %}" class="btn btn-sm btn-outline-secondary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 13 -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-secondary"><i class="fas fa-file-invoice"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 13</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte Regulatorio</span>
+                                        <a href="{% url 'regulatory_reports:anexo_13' %}" class="btn btn-sm btn-outline-secondary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 15 -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-secondary"><i class="fas fa-file-invoice"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 15</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte Regulatorio</span>
+                                        <a href="{% url 'regulatory_reports:anexo_15' %}" class="btn btn-sm btn-outline-secondary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 17-B -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-success"><i class="fas fa-shield-alt"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 17-B</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Hoja Control Pago Prima al FSDC</span>
+                                        <a href="{% url 'regulatory_reports:anexo_17b' %}" class="btn btn-sm btn-outline-success mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 15A -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-primary"><i class="fas fa-water"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 15A</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Posición de Liquidez</span>
+                                        <a href="{% url 'regulatory_reports:anexo_15a' %}" class="btn btn-sm btn-outline-primary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 5 -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-secondary"><i class="fas fa-file-contract"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 5</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte Regulatorio</span>
+                                        <a href="{% url 'regulatory_reports:anexo_5' %}" class="btn btn-sm btn-outline-secondary mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 17-A -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-warning"><i class="fas fa-piggy-bank text-white"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 17-A</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Control de Depósitos para COOPAC</span>
+                                        <a href="{% url 'regulatory_reports:anexo_17a' %}" class="btn btn-sm btn-outline-warning mt-2">Ir al Anexo <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Anexo 6 (Pre-existente) -->
+                            <div class="col-md-4 col-sm-6 col-12 mb-4">
+                                <div class="info-box shadow h-100">
+                                    <span class="info-box-icon bg-danger"><i class="fas fa-users"></i></span>
+                                    <div class="info-box-content">
+                                        <span class="info-box-text font-weight-bold">Anexo 6</span>
+                                        <span class="info-box-number text-muted font-weight-normal" style="font-size: 0.9rem;">Reporte de Deudores</span>
+                                        <a href="{% url 'utilities:bulk_load_credit' %}" class="btn btn-sm btn-outline-danger mt-2">Ir a Utilitarios <i class="fas fa-arrow-right"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

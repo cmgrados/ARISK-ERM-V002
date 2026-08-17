@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Anexo 6: Reporte de Deudores SBS{% endblock %}
+
+{% block content %}
+<div class="content-header">
+  <div class="container-fluid">
+    <div class="row mb-2">
+      <div class="col-sm-6">
+        <h1 class="m-0 text-dark">
+          <i class="fas fa-file-invoice-dollar text-primary mr-2"></i> 
+          Anexo 6: Reporte de Deudores SBS
+        </h1>
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb float-sm-right">
+          <li class="breadcrumb-item"><a href="/">Inicio</a></li>
+          <li class="breadcrumb-item">Reportes Regulatorios</li>
+          <li class="breadcrumb-item active">Anexo 6</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="content">
+  <div class="container-fluid">
+    <!-- Filters & Actions -->
+    <div class="card card-outline card-primary shadow-sm mb-4">
+      <div class="card-header bg-light">
+        <h3 class="card-title font-weight-bold text-primary">
+          <i class="fas fa-filter mr-1"></i> Filtros y Acciones
+        </h3>
+        <div class="card-tools">
+            <button class="btn btn-sm btn-success" data-toggle="modal" data-target="#uploadModal">
+                <i class="fas fa-upload mr-1"></i> Cargar Anexo 6
+            </button>
+            <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print mr-1"></i> Imprimir Reporte
+            </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="GET" class="row align-items-end">
+          <div class="col-md-3">
+            <div class="form-group mb-0">
+              <label for="periodo">Corte de Cartera (Periodo)</label>
+              <select name="periodo" id="periodo" class="form-control select2">
+                <option value="2024-12">Diciembre 2024</option>
+                <option value="2024-11">Noviembre 2024</option>
+                <option value="2024-10">Octubre 2024</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group mb-0">
+              <label for="tipo_credito">Tipo de Crédito</label>
+              <select name="tipo_credito" id="tipo_credito" class="form-control select2">
+                <option value="">Todos</option>
+                <option value="consumo">Consumo No Revolvente</option>
+                <option value="hipotecario">Hipotecario</option>
+                <option value="mes">Microempresa</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-block">
+              <i class="fas fa-search mr-1"></i> Consultar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="row">
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-info shadow-sm" style="border-radius: 10px;">
+          <div class="inner">
+            <h3>S/ 45.2M</h3>
+            <p>Saldo Total Colocaciones</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-success shadow-sm" style="border-radius: 10px;">
+          <div class="inner">
+            <h3>1,245</h3>
+            <p>Total Deudores</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-users"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-warning shadow-sm" style="border-radius: 10px;">
+          <div class="inner">
+            <h3>5.4%</h3>
+            <p>Índice de Morosidad</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-3 col-6">
+        <div class="small-box bg-danger shadow-sm" style="border-radius: 10px;">
+          <div class="inner">
+            <h3>S/ 2.1M</h3>
+            <p>Provisiones Requeridas</p>
+          </div>
+          <div class="icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debtors Table -->
+    <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden;">
+      <div class="card-header bg-white border-bottom pt-4 pb-3">
+        <h3 class="card-title font-weight-bold text-dark" style="font-size: 1.1rem;">
+          <i class="fas fa-list-ul mr-2 text-primary"></i> Detalle de Deudores (Anexo 6)
+        </h3>
+        <div class="card-tools">
+          <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+          <button type="button" class="btn btn-tool" data-card-widget="maximize"><i class="fas fa-expand"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover table-striped table-bordered text-sm mb-0">
+            <thead class="bg-light text-muted">
+              <tr>
+                <th class="text-center">Tipo Doc.</th>
+                <th>Nro Documento</th>
+                <th>Nombre / Razón Social</th>
+                <th class="text-center">Tipo Crédito</th>
+                <th class="text-center">Calificación</th>
+                <th class="text-right">Saldo Capital (S/)</th>
+                <th class="text-right">Garantías (S/)</th>
+                <th class="text-right">Provisión (S/)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="text-center">DNI</td>
+                <td>45124578</td>
+                <td>JUAN PEREZ GONZALES</td>
+                <td class="text-center"><span class="badge badge-info">Consumo</span></td>
+                <td class="text-center"><span class="badge badge-success">Normal</span></td>
+                <td class="text-right font-weight-bold">15,400.00</td>
+                <td class="text-right">0.00</td>
+                <td class="text-right">154.00</td>
+              </tr>
+              <tr>
+                <td class="text-center">RUC</td>
+                <td>20541245789</td>
+                <td>EMPRESA LOGISTICA SAC</td>
+                <td class="text-center"><span class="badge badge-primary">Pequeña Emp.</span></td>
+                <td class="text-center"><span class="badge badge-warning">CPP</span></td>
+                <td class="text-right font-weight-bold">120,500.00</td>
+                <td class="text-right">150,000.00</td>
+                <td class="text-right">6,025.00</td>
+              </tr>
+              <tr>
+                <td class="text-center">DNI</td>
+                <td>74125896</td>
+                <td>MARIA RODRIGUEZ SILVA</td>
+                <td class="text-center"><span class="badge badge-success">Hipotecario</span></td>
+                <td class="text-center"><span class="badge badge-success">Normal</span></td>
+                <td class="text-right font-weight-bold">245,000.00</td>
+                <td class="text-right">300,000.00</td>
+                <td class="text-right">1,837.50</td>
+              </tr>
+              <tr>
+                <td class="text-center">DNI</td>
+                <td>10254789</td>
+                <td>CARLOS MENDOZA RUIZ</td>
+                <td class="text-center"><span class="badge badge-warning">Microempresa</span></td>
+                <td class="text-center"><span class="badge badge-danger">Deficiente</span></td>
+                <td class="text-right font-weight-bold">45,200.00</td>
+                <td class="text-right">0.00</td>
+                <td class="text-right">11,300.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card-footer bg-white clearfix">
+        <ul class="pagination pagination-sm m-0 float-right">
+          <li class="page-item"><a class="page-link" href="#">«</a></li>
+          <li class="page-item active"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item"><a class="page-link" href="#">»</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <form method="POST" enctype="multipart/form-data" action="">
+        {% csrf_token %}
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="uploadModalLabel"><i class="fas fa-upload mr-2"></i> Carga de Anexo 6</h5>
+          <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="corte_fecha">Fecha de Corte</label>
+            <input type="date" class="form-control" id="corte_fecha" name="corte_fecha" required>
+          </div>
+          <div class="form-group">
+            <label for="anexo6_file">Archivo Excel / CSV</label>
+            <div class="custom-file">
+              <input type="file" class="custom-file-input" id="anexo6_file" name="anexo6_file" accept=".xlsx,.xls,.csv" required>
+              <label class="custom-file-label" for="anexo6_file" data-browse="Buscar">Seleccionar Archivo...</label>
+            </div>
+            <small class="form-text text-muted">Asegúrese de que el archivo cumpla con la estructura definida por la SBS.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success"><i class="fas fa-cloud-upload-alt mr-1"></i> Procesar Carga</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            theme: 'bootstrap4'
+        });
+        
+        bsCustomFileInput.init();
+    });
+</script>
+{% endblock %}

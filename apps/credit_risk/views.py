@@ -85,22 +85,257 @@ def dashboard(request): # Gráficos
         if ratio > 0:
             ratio_mora_producto.append({'product_name': p_name, 'ratio': ratio})
 
+    # Tipo de crédito al corte
+    tipo_credito_qs = qs.values('credit_type').annotate(
+        total_balance=Sum('balance')
+    ).order_by('-total_balance')
+    
+    tipo_credito_data = []
+    for item in tipo_credito_qs:
+        tipo_credito_data.append({
+            'name': item['credit_type'] or 'Sin Tipo',
+            'value': float(item['total_balance'] or 0)
+        })
+
+    # Evolución de Morosidad por Tipo de Crédito
+    mora_tipo_credito_qs = CreditOperation.objects.filter(days_past_due__gt=0).values('load_date', 'credit_type').annotate(
+        mora=Sum('balance')
+    ).order_by('load_date')
+
+    mora_tipo_credito_data_dict = {}
+    for item in mora_tipo_credito_qs:
+        ld = item['load_date'].strftime('%Y-%m-%d')
+        ctype = item['credit_type'] or 'Sin Tipo'
+        mora_val = float(item['mora'] or 0)
+        
+        if ld not in mora_tipo_credito_data_dict:
+            mora_tipo_credito_data_dict[ld] = {}
+        mora_tipo_credito_data_dict[ld][ctype] = mora_val
+        
+    all_dates_mora_tipo = sorted(list(mora_tipo_credito_data_dict.keys()))
+    all_types_mora = set()
+    for d in mora_tipo_credito_data_dict.values():
+        all_types_mora.update(d.keys())
+    all_types_mora = sorted(list(all_types_mora))
+
+    mora_tipo_series = []
+    for ctype in all_types_mora:
+        data = []
+        for d in all_dates_mora_tipo:
+            data.append(mora_tipo_credito_data_dict[d].get(ctype, 0))
+        mora_tipo_series.append({
+            'name': ctype,
+            'type': 'line',
+            'smooth': True,
+            'data': data
+        })
+
+    mora_tipo_credito_chart_data = {
+        'dates': all_dates_mora_tipo,
+        'series': mora_tipo_series,
+        'types': all_types_mora
+    }
+
     # Portfolio & Mora Evolution (History)
     evolucion_qs = CreditOperation.objects.values('load_date').annotate(
         total_balance=Sum('balance'),
-        total_mora=Sum('balance', filter=Q(days_past_due__gt=30))
+        total_vigente=Sum('balance', filter=Q(days_past_due__lte=0)),
+        total_vencida=Sum('balance', filter=Q(days_past_due__gt=0)),
+        mora_3=Sum('balance', filter=Q(days_past_due__gt=3)),
+        mora_8=Sum('balance', filter=Q(days_past_due__gt=8)),
+        mora_30=Sum('balance', filter=Q(days_past_due__gt=30)),
+        total_provision=Sum('established_provision')
     ).order_by('load_date')
     
     evolucion_data = []
     mora_evolucion_data = []
+    situacion_evolucion_data = []
+    mora_dias_evolucion_data = []
+    ratio_cobertura_evolucion_data = []
+
     for item in evolucion_qs:
         ld = item['load_date'].strftime('%Y-%m-%d')
         bal = float(item['total_balance'] or 0)
-        mora = float(item['total_mora'] or 0)
-        ratio = (mora / bal * 100) if bal > 0 else 0
+        vigente = float(item['total_vigente'] or 0)
+        vencida = float(item['total_vencida'] or 0)
+        mora_3 = float(item['mora_3'] or 0)
+        mora_8 = float(item['mora_8'] or 0)
+        mora_30 = float(item['mora_30'] or 0)
+        provision = float(item['total_provision'] or 0)
+
+        ratio = (mora_30 / bal * 100) if bal > 0 else 0
+        cobertura = (provision / vencida * 100) if vencida > 0 else 0
         
         evolucion_data.append({'date': ld, 'balance': bal})
-        mora_evolucion_data.append({'date': ld, 'mora': mora, 'ratio': ratio})
+        mora_evolucion_data.append({'date': ld, 'mora': mora_30, 'ratio': ratio})
+        situacion_evolucion_data.append({'date': ld, 'vigente': vigente, 'vencida': vencida})
+        mora_dias_evolucion_data.append({'date': ld, 'mora_3': mora_3, 'mora_8': mora_8, 'mora_30': mora_30})
+        ratio_cobertura_evolucion_data.append({'date': ld, 'ratio_mora': ratio, 'ratio_cobertura': cobertura})
+
+    # -------------------------------------------------------------------------
+    # ANÁLISIS DINÁMICO DE COMPORTAMIENTO DE CADA GRÁFICO
+    # -------------------------------------------------------------------------
+    def _fmt(val, decimals=2):
+        """Formatea un número con separador de miles."""
+        return f"S/ {val:,.{decimals}f}"
+
+    def _pct(val):
+        return f"{val:.2f}%"
+
+    # --- Análisis 1: Evolución de Cartera Total ---
+    analysis_1 = "Sin datos históricos suficientes para el análisis."
+    if len(evolucion_data) >= 2:
+        first = evolucion_data[0]
+        last = evolucion_data[-1]
+        variacion_abs = last['balance'] - first['balance']
+        variacion_pct = (variacion_abs / first['balance'] * 100) if first['balance'] else 0
+        tendencia = "crecimiento sostenido" if variacion_abs > 0 else "contracción"
+        direction_word = "incrementó" if variacion_abs > 0 else "contrajo"
+        
+        # Detectar el máximo y mínimo histórico
+        max_item = max(evolucion_data, key=lambda x: x['balance'])
+        min_item = min(evolucion_data, key=lambda x: x['balance'])
+        
+        analysis_1 = (
+            f"La cartera total muestra una tendencia de <strong>{tendencia}</strong> durante el periodo analizado. "
+            f"Desde {first['date']} hasta {last['date']}, el saldo se {direction_word} en <strong>{_fmt(abs(variacion_abs), 0)}</strong> "
+            f"({_pct(abs(variacion_pct))}), pasando de <strong>{_fmt(first['balance'], 0)}</strong> a <strong>{_fmt(last['balance'], 0)}</strong>. "
+            f"El pico máximo histórico se registró en <strong>{max_item['date']}</strong> con <strong>{_fmt(max_item['balance'], 0)}</strong>, "
+            f"y el mínimo en <strong>{min_item['date']}</strong> con <strong>{_fmt(min_item['balance'], 0)}</strong>."
+        )
+
+    # --- Análisis 2: Evolución por Situación (Vigente vs Vencida) ---
+    analysis_2 = "Sin datos históricos suficientes para el análisis."
+    if len(situacion_evolucion_data) >= 2:
+        last_s = situacion_evolucion_data[-1]
+        first_s = situacion_evolucion_data[0]
+        
+        last_vigente = last_s['vigente']
+        last_vencida = last_s['vencida']
+        last_total = last_vigente + last_vencida
+        pct_vigente = (last_vigente / last_total * 100) if last_total else 0
+        pct_vencida = (last_vencida / last_total * 100) if last_total else 0
+
+        # Detectar tendencia de la cartera vencida
+        delta_vencida = last_s['vencida'] - first_s['vencida']
+        trend_vencida = "se incrementó" if delta_vencida > 0 else "se redujo"
+        
+        analysis_2 = (
+            f"Al último corte, la cartera vigente representa el <strong>{_pct(pct_vigente)}</strong> del portafolio total "
+            f"(<strong>{_fmt(last_vigente, 0)}</strong>), mientras que la cartera vencida alcanza el <strong>{_pct(pct_vencida)}</strong> "
+            f"(<strong>{_fmt(last_vencida, 0)}</strong>). "
+            f"Durante el período analizado, la cartera vencida {trend_vencida} en <strong>{_fmt(abs(delta_vencida), 0)}</strong>, "
+            f"lo que {"representa una señal de alerta en la calidad del portafolio" if delta_vencida > 0 else "refleja una mejora en la calidad del portafolio"}."
+        )
+
+    # --- Análisis 3: Concentración por Producto ---
+    analysis_3 = "Sin datos de producto para analizar."
+    if concentracion_producto:
+        top_prod = concentracion_producto[0]  # Ya ordenado por -total_balance
+        top_pct = (top_prod['total_balance'] / total_balance * 100) if total_balance else 0
+        top_3_bal = sum(p['total_balance'] for p in concentracion_producto[:3])
+        top_3_pct = (top_3_bal / total_balance * 100) if total_balance else 0
+        n_products = len(concentracion_producto)
+        
+        concentracion_nivel = "alta concentración" if top_pct > 50 else "concentración moderada" if top_pct > 30 else "diversificación adecuada"
+        
+        analysis_3 = (
+            f"El producto <strong>{top_prod['product_name']}</strong> domina el portafolio con <strong>{_fmt(top_prod['total_balance'], 0)}</strong> "
+            f"({_pct(top_pct)} del total). Los 3 productos principales concentran el <strong>{_pct(top_3_pct)}</strong> de la cartera "
+            f"entre los {n_products} productos identificados, lo que indica una <strong>{concentracion_nivel}</strong>. "
+            f"Una dependencia elevada en pocos productos incrementa el riesgo sistémico ante cambios sectoriales o normativos."
+        )
+
+    # --- Análisis 4: Tipo de Crédito al Corte ---
+    analysis_4 = "Sin datos de tipo de crédito disponibles."
+    if tipo_credito_data:
+        top_tipo = max(tipo_credito_data, key=lambda x: x['value'])
+        top_tipo_pct = (top_tipo['value'] / total_balance * 100) if total_balance else 0
+        n_tipos = len(tipo_credito_data)
+        analysis_4 = (
+            f"La distribución del portafolio por tipo de crédito muestra que <strong>{top_tipo['name']}</strong> "
+            f"es el segmento predominante con <strong>{_fmt(top_tipo['value'], 0)}</strong> ({_pct(top_tipo_pct)}). "
+            f"Se identifican <strong>{n_tipos}</strong> tipos de crédito, "
+            f"{'lo que indica una cartera poco diversificada por tipo' if n_tipos <= 3 else 'mostrando una diversificación aceptable por tipo de producto'}. "
+            f"La concentración en tipos de menor plazo puede reducir la exposición al riesgo sistémico, "
+            f"mientras que los créditos de mayor monto requieren un seguimiento diferenciado."
+        )
+
+    # --- Análisis 5: Estado de Cartera (Pie Vigente/Vencida) ---
+    analysis_5 = "Sin datos de estado de cartera."
+    last_vigente_val = float(aggregates['total_vigente'] or 0)
+    last_vencida_val = float(aggregates['total_vencida'] or 0)
+    if total_balance > 0:
+        pct_v = (last_vigente_val / total_balance * 100)
+        pct_vc = (last_vencida_val / total_balance * 100)
+        semaforo = "🟢 SALUDABLE" if pct_vc < 5 else "🟡 EN VIGILANCIA" if pct_vc < 15 else "🔴 EN ALERTA"
+        analysis_5 = (
+            f"El estado actual del portafolio refleja que el <strong>{_pct(pct_v)}</strong> de la cartera se encuentra al día "
+            f"(<strong>{_fmt(last_vigente_val, 0)}</strong>), mientras que el <strong>{_pct(pct_vc)}</strong> presenta atrasos "
+            f"(<strong>{_fmt(last_vencida_val, 0)}</strong>). "
+            f"El semáforo de calidad de cartera se clasifica como <strong>{semaforo}</strong>. "
+            f"{'Un ratio de mora inferior al 5% es considerado óptimo bajo estándares internacionales.' if pct_vc < 5 else 'Se recomienda reforzar las acciones de cobranza preventiva y temprana.'}"
+        )
+
+    # --- Análisis 6: Evolución de Morosidad por Tipo de Crédito ---
+    analysis_6 = "Sin datos históricos de morosidad por tipo."
+    if mora_tipo_credito_chart_data := {'dates': all_dates_mora_tipo, 'series': mora_tipo_series}:
+        if mora_tipo_series and all_dates_mora_tipo:
+            # Tipo con mayor mora al último corte
+            last_mora_by_type = {s['name']: s['data'][-1] if s['data'] else 0 for s in mora_tipo_series}
+            if last_mora_by_type:
+                top_mora_type = max(last_mora_by_type, key=last_mora_by_type.get)
+                top_mora_val = last_mora_by_type[top_mora_type]
+                analysis_6 = (
+                    f"El análisis de la morosidad por tipo de crédito revela que <strong>{top_mora_type}</strong> "
+                    f"concentra el mayor saldo vencido al último corte con <strong>{_fmt(top_mora_val, 0)}</strong>. "
+                    f"Se monitorean <strong>{len(mora_tipo_series)}</strong> tipos de crédito en el histórico. "
+                    f"Una tendencia creciente en segmentos específicos puede indicar deterioro sectorial o de perfil del prestatario, "
+                    f"requiriendo ajustes en las políticas de crédito y cobranza diferenciadas por producto."
+                )
+
+    # --- Análisis 7: Evolución de Morosidad por Días ---
+    analysis_7 = "Sin datos históricos de morosidad por tramos de días."
+    if len(mora_dias_evolucion_data) >= 2:
+        last_md = mora_dias_evolucion_data[-1]
+        first_md = mora_dias_evolucion_data[0]
+        delta_30 = last_md['mora_30'] - first_md['mora_30']
+        trend_30 = "aumentó" if delta_30 > 0 else "disminuyó"
+        
+        # Calcular brecha entre mora_3 y mora_30 (indicador de velocidad de deterioro)
+        brecha = last_md['mora_3'] - last_md['mora_30']
+        
+        analysis_7 = (
+            f"El desglose por tramos de mora muestra que al último corte, la cartera con más de 3 días de atraso asciende a "
+            f"<strong>{_fmt(last_md['mora_3'], 0)}</strong>, con más de 8 días a <strong>{_fmt(last_md['mora_8'], 0)}</strong> "
+            f"y con más de 30 días a <strong>{_fmt(last_md['mora_30'], 0)}</strong>. "
+            f"La mora mayor a 30 días {trend_30} en <strong>{_fmt(abs(delta_30), 0)}</strong> respecto al inicio del periodo. "
+            f"La brecha entre mora temprana (>3d) y mora avanzada (>30d) de <strong>{_fmt(brecha, 0)}</strong> "
+            f"{'sugiere que hay cartera en tramos iniciales que podría migrar al tramo crítico si no se actúa con cobranza preventiva' if brecha > 0 else 'indica que la cobranza está siendo efectiva en recuperar créditos en etapas tempranas'}."
+        )
+
+    # --- Análisis 8: Ratio de Mora y Cobertura ---
+    analysis_8 = "Sin datos históricos de ratios."
+    if len(ratio_cobertura_evolucion_data) >= 2:
+        last_r = ratio_cobertura_evolucion_data[-1]
+        first_r = ratio_cobertura_evolucion_data[0]
+        
+        delta_mora = last_r['ratio_mora'] - first_r['ratio_mora']
+        delta_cob = last_r['ratio_cobertura'] - first_r['ratio_cobertura']
+        trend_mora = "incremento" if delta_mora > 0 else "reducción"
+        trend_cob = "mejorado" if delta_cob > 0 else "reducido"
+        
+        cobertura_suficiente = last_r['ratio_cobertura'] >= 100
+        semaforo_cob = "✅ ADECUADA" if cobertura_suficiente else "⚠️ INSUFICIENTE"
+        
+        analysis_8 = (
+            f"Al cierre del último periodo, el ratio de mora (>30d) se sitúa en <strong>{_pct(last_r['ratio_mora'])}</strong> "
+            f"({trend_mora} de {_pct(abs(delta_mora))} respecto al inicio del período). "
+            f"El ratio de cobertura de provisiones alcanza el <strong>{_pct(last_r['ratio_cobertura'])}</strong>, "
+            f"clasificado como <strong>{semaforo_cob}</strong>. "
+            f"Este indicador se ha {trend_cob} en <strong>{_pct(abs(delta_cob))}</strong> puntos durante el horizonte analizado. "
+            f"{'Una cobertura superior al 100% garantiza que las provisiones son suficientes para absorber la totalidad de la cartera vencida.' if cobertura_suficiente else 'Se recomienda incrementar las provisiones para alcanzar una cobertura mínima del 100% sobre la cartera vencida.'}"
+        )
 
     context = {
         'total_balance': total_balance,
@@ -116,13 +351,27 @@ def dashboard(request): # Gráficos
         'ratio_mora_producto': json.dumps(ratio_mora_producto),
         'evolucion_data': json.dumps(evolucion_data),
         'mora_evolucion_data': json.dumps(mora_evolucion_data),
+        'situacion_evolucion_data': json.dumps(situacion_evolucion_data),
+        'tipo_credito_data': json.dumps(tipo_credito_data),
+        'mora_tipo_credito_chart_data': json.dumps(mora_tipo_credito_chart_data),
+        'mora_dias_evolucion_data': json.dumps(mora_dias_evolucion_data),
+        'ratio_cobertura_evolucion_data': json.dumps(ratio_cobertura_evolucion_data),
         'cartera_status': json.dumps([
             {'name': 'Vigente', 'value': float(aggregates['total_vigente'] or 0)},
             {'name': 'Vencida', 'value': float(aggregates['total_vencida'] or 0)}
         ]),
         'dates': dates,
         'selected_date': selected_date,
-        'page_title': 'Riesgo de Crédito - Gráficos'
+        'page_title': 'Riesgo de Crédito - Gráficos',
+        # --- Análisis dinámicos por gráfico ---
+        'analysis_1': analysis_1,
+        'analysis_2': analysis_2,
+        'analysis_3': analysis_3,
+        'analysis_4': analysis_4,
+        'analysis_5': analysis_5,
+        'analysis_6': analysis_6,
+        'analysis_7': analysis_7,
+        'analysis_8': analysis_8,
     }
     cache.set(cache_key, context, 3600)  # Cache for 1 hour
     return render(request, 'credit_risk/dashboard.html', context)
@@ -721,7 +970,80 @@ def export_methodologies_pdf(request):
     return HttpResponse("Error generando PDF", status=500)
 
 def controls(request):
-    return render(request, 'credit_risk/controls.html', {'page_title': 'Riesgo de Crédito - Controles y Límites'})
+    from django.db.models import Sum, Count, Max
+    from decimal import Decimal
+
+    # Todas las fechas de corte disponibles para el selector
+    available_dates = (
+        CreditOperation.objects
+        .values_list('load_date', flat=True)
+        .distinct()
+        .order_by('-load_date')
+    )
+
+    # Fecha seleccionada por el usuario (GET) o la más reciente por defecto
+    selected_date_str = request.GET.get('load_date', '')
+    latest_date = available_dates.first() if available_dates.exists() else None
+
+    selected_date = None
+    if selected_date_str:
+        from datetime import datetime
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            # Validar que la fecha exista en la BD
+            if selected_date not in list(available_dates):
+                selected_date = latest_date
+        except ValueError:
+            selected_date = latest_date
+    else:
+        selected_date = latest_date
+
+    top_debtors = []
+    total_cartera = Decimal('0')
+
+    if selected_date:
+        # Saldo total de cartera en la fecha seleccionada
+        total_cartera = CreditOperation.objects.filter(
+            load_date=selected_date
+        ).aggregate(total=Sum('balance'))['total'] or Decimal('0')
+
+        # Top 20 deudores por saldo consolidado
+        debtors_qs = (
+            CreditOperation.objects
+            .filter(load_date=selected_date)
+            .values('customer__document_id', 'customer__name', 'credit_type', 'sbs_classification')
+            .annotate(
+                total_balance=Sum('balance'),
+                total_provision=Sum('required_provision'),
+                num_ops=Count('id'),
+            )
+            .order_by('-total_balance')[:20]
+        )
+
+        for i, d in enumerate(debtors_qs, start=1):
+            pct = (d['total_balance'] / total_cartera * 100) if total_cartera else Decimal('0')
+            top_debtors.append({
+                'rank': i,
+                'document_id': d['customer__document_id'],
+                'name': d['customer__name'],
+                'credit_type': d['credit_type'],
+                'sbs_classification': d['sbs_classification'],
+                'total_balance': d['total_balance'],
+                'total_provision': d['total_provision'],
+                'num_ops': d['num_ops'],
+                'pct_cartera': round(pct, 2),
+            })
+
+    context = {
+        'page_title': 'Riesgo de Crédito - Controles y Límites',
+        'top_debtors': top_debtors,
+        'total_cartera': total_cartera,
+        'selected_date': selected_date,
+        'available_dates': list(available_dates),
+    }
+    return render(request, 'credit_risk/controls.html', context)
+
+
 
 import pandas as pd
 import numpy as np
@@ -1267,14 +1589,17 @@ def expected_loss_analysis(request):
     report_data = []
     summary = {
         't0_pe': 0, 't1_pe': 0, 'variation_abs': 0, 'variation_pct': 0,
-        't0_ead': 0, 't1_ead': 0, 't1_pd_avg': 0, 't1_lgd_avg': 0
+        't0_ead': 0, 't1_ead': 0, 'ead_var_abs': 0, 'ead_var_pct': 0,
+        't0_pd_avg': 0, 't1_pd_avg': 0, 'pd_var_abs': 0,
+        't0_lgd_avg': 0, 't1_lgd_avg': 0, 'lgd_var_abs': 0,
+        't0_pe_ratio': 0, 't1_pe_ratio': 0, 'pe_ratio_var': 0
     }
-    agg_qs = CreditOperation.objects.values('load_date', 'customer__segment').annotate(
+    agg_qs = CreditOperation.objects.values('load_date', 'credit_type').annotate(
         EAD_total=Sum('balance'),
         PD_avg=Avg('metrics__pd'),
         LGD_avg=Avg('metrics__lgd'),
         PE_total=Sum('metrics__expected_loss')
-    ).order_by('-load_date', 'customer__segment')
+    ).order_by('-load_date', 'credit_type')
 
     # Convert to list of dicts for report_data
     report_data = []
@@ -1283,9 +1608,10 @@ def expected_loss_analysis(request):
         pe = float(item['PE_total'] or 0)
         pd_val = float(item['PD_avg'] or 0)
         lgd_val = float(item['LGD_avg'] or 0)
+        seg = (item.get('credit_type') or 'General').strip()
         report_data.append({
             'Periodo': str(item['load_date']),
-            'Segmento': item['customer__segment'] or 'N/A',
+            'Segmento': seg,
             'EAD_total': ead,
             'PD_avg': pd_val,
             'LGD_avg': lgd_val,
@@ -1294,10 +1620,6 @@ def expected_loss_analysis(request):
         })
 
     # Summary calculation (Comparative analysis between T0 and T1)
-    summary = {
-        't0_pe': 0, 't1_pe': 0, 'variation_abs': 0, 'variation_pct': 0,
-        't0_ead': 0, 't1_ead': 0, 't1_pd_avg': 0, 't1_lgd_avg': 0
-    }
     analysis_text = "No hay suficientes periodos de carga para realizar el análisis comparativo."
     detailed_insights = []
 
@@ -1314,7 +1636,23 @@ def expected_loss_analysis(request):
             
             variation_abs = t1_total - t0_total
             variation_pct = (variation_abs / t0_total * 100) if t0_total > 0 else 0
-            
+
+            ead_var_abs = t1_ead - t0_ead
+            ead_var_pct = (ead_var_abs / t0_ead * 100) if t0_ead > 0 else 0
+
+            # Calculate EAD-weighted PD and LGD averages
+            t0_pd_weighted = (sum(i['PD_avg'] * i['EAD_total'] for i in t0_items) / t0_ead) if t0_ead > 0 else 0
+            t1_pd_weighted = (sum(i['PD_avg'] * i['EAD_total'] for i in t1_items) / t1_ead) if t1_ead > 0 else 0
+            pd_var_abs = t1_pd_weighted - t0_pd_weighted
+
+            t0_lgd_weighted = (sum(i['LGD_avg'] * i['EAD_total'] for i in t0_items) / t0_ead) if t0_ead > 0 else 0
+            t1_lgd_weighted = (sum(i['LGD_avg'] * i['EAD_total'] for i in t1_items) / t1_ead) if t1_ead > 0 else 0
+            lgd_var_abs = t1_lgd_weighted - t0_lgd_weighted
+
+            t0_pe_ratio = (t0_total / t0_ead * 100) if t0_ead > 0 else 0
+            t1_pe_ratio = (t1_total / t1_ead * 100) if t1_ead > 0 else 0
+            pe_ratio_var = t1_pe_ratio - t0_pe_ratio
+
             summary.update({
                 't0_pe': t0_total,
                 't1_pe': t1_total,
@@ -1322,18 +1660,59 @@ def expected_loss_analysis(request):
                 'variation_pct': float(variation_pct),
                 't0_ead': t0_ead,
                 't1_ead': t1_ead,
-                't1_pd_avg': sum(i['PD_avg'] for i in t1_items) / len(t1_items) if t1_items else 0,
-                't1_lgd_avg': sum(i['LGD_avg'] for i in t1_items) / len(t1_items) if t1_items else 0,
+                'ead_var_abs': ead_var_abs,
+                'ead_var_pct': float(ead_var_pct),
+                't0_pd_avg': t0_pd_weighted,
+                't1_pd_avg': t1_pd_weighted,
+                'pd_var_abs': pd_var_abs,
+                't0_lgd_avg': t0_lgd_weighted,
+                't1_lgd_avg': t1_lgd_weighted,
+                'lgd_var_abs': lgd_var_abs,
+                't0_pe_ratio': t0_pe_ratio,
+                't1_pe_ratio': t1_pe_ratio,
+                'pe_ratio_var': pe_ratio_var,
             })
             
-            # --- EXPANDED ANALYSIS LOGIC ---
-            trend = "INCREMENTO" if variation_abs > 0 else "DISMINUCIÓN"
-            severity = "significativo" if abs(variation_pct) > 5 else "moderado"
-            
-            analysis_text = f"Se observa un <strong>{trend} {severity}</strong> del {abs(variation_pct):.2f}% en la Pérdida Esperada (PE) total, "
-            analysis_text += f"pasando de S/ {t0_total:,.2f} en {date_t0} a S/ {t1_total:,.2f} en {date_t1}."
+            # --- MICRO-ANALYSES FOR EACH KPI CARD ---
+            if variation_abs < 0:
+                card_1_analysis = f"Reducción de S/ {abs(variation_abs):,.0f} (-{abs(variation_pct):.2f}%) en reservas estimadas por menor pérdida esperada."
+                card_2_analysis = f"Optimización de riesgo (-{abs(variation_pct):.2f}%), favorecida por contracción de saldo expuesto."
+            else:
+                card_1_analysis = f"Incremento de S/ {variation_abs:,.0f} (+{variation_pct:.2f}%) en la estimación de Pérdida Esperada."
+                card_2_analysis = f"Incremento de riesgo (+{variation_pct:.2f}%), recomendando seguimiento cercano de provisiones."
 
-            # Impact by Segment
+            if pe_ratio_var > 0:
+                card_3_analysis = f"Ligero aumento de +{pe_ratio_var:.2f} p.p. en la densidad de riesgo por sol colocado."
+            elif pe_ratio_var < 0:
+                card_3_analysis = f"Mejora de {abs(pe_ratio_var):.2f} p.p. en la tasa de intensidad de pérdida sobre EAD."
+            else:
+                card_3_analysis = "Estabilidad en la tasa de densidad de pérdida esperada sobre el saldo expuesto."
+
+            if ead_var_abs < 0:
+                card_4_analysis = f"Amortización de cartera: EAD disminuyó S/ {abs(ead_var_abs):,.0f} (-{abs(ead_var_pct):.2f}%)."
+            else:
+                card_4_analysis = f"Crecimiento del saldo en S/ {ead_var_abs:,.0f} (+{ead_var_pct:.2f}%) durante el periodo."
+
+            if pd_var_abs < 0:
+                card_5_analysis = f"Mejora crediticia: la PD ponderada bajó {abs(pd_var_abs):.2f} p.p. respecto a t0 ({t0_pd_weighted:.2f}%)."
+            elif pd_var_abs > 0:
+                card_5_analysis = f"Deterioro crediticio: la PD ponderada subió +{pd_var_abs:.2f} p.p. respecto a t0 ({t0_pd_weighted:.2f}%)."
+            else:
+                card_5_analysis = "Estabilidad en el perfil de riesgo y probabilidad de incumplimiento promedio."
+
+            card_analyses = {
+                'card_1': card_1_analysis,
+                'card_2': card_2_analysis,
+                'card_3': card_3_analysis,
+                'card_4': card_4_analysis,
+                'card_5': card_5_analysis,
+            }
+
+            # --- EXPANDED ANALYSIS LOGIC ---
+            trend = "DISMINUCIÓN" if variation_abs < 0 else "INCREMENTO"
+            severity = "moderado" if abs(variation_pct) < 5 else "significativo"
+            
+            # Segment impacts
             segment_impacts = []
             for t1_item in t1_items:
                 seg = t1_item['Segmento']
@@ -1342,34 +1721,38 @@ def expected_loss_analysis(request):
                 if t0_item:
                     seg_var_abs = t1_item['PE_total'] - t0_item['PE_total']
                     seg_var_pct = (seg_var_abs / t0_item['PE_total'] * 100) if t0_item['PE_total'] > 0 else 0
-                    
-                    # Detect driver
                     ead_var = (t1_item['EAD_total'] / t0_item['EAD_total'] - 1) if t0_item['EAD_total'] > 0 else 0
                     pd_var = (t1_item['PD_avg'] / t0_item['PD_avg'] - 1) if t0_item['PD_avg'] > 0 else 0
                     
                     driver = "Exposición (EAD)" if abs(ead_var) > abs(pd_var) else "Calidad Crediticia (PD)"
-                    if abs(seg_var_abs) > 100: # Significant enough to mention
-                        segment_impacts.append({
-                            'segment': seg,
-                            'var_abs': seg_var_abs,
-                            'var_pct': seg_var_pct,
-                            'driver': driver
-                        })
+                    segment_impacts.append({
+                        'segment': seg,
+                        'var_abs': seg_var_abs,
+                        'var_pct': seg_var_pct,
+                        'driver': driver
+                    })
             
-            if segment_impacts:
-                # Sort by absolute impact
-                segment_impacts.sort(key=lambda x: abs(x['var_abs']), reverse=True)
-                top_impact = segment_impacts[0]
-                
-                analysis_text += f" El segmento con mayor impacto fue <strong>{top_impact['segment']}</strong>, "
-                analysis_text += f"con una variación de S/ {top_impact['var_abs']:,.2f} ({top_impact['var_pct']:.1f}%), "
-                analysis_text += f"impulsada principalmente por cambios en <strong>{top_impact['driver']}</strong>."
+            segment_impacts.sort(key=lambda x: abs(x['var_abs']), reverse=True)
 
-                # Qualitative Conclusion
-                if variation_abs > 0:
-                    analysis_text += " Se recomienda un monitoreo preventivo intensificado en los segmentos identificados para mitigar el riesgo de deterioro de cartera."
-                else:
-                    analysis_text += " La gestión de riesgos muestra una optimización en la calidad de los activos durante este periodo."
+            analysis_text = f"<div class='mb-2'><strong><i class='fas fa-chart-line text-indigo mr-1'></i> Diagnóstico General ({date_t0} vs {date_t1}):</strong><br>"
+            analysis_text += f"Se registra una <strong>{trend} {severity} del {abs(variation_pct):.2f}%</strong> en la Pérdida Esperada total del portafolio, "
+            analysis_text += f"pasando de <strong>S/ {t0_total:,.2f}</strong> en t0 a <strong>S/ {t1_total:,.2f}</strong> en t1 (variación neta de <strong>S/ {variation_abs:,.2f}</strong>).</div>"
+            
+            analysis_text += f"<div class='mb-2'><strong><i class='fas fa-sliders-h text-indigo mr-1'></i> Drivers y Sensibilidad del Modelo:</strong><br>"
+            analysis_text += f"• <strong>Exposición (EAD Total):</strong> Se ubicó en <strong>S/ {t1_ead:,.2f}</strong> ({ead_var_pct:+.2f}% vs t0). La amortización de capital fue el motor principal de la variación.<br>"
+            analysis_text += f"• <strong>Probabilidad de Incumplimiento (PD):</strong> La PD ponderada pasó de <strong>{t0_pd_weighted:.2f}%</strong> a <strong>{t1_pd_weighted:.2f}%</strong> ({pd_var_abs:+.2f} p.p.), reflejando estabilidad y ligera mejora crediticia.<br>"
+            analysis_text += f"• <strong>Severidad (LGD):</strong> Promedió <strong>{t1_lgd_weighted:.2f}%</strong>, sostenida por la cobertura de colaterales y parámetros de provisión SBS.</div>"
+            
+            analysis_text += "<div class='mb-2'><strong><i class='fas fa-layer-group text-warning mr-1'></i> Comportamiento por Segmento:</strong><br>"
+            for impact in segment_impacts:
+                analysis_text += f"• <strong>{impact['segment']}:</strong> Var PE: S/ {impact['var_abs']:,.2f} ({impact['var_pct']:+.2f}%) — Principal driver: {impact['driver']}.<br>"
+            analysis_text += "</div>"
+            
+            analysis_text += "<div><strong><i class='fas fa-shield-alt text-success mr-1'></i> Recomendación Estratégica ERM:</strong><br>"
+            if variation_abs <= 0:
+                analysis_text += "La cartera mantiene un perfil de riesgo optimizado con una tasa de cobertura PE/EAD de <strong>" + f"{t1_pe_ratio:.2f}%" + "</strong>. Se sugiere mantener criterios prudenciales de originación en Consumo e incentivar colocaciones hipotecarias con garantía preferida.</div>"
+            else:
+                analysis_text += "Se recomienda reforzar el monitoreo preventivo de morosidad temprana y ajustar políticas de admisión en los segmentos con mayor incremento de PE.</div>"
 
     context = {
         'page_title': 'Análisis de Pérdida Esperada por Periodo',
@@ -1378,21 +1761,198 @@ def expected_loss_analysis(request):
         'date_t1': str(date_t1),
         'report_data': report_data,
         'summary': summary,
+        'card_analyses': card_analyses if 'card_analyses' in locals() else {},
         'analysis_text': analysis_text,
         'detailed_insights': detailed_insights
     }
     return render(request, 'credit_risk/expected_loss.html', context)
 
-    context = {
-        'page_title': 'Análisis de Pérdida Esperada por Periodo',
-        'dates': dates,
-        'date_t0': str(date_t0),
-        'date_t1': str(date_t1),
-        'report_data': report_data,
-        'summary': summary,
-        'analysis_text': analysis_text
-    }
-    return render(request, 'credit_risk/expected_loss.html', context)
+def export_expected_loss_word(request):
+    """
+    Exporta el Informe Ejecutivo de Pérdida Esperada a formato Microsoft Word (.docx / .doc).
+    """
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+
+    dates = CreditOperation.objects.dates('load_date', 'day', order='DESC')
+    if not dates.exists():
+        return HttpResponse("No hay datos disponibles para generar el informe.", status=400)
+
+    date_t0_str = request.GET.get('date_t0')
+    date_t1_str = request.GET.get('date_t1')
+
+    dates_list = list(dates)
+    if len(dates_list) >= 2:
+        default_t0 = dates_list[1].strftime('%Y-%m-%d')
+        default_t1 = dates_list[0].strftime('%Y-%m-%d')
+    else:
+        default_t0 = dates_list[0].strftime('%Y-%m-%d')
+        default_t1 = dates_list[0].strftime('%Y-%m-%d')
+
+    date_t0 = date_t0_str if date_t0_str else default_t0
+    date_t1 = date_t1_str if date_t1_str else default_t1
+
+    ops_t0 = CreditOperation.objects.filter(load_date=date_t0)
+    ops_t1 = CreditOperation.objects.filter(load_date=date_t1)
+
+    grouped_t0 = ops_t0.values('load_date', 'credit_type').annotate(
+        ead=Sum('balance'),
+        pd_weighted=ExpressionWrapper(Sum(F('metrics__pd') * F('balance')), output_field=FloatField()),
+        lgd_weighted=ExpressionWrapper(Sum(F('metrics__lgd') * F('balance')), output_field=FloatField()),
+        pe_total=Sum('metrics__expected_loss')
+    )
+    grouped_t1 = ops_t1.values('load_date', 'credit_type').annotate(
+        ead=Sum('balance'),
+        pd_weighted=ExpressionWrapper(Sum(F('metrics__pd') * F('balance')), output_field=FloatField()),
+        lgd_weighted=ExpressionWrapper(Sum(F('metrics__lgd') * F('balance')), output_field=FloatField()),
+        pe_total=Sum('metrics__expected_loss')
+    )
+
+    report_data = []
+    t0_pe, t0_ead = 0.0, 0.0
+    t1_pe, t1_ead = 0.0, 0.0
+
+    for item in grouped_t0:
+        ead = float(item['ead'] or 0.0)
+        pd_avg = (float(item['pd_weighted'] or 0.0) / ead) if ead > 0 else 0.0
+        lgd_avg = (float(item['lgd_weighted'] or 0.0) / ead) if ead > 0 else 0.0
+        pe = float(item['pe_total'] or 0.0)
+        pe_pct = (pe / ead * 100.0) if ead > 0 else 0.0
+        t0_pe += pe
+        t0_ead += ead
+        report_data.append({
+            'Periodo': str(item['load_date']),
+            'Segmento': item['credit_type'] or 'GENERAL',
+            'EAD_total': ead,
+            'PD_avg': pd_avg,
+            'LGD_avg': lgd_avg,
+            'PE_total': pe,
+            'PE_pct': pe_pct
+        })
+
+    for item in grouped_t1:
+        ead = float(item['ead'] or 0.0)
+        pd_avg = (float(item['pd_weighted'] or 0.0) / ead) if ead > 0 else 0.0
+        lgd_avg = (float(item['lgd_weighted'] or 0.0) / ead) if ead > 0 else 0.0
+        pe = float(item['pe_total'] or 0.0)
+        pe_pct = (pe / ead * 100.0) if ead > 0 else 0.0
+        t1_pe += pe
+        t1_ead += ead
+        report_data.append({
+            'Periodo': str(item['load_date']),
+            'Segmento': item['credit_type'] or 'GENERAL',
+            'EAD_total': ead,
+            'PD_avg': pd_avg,
+            'LGD_avg': lgd_avg,
+            'PE_total': pe,
+            'PE_pct': pe_pct
+        })
+
+    variation_abs = t1_pe - t0_pe
+    variation_pct = (variation_abs / t0_pe * 100.0) if t0_pe > 0 else 0.0
+
+    doc = Document()
+    
+    # Title
+    title_p = doc.add_paragraph()
+    title_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_run = title_p.add_run('INFORME EJECUTIVO DE PÉRDIDA ESPERADA Y RIESGO CREDITICIO')
+    title_run.bold = True
+    title_run.font.size = Pt(16)
+    title_run.font.color.rgb = RGBColor(79, 70, 229)
+
+    sub_p = doc.add_paragraph()
+    sub_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    sub_run = sub_p.add_run(f'Evaluación Comparativa de Portafolio: {date_t0} (t0) vs {date_t1} (t1)')
+    sub_run.italic = True
+    sub_run.font.size = Pt(11)
+    sub_run.font.color.rgb = RGBColor(100, 116, 139)
+
+    doc.add_paragraph()
+
+    # Section 1: Summary Table
+    doc.add_heading('1. Resumen de Indicadores Clave de Portafolio', level=1)
+    table_kpi = doc.add_table(rows=1, cols=4)
+    table_kpi.alignment = WD_TABLE_ALIGNMENT.CENTER
+    hdr_cells = table_kpi.rows[0].cells
+    hdr_cells[0].text = "Métrica de Riesgo"
+    hdr_cells[1].text = f"Periodo t0 ({date_t0})"
+    hdr_cells[2].text = f"Periodo t1 ({date_t1})"
+    hdr_cells[3].text = "Variación Absoluta / %"
+
+    for cell in hdr_cells:
+        for p in cell.paragraphs:
+            for run in p.runs:
+                run.bold = True
+
+    kpi_rows = [
+        ("Pérdida Esperada (PE Total)", f"S/ {t0_pe:,.2f}", f"S/ {t1_pe:,.2f}", f"S/ {variation_abs:,.2f} ({variation_pct:+.2f}%)"),
+        ("Exposición Total (EAD)", f"S/ {t0_ead:,.2f}", f"S/ {t1_ead:,.2f}", f"S/ {(t1_ead - t0_ead):,.2f}"),
+        ("Tasa de Cobertura PE / EAD", f"{(t0_pe/t0_ead*100 if t0_ead else 0):.2f}%", f"{(t1_pe/t1_ead*100 if t1_ead else 0):.2f}%", f"{((t1_pe/t1_ead*100) - (t0_pe/t0_ead*100) if t0_ead and t1_ead else 0):+.2f}%")
+    ]
+
+    for m, v0, v1, var in kpi_rows:
+        row_cells = table_kpi.add_row().cells
+        row_cells[0].text = m
+        row_cells[1].text = v0
+        row_cells[2].text = v1
+        row_cells[3].text = var
+
+    doc.add_paragraph()
+
+    # Section 2: Executive Analysis
+    doc.add_heading('2. Diagnóstico Integral y Análisis de Drivers (ERM)', level=1)
+    p_diag = doc.add_paragraph()
+    diag_text = (
+        f"Al cierre del periodo {date_t1} (t1), la Pérdida Esperada (PE = EAD × PD × LGD) del portafolio se situó en "
+        f"S/ {t1_pe:,.2f}, registrando una variación de S/ {variation_abs:,.2f} ({variation_pct:+.2f}%) respecto al periodo base "
+        f"{date_t0} (t0) (S/ {t0_pe:,.2f}). La tasa de cobertura ponderada PE/EAD cerró en "
+        f"{(t1_pe/t1_ead*100 if t1_ead else 0):.2f}% sobre un saldo expuesto total de S/ {t1_ead:,.2f}.\n\n"
+        f"Recomendaciones Estratégicas ERM:\n"
+        f"• Se recomienda mantener una cobertura anticipada de provisiones bajo NIIF 9 y SBS Res. N° 3718-2021.\n"
+        f"• Fortalecer el monitoreo preventivo de cosechas recientes en los segmentos con mayor sensibilidad a la PD.\n"
+        f"• Ajustar las políticas de admisión crediticia e incentivar colocaciones garantizadas en caso de incrementos en la mora tardía."
+    )
+    p_diag.add_run(diag_text)
+
+    doc.add_paragraph()
+
+    # Section 3: Segment Breakdown Table
+    doc.add_heading('3. Desglose Detallado por Periodo y Segmento', level=1)
+    table_det = doc.add_table(rows=1, cols=7)
+    table_det.alignment = WD_TABLE_ALIGNMENT.CENTER
+    headers = ["Periodo", "Segmento", "EAD Total (S/)", "PD Avg (%)", "LGD Avg (%)", "PE Total (S/)", "PE/EAD (%)"]
+    
+    for i, h in enumerate(headers):
+        table_det.rows[0].cells[i].text = h
+        for p in table_det.rows[0].cells[i].paragraphs:
+            for r in p.runs:
+                r.bold = True
+
+    for r in report_data:
+        row_cells = table_det.add_row().cells
+        row_cells[0].text = r['Periodo']
+        row_cells[1].text = r['Segmento']
+        row_cells[2].text = f"S/ {r['EAD_total']:,.2f}"
+        row_cells[3].text = f"{r['PD_avg']:.2f}%"
+        row_cells[4].text = f"{r['LGD_avg']:.2f}%"
+        row_cells[5].text = f"S/ {r['PE_total']:,.2f}"
+        row_cells[6].text = f"{r['PE_pct']:.2f}%"
+
+    doc.add_paragraph()
+    footer_p = doc.add_paragraph('Generado automáticamente por el Sistema A.RISK ERM v2.0 - Cumplimiento SBS / NIIF 9')
+    footer_p.italic = True
+    footer_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    f = io.BytesIO()
+    doc.save(f)
+    f.seek(0)
+
+    filename = f"informe_perdida_esperada_{date_t1}.docx"
+    response = HttpResponse(f.read(), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 def reports(request):
     dates = CreditOperation.objects.dates('load_date', 'day', order='DESC')
